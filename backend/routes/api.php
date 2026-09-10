@@ -24,6 +24,7 @@ Route::prefix('complejos')->group(function () {
     Route::get('/', [ComplejoPublicoController::class, 'index']);
     Route::get('/{complejo}', [ComplejoPublicoController::class, 'show']);
     Route::get('/{complejo}/disponibilidad', [ComplejoPublicoController::class, 'disponibilidad']);
+    Route::get('/{complejo}/whatsapp', [ComplejoPublicoController::class, 'enlaceWhatsApp']);
 });
 
 Route::prefix('geografia')->group(function () {
@@ -35,7 +36,7 @@ Route::prefix('geografia')->group(function () {
 Route::prefix('panel')->middleware('auth:sanctum')->group(function () {
     Route::get('/mis-complejos', [ComplejoController::class, 'misComplejos']);
     Route::get('/complejos/{complejo:id}', [ComplejoController::class, 'show']);
-Route::put('/complejos/{complejo:id}', [ComplejoController::class, 'update']);
+    Route::put('/complejos/{complejo:id}', [ComplejoController::class, 'update']);
 
     Route::get('/complejos/{complejo:id}/canchas', [CanchaController::class, 'index']);
     Route::post('/canchas', [CanchaController::class, 'store']);

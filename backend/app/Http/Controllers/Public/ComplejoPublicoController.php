@@ -7,6 +7,7 @@ use App\Http\Resources\ComplejoDetalleResource;
 use App\Http\Resources\ComplejoResource;
 use App\Models\Complejo;
 use App\Services\CalculadorDisponibilidadService;
+use App\Services\WhatsAppLinkService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -94,5 +95,35 @@ class ComplejoPublicoController extends Controller
                 'canchas' => $disponibilidad,
             ],
         ]);
+    }
+
+    public function enlaceWhatsApp(Request $request, Complejo $complejo, WhatsAppLinkService $whatsAppLinkService): JsonResponse
+    {
+        abort_if(!$complejo->activo, 404);
+
+        $request->validate([
+            'cancha_id' => ['nullable', 'integer', 'exists:canchas,id'],
+            'fecha' => ['nullable', 'date'],
+            'hora_inicio' => ['nullable', 'date_format:H:i'],
+        ]);
+
+        $cancha = $request->filled('cancha_id')
+            ? $complejo->canchas()->findOrFail($request->integer('cancha_id'))
+            : null;
+
+        $fecha = $request->filled('fecha') ? Carbon::parse($request->string('fecha')->toString()) : null;
+
+        $enlace = $whatsAppLinkService->generarEnlaceConsulta(
+            $complejo,
+            $cancha,
+            $fecha,
+            $request->string('hora_inicio')->toString() ?: null,
+        );
+
+        if (!$enlace) {
+            return response()->json(['message' => 'Este complejo no ha configurado WhatsApp todavía.'], 404);
+        }
+
+        return response()->json(['data' => ['enlace' => $enlace]]);
     }
 }
