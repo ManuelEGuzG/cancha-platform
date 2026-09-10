@@ -2,6 +2,7 @@
 
 namespace App\Scopes;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Scope;
@@ -19,7 +20,11 @@ class TenantScope implements Scope
     {
         $user = auth('sanctum')->user();
 
-        if (!$user || $user->is_platform_admin) {
+        if (!$user instanceof User) {
+            return; // sin usuario autenticado, o tipo inesperado: no filtrar
+        }
+
+        if ($user->is_platform_admin) {
             return; // admin de plataforma ve todo, sin restricción
         }
 
