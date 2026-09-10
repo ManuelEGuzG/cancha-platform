@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Panel\ActualizarComplejoRequest;
 use App\Http\Resources\ComplejoDetalleResource;
 use App\Models\Complejo;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -43,5 +44,48 @@ class ComplejoController extends Controller
         $complejo->update($request->validated());
 
         return response()->json(['data' => new ComplejoDetalleResource($complejo)]);
+    }
+
+    public function agenda(Request $request, Complejo $complejo): JsonResponse
+    {
+        Gate::authorize('gestionar', $complejo);
+
+        $request->validate([
+            'fecha' => ['nullable', 'date'],
+        ]);
+
+        $fecha = $request->filled('fecha')
+            ? Carbon::parse($request->string('fecha')->toString())
+            : Carbon::today();
+
+        $canchas = $complejo->canchas()->where('activa', true)->with('deporte')->get();
+
+        $agenda = $canchas->map(function ($cancha) use ($fecha) {
+            $reservas = $cancha->reservas()
+                ->whereDate('fecha', $fecha->toDateString())
+                ->whereIn('estado', ['pendiente', 'confirmada'])
+                ->orderBy('hora_inicio')
+                ->get(['id', 'nombre_cliente', 'telefono_cliente', 'hora_inicio', 'hora_fin', 'estado', 'origen']);
+
+            $bloqueos = $cancha->bloqueos()
+                ->whereDate('fecha', $fecha->toDateString())
+                ->orderBy('hora_inicio')
+                ->get(['id', 'hora_inicio', 'hora_fin', 'motivo', 'notas']);
+
+            return [
+                'cancha_id' => $cancha->id,
+                'nombre' => $cancha->nombre,
+                'deporte' => $cancha->deporte->nombre,
+                'reservas' => $reservas,
+                'bloqueos' => $bloqueos,
+            ];
+        });
+
+        return response()->json([
+            'data' => [
+                'fecha' => $fecha->toDateString(),
+                'canchas' => $agenda,
+            ],
+        ]);
     }
 }

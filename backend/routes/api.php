@@ -8,6 +8,7 @@ use App\Http\Controllers\Panel\HorarioController;
 use App\Http\Controllers\Panel\ReservaController;
 use App\Http\Controllers\Public\ComplejoPublicoController;
 use App\Http\Controllers\Public\GeografiaPublicaController;
+use App\Http\Controllers\Panel\EstadisticaController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -37,6 +38,8 @@ Route::prefix('panel')->middleware('auth:sanctum')->group(function () {
     Route::get('/mis-complejos', [ComplejoController::class, 'misComplejos']);
     Route::get('/complejos/{complejo:id}', [ComplejoController::class, 'show']);
     Route::put('/complejos/{complejo:id}', [ComplejoController::class, 'update']);
+    Route::get('/complejos/{complejo:id}/agenda', [ComplejoController::class, 'agenda']);
+    Route::get('/complejos/{complejo:id}/estadisticas', [EstadisticaController::class, 'resumen']);
 
     Route::get('/complejos/{complejo:id}/canchas', [CanchaController::class, 'index']);
     Route::post('/canchas', [CanchaController::class, 'store']);
