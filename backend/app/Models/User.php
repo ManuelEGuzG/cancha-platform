@@ -2,31 +2,79 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'email', 'password'])]
-#[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+        'telefono',
+        'is_platform_admin',
+    ];
+
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_platform_admin' => 'boolean',
         ];
+    }
+
+    /**
+     * Todos los complejos a los que este usuario tiene acceso,
+     * incluyendo el nombre del rol vía ->pivot->rol_nombre.
+     */
+    public function complejos(): BelongsToMany
+    {
+        return $this->belongsToMany(Complejo::class, 'complejo_user')
+            ->withPivot('rol_id')
+            ->withTimestamps();
+    }
+
+    public function perteneceAComplejo(int $complejoId): bool
+    {
+        if ($this->is_platform_admin) {
+            return true;
+        }
+
+        return $this->complejos()->where('complejos.id', $complejoId)->exists();
+    }
+
+    public function rolEnComplejo(int $complejoId): ?string
+    {
+        $pivot = $this->complejos()
+            ->where('complejos.id', $complejoId)
+            ->first()
+            ?->pivot;
+
+        if (!$pivot) {
+            return null;
+        }
+
+        return Rol::find($pivot->rol_id)?->nombre;
+    }
+
+    public function esPropietarioDe(int $complejoId): bool
+    {
+        return $this->rolEnComplejo($complejoId) === Rol::PROPIETARIO;
+    }
+
+    public function esEncargadoDe(int $complejoId): bool
+    {
+        return $this->rolEnComplejo($complejoId) === Rol::ENCARGADO;
     }
 }
