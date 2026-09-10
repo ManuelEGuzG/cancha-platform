@@ -1,0 +1,60 @@
+<?php
+
+namespace App\Http\Controllers\Public;
+
+use App\Http\Controllers\Controller;
+use App\Http\Resources\ComplejoDetalleResource;
+use App\Http\Resources\ComplejoResource;
+use App\Models\Complejo;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+class ComplejoPublicoController extends Controller
+{
+    public function index(Request $request): JsonResponse
+    {
+        $request->validate([
+            'distrito_id' => ['nullable', 'integer', 'exists:distritos,id'],
+            'canton_id' => ['nullable', 'integer', 'exists:cantones,id'],
+            'deporte_id' => ['nullable', 'integer', 'exists:deportes,id'],
+        ]);
+
+        $complejos = Complejo::query()
+            ->where('activo', true)
+            ->with(['distrito.canton', 'canchas' => function ($query) use ($request) {
+                if ($request->filled('deporte_id')) {
+                    $query->where('deporte_id', $request->integer('deporte_id'));
+                }
+            }])
+            ->withCount('canchas')
+            ->when($request->filled('distrito_id'), function ($query) use ($request) {
+                $query->where('distrito_id', $request->integer('distrito_id'));
+            })
+            ->when($request->filled('canton_id'), function ($query) use ($request) {
+                $query->whereHas('distrito', function ($q) use ($request) {
+                    $q->where('canton_id', $request->integer('canton_id'));
+                });
+            })
+            ->paginate(15);
+
+        return response()->json([
+            'data' => ComplejoResource::collection($complejos),
+            'meta' => [
+                'current_page' => $complejos->currentPage(),
+                'last_page' => $complejos->lastPage(),
+                'total' => $complejos->total(),
+            ],
+        ]);
+    }
+
+    public function show(Complejo $complejo): JsonResponse
+    {
+        abort_if(!$complejo->activo, 404);
+
+        $complejo->load(['distrito.canton.provincia', 'canchas.deporte']);
+
+        return response()->json([
+            'data' => new ComplejoDetalleResource($complejo),
+        ]);
+    }
+}
