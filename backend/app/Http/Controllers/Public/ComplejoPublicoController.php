@@ -6,11 +6,18 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\ComplejoDetalleResource;
 use App\Http\Resources\ComplejoResource;
 use App\Models\Complejo;
+use App\Services\CalculadorDisponibilidadService;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ComplejoPublicoController extends Controller
 {
+    public function __construct(
+        private readonly CalculadorDisponibilidadService $calculadorDisponibilidad,
+    ) {
+    }
+
     public function index(Request $request): JsonResponse
     {
         $request->validate([
@@ -55,6 +62,37 @@ class ComplejoPublicoController extends Controller
 
         return response()->json([
             'data' => new ComplejoDetalleResource($complejo),
+        ]);
+    }
+
+    public function disponibilidad(Request $request, Complejo $complejo): JsonResponse
+    {
+        abort_if(!$complejo->activo, 404);
+
+        $request->validate([
+            'fecha' => ['nullable', 'date', 'after_or_equal:today'],
+        ]);
+
+        $fecha = $request->filled('fecha')
+            ? Carbon::parse($request->string('fecha')->toString())
+            : Carbon::today();
+
+        $canchas = $complejo->canchas()->where('activa', true)->get();
+
+        $disponibilidad = $canchas->map(function ($cancha) use ($fecha) {
+            return [
+                'cancha_id' => $cancha->id,
+                'nombre' => $cancha->nombre,
+                'precio_hora' => $cancha->precio_hora,
+                'bloques' => $this->calculadorDisponibilidad->calcularParaCancha($cancha, $fecha),
+            ];
+        });
+
+        return response()->json([
+            'data' => [
+                'fecha' => $fecha->toDateString(),
+                'canchas' => $disponibilidad,
+            ],
         ]);
     }
 }

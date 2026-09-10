@@ -18,6 +18,7 @@ Route::prefix('auth')->group(function () {
 Route::prefix('complejos')->group(function () {
     Route::get('/', [ComplejoPublicoController::class, 'index']);
     Route::get('/{complejo}', [ComplejoPublicoController::class, 'show']);
+    Route::get('/{complejo}/disponibilidad', [ComplejoPublicoController::class, 'disponibilidad']);
 });
 
 Route::prefix('geografia')->group(function () {
