@@ -45,4 +45,14 @@ class Cancha extends Model
     {
         return $this->hasMany(HorarioExcepcion::class);
     }
+
+    public function reservas(): HasMany
+    {
+        return $this->hasMany(Reserva::class);
+    }
+
+    public function bloqueos(): HasMany
+    {
+        return $this->hasMany(Bloqueo::class);
+    }
 }

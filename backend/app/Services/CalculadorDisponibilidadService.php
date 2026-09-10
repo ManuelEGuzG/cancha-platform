@@ -9,17 +9,22 @@ use Illuminate\Support\Collection;
 
 class CalculadorDisponibilidadService
 {
-    /**
-     * Genera los bloques de disponibilidad de una cancha para una fecha dada,
-     * en intervalos de una hora, dentro del horario de operación.
-     */
     public function calcularParaCancha(Cancha $cancha, Carbon $fecha): Collection
     {
         [$horaApertura, $horaCierre] = $this->resolverHorarioDelDia($cancha, $fecha);
 
         if (!$horaApertura || !$horaCierre) {
-            return collect(); // la cancha no opera ese día
+            return collect();
         }
+
+        $bloqueos = $cancha->bloqueos()
+            ->whereDate('fecha', $fecha->toDateString())
+            ->get();
+
+        $reservas = $cancha->reservas()
+            ->whereDate('fecha', $fecha->toDateString())
+            ->whereIn('estado', ['pendiente', 'confirmada'])
+            ->get();
 
         $bloques = collect();
         $inicio = $fecha->copy()->setTimeFromTimeString($horaApertura);
@@ -31,7 +36,7 @@ class CalculadorDisponibilidadService
             $bloques->push([
                 'hora_inicio' => $inicio->format('H:i'),
                 'hora_fin' => $finBloque->format('H:i'),
-                'estado' => $this->determinarEstado($cancha, $inicio, $finBloque)->value,
+                'estado' => $this->determinarEstado($inicio, $finBloque, $bloqueos, $reservas)->value,
             ]);
 
             $inicio = $finBloque;
@@ -41,9 +46,6 @@ class CalculadorDisponibilidadService
     }
 
     /**
-     * Determina el horario de apertura/cierre de una cancha para un día específico,
-     * dando prioridad a excepciones (feriados, eventos) sobre el horario regular.
-     *
      * @return array{0: ?string, 1: ?string}
      */
     private function resolverHorarioDelDia(Cancha $cancha, Carbon $fecha): array
@@ -67,15 +69,38 @@ class CalculadorDisponibilidadService
         return [$regular->hora_apertura, $regular->hora_cierre];
     }
 
-    /**
-     * Determina el estado de un bloque de hora específico.
-     *
-     * NOTA: en esta fase todavía no existen `reservas` ni `bloqueos`,
-     * así que siempre devuelve DISPONIBLE dentro del horario de operación.
-     * Este método se completará en la fase de RESERVAS con las consultas reales.
-     */
-    private function determinarEstado(Cancha $cancha, Carbon $inicio, Carbon $fin): EstadoDisponibilidad
-    {
+    private function determinarEstado(
+        Carbon $inicioBloque,
+        Carbon $finBloque,
+        Collection $bloqueos,
+        Collection $reservas,
+    ): EstadoDisponibilidad {
+        foreach ($bloqueos as $bloqueo) {
+            if ($this->seSolapan($inicioBloque, $finBloque, $bloqueo->hora_inicio, $bloqueo->hora_fin)) {
+                return EstadoDisponibilidad::BLOQUEADA;
+            }
+        }
+
+        foreach ($reservas as $reserva) {
+            if ($this->seSolapan($inicioBloque, $finBloque, $reserva->hora_inicio, $reserva->hora_fin)) {
+                return $reserva->estado === 'pendiente'
+                    ? EstadoDisponibilidad::PENDIENTE
+                    : EstadoDisponibilidad::OCUPADA;
+            }
+        }
+
         return EstadoDisponibilidad::DISPONIBLE;
+    }
+
+    /**
+     * Compara si el bloque [inicioBloque, finBloque) se solapa con
+     * un rango [horaInicioStr, horaFinStr) guardado como string "HH:MM:SS".
+     */
+    private function seSolapan(Carbon $inicioBloque, Carbon $finBloque, string $horaInicioStr, string $horaFinStr): bool
+    {
+        $inicioRango = $inicioBloque->copy()->setTimeFromTimeString($horaInicioStr);
+        $finRango = $inicioBloque->copy()->setTimeFromTimeString($horaFinStr);
+
+        return $inicioBloque->lt($finRango) && $finBloque->gt($inicioRango);
     }
 }

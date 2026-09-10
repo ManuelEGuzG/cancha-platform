@@ -21,15 +21,23 @@ class TenantScope implements Scope
         $user = auth('sanctum')->user();
 
         if (!$user instanceof User) {
-            return; // sin usuario autenticado, o tipo inesperado: no filtrar
+            return;
         }
 
         if ($user->is_platform_admin) {
-            return; // admin de plataforma ve todo, sin restricción
+            return;
         }
 
         $complejoIds = $user->complejos()->pluck('complejos.id');
 
-        $builder->whereIn($model->getTable() . '.complejo_id', $complejoIds);
+        if ($model->getTable() === 'canchas') {
+            $builder->whereIn('canchas.complejo_id', $complejoIds);
+            return;
+        }
+
+        // Modelos que llegan a su complejo a través de la cancha (reservas, bloqueos, horarios)
+        $builder->whereHas('cancha', function ($query) use ($complejoIds) {
+            $query->whereIn('canchas.complejo_id', $complejoIds);
+        });
     }
 }
