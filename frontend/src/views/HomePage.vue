@@ -1,6 +1,6 @@
 <template>
   <ion-page class="sportra-landing">
-    <!-- Header Sticky con Buscador Flotante tipo Airbnb -->
+    <!-- Header Sticky con Buscador Flotante -->
     <header class="navbar">
       <div class="navbar-container">
         <!-- Logo Sportra -->
@@ -123,10 +123,9 @@
     </header>
 
     <ion-content :fullscreen="true" class="sportra-content">
-      <div class="split-view-container">
+      <main class="main-container">
         
-        <!-- COLUMNA IZQUIERDA: Tarjetas y Listado -->
-        <section class="results-column">
+        <section class="results-section">
           <div class="results-header">
             <div class="results-meta">
               <h1 class="results-title">
@@ -148,7 +147,7 @@
 
           <!-- Loading Skeleton -->
           <div v-if="cargando" class="courts-grid">
-            <div v-for="i in 4" :key="i" class="court-card skeleton-card">
+            <div v-for="i in 6" :key="i" class="court-card skeleton-card">
               <div class="skeleton-img"></div>
               <div class="card-body">
                 <div class="skeleton-line title"></div>
@@ -167,10 +166,7 @@
               v-for="complejo in complejosOrdenados"
               :key="complejo.id"
               class="court-card"
-              :class="{ 'is-highlighted': hoveredComplejoId === complejo.id }"
               @click="verDetalle(complejo.slug)"
-              @mouseenter="hoveredComplejoId = complejo.id"
-              @mouseleave="hoveredComplejoId = null"
             >
               <div class="card-img-wrapper">
                 <img
@@ -233,22 +229,15 @@
           </footer>
         </section>
 
-        <!-- COLUMNA DERECHA: Mapa Real Interactivo -->
-        <section class="map-column">
-          <div id="mapa-sportra" class="map-container"></div>
-        </section>
-
-      </div>
+      </main>
     </ion-content>
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, nextTick } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { IonPage, IonContent, IonSelect, IonSelectOption, IonIcon } from '@ionic/vue';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 
 import complejosService from '@/services/complejos.service';
 import geografiaService from '@/services/geografia.service';
@@ -267,14 +256,9 @@ const distritoId = ref<number | null>(null);
 const busquedaTexto = ref('');
 const orden = ref<'nombre' | 'precio-asc' | 'precio-desc'>('nombre');
 const searchOpen = ref(false);
-const hoveredComplejoId = ref<number | null>(null);
 
 const complejos = ref<Complejo[]>([]);
 const cargando = ref(true);
-
-// Leaflet Map Reference
-let mapInstance: L.Map | null = null;
-const markersGroup = L.layerGroup();
 
 const filtrosActivos = computed(() => {
   return provinciaId.value !== null || cantonId.value !== null || distritoId.value !== null || busquedaTexto.value !== '';
@@ -315,77 +299,6 @@ const complejosOrdenados = computed(() => {
     return lista.sort((a, b) => b.precio_desde - a.precio_desde);
   }
   return lista.sort((a, b) => a.nombre.localeCompare(b.nombre));
-});
-
-// Inicialización del Mapa
-function inicializarMapa() {
-  if (mapInstance) return;
-
-  // Centro por defecto: San José, Costa Rica
-  mapInstance = L.map('mapa-sportra', {
-    zoomControl: false
-  }).setView([9.9333, -84.0833], 12);
-
-  // Control de Zoom posicionado abajo a la derecha
-  L.control.zoom({ position: 'bottomright' }).addTo(mapInstance);
-
-  // Tiles CartoDB Positron (Estilo limpio/Airbnb)
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-    maxZoom: 19,
-    subdomains: 'abcd',
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'
-  }).addTo(mapInstance);
-
-  markersGroup.addTo(mapInstance);
-}
-
-// Actualizar los Marcadores de Precio en el Mapa
-function actualizarMarcadoresMapa() {
-  if (!mapInstance) return;
-
-  markersGroup.clearLayers();
-  const bounds = L.latLngBounds([]);
-
-  complejosOrdenados.value.forEach((complejo) => {
-    // Si la API no retorna lat/lng, asignamos coordenadas aproximadas dentro del GAM para demo
-    const lat = complejo.latitud || (9.9333 + (Math.random() - 0.5) * 0.08);
-    const lng = complejo.longitud || (-84.0833 + (Math.random() - 0.5) * 0.08);
-
-    const priceFormatted = `₡${formatearPrecio(complejo.precio_desde)}`;
-
-    const customIcon = L.divIcon({
-      className: 'custom-price-marker-wrapper',
-      html: `<div class="map-price-pill ${hoveredComplejoId.value === complejo.id ? 'is-active' : ''}">${priceFormatted}</div>`,
-      iconSize: [80, 30],
-      iconAnchor: [40, 15]
-    });
-
-    const marker = L.marker([lat, lng], { icon: customIcon });
-
-    marker.on('click', () => {
-      verDetalle(complejo.slug);
-    });
-
-    marker.on('mouseover', () => {
-      hoveredComplejoId.value = complejo.id;
-    });
-
-    marker.on('mouseout', () => {
-      hoveredComplejoId.value = null;
-    });
-
-    markersGroup.addLayer(marker);
-    bounds.extend([lat, lng]);
-  });
-
-  if (complejosOrdenados.value.length > 0 && bounds.isValid()) {
-    mapInstance.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
-  }
-}
-
-// Observar cambios para refrescar pines en el mapa
-watch([complejosOrdenados, hoveredComplejoId], () => {
-  actualizarMarcadoresMapa();
 });
 
 function toggleDropdownSearch() {
@@ -435,9 +348,6 @@ async function cargarComplejos() {
       distrito_id: distritoId.value ?? undefined,
     });
     complejos.value = data.data;
-    
-    await nextTick();
-    actualizarMarcadoresMapa();
   } catch (error) {
     console.error('Error cargando complejos:', error);
   } finally {
@@ -473,7 +383,6 @@ function handleImageError(event: Event) {
 
 onMounted(async () => {
   await cargarProvincias();
-  inicializarMapa();
 });
 </script>
 
@@ -486,7 +395,7 @@ onMounted(async () => {
   --primary-border: #c7d2fe;
   --text-primary: #0f172a;
   --text-secondary: #64748b;
-  --bg-page: #ffffff;
+  --bg-page: #f8fafc;
   --border-light: #e2e8f0;
 }
 
@@ -509,7 +418,9 @@ ion-content.sportra-content {
 
 .navbar-container {
   width: 100%;
-  padding: 0 2rem;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -571,10 +482,11 @@ ion-content.sportra-content {
 .capsule-value {
   font-size: 0.8rem;
   color: var(--text-secondary);
-  max-width: 130px;
+  max-width: 140px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.2;
 }
 
 .capsule-divider {
@@ -728,30 +640,30 @@ ion-content.sportra-content {
   border-color: var(--primary-border);
 }
 
-/* SPLIT CONTAINER */
-.split-view-container {
-  display: grid;
-  grid-template-columns: 52% 48%;
-  height: calc(100vh - 76px);
-  overflow: hidden;
+/* MAIN CONTAINER CENTRADO */
+.main-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1.5rem 1.5rem 3rem;
 }
 
-/* COLUMNA IZQUIERDA */
-.results-column {
-  padding: 1.5rem 2rem;
-  overflow-y: auto;
-  height: 100%;
+.results-section {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid var(--border-light);
+  padding: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
 }
 
 .results-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
 }
 
 .results-title {
-  font-size: 1.2rem;
+  font-size: 1.35rem;
   font-weight: 800;
   color: var(--text-primary);
   margin: 0;
@@ -761,13 +673,13 @@ ion-content.sportra-content {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.725rem;
+  font-size: 0.75rem;
   color: var(--primary-color);
   background: var(--primary-light);
-  padding: 0.15rem 0.45rem;
+  padding: 0.2rem 0.5rem;
   border-radius: 6px;
   font-weight: 700;
-  margin-top: 0.2rem;
+  margin-top: 0.25rem;
 }
 
 .active-filter-badge .dot {
@@ -780,8 +692,8 @@ ion-content.sportra-content {
 .sort-select {
   border: 1px solid var(--border-light);
   border-radius: 8px;
-  padding: 0.4rem 0.6rem;
-  font-size: 0.8rem;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.85rem;
   outline: none;
   background-color: #ffffff;
   color: var(--text-primary);
@@ -789,12 +701,12 @@ ion-content.sportra-content {
   cursor: pointer;
 }
 
-/* GRILLA Y TARJETAS */
+/* GRILLA Y TARJETAS EN PANTALLA COMPLETA */
 .courts-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.25rem;
-  margin-bottom: 2rem;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
 }
 
 .court-card {
@@ -808,15 +720,15 @@ ion-content.sportra-content {
   flex-direction: column;
 }
 
-.court-card:hover, .court-card.is-highlighted {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+.court-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.08);
   border-color: var(--primary-color);
 }
 
 .card-img-wrapper {
   position: relative;
-  height: 150px;
+  height: 180px;
   background-color: #e2e8f0;
 }
 
@@ -828,33 +740,33 @@ ion-content.sportra-content {
 
 .card-badges {
   position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
+  top: 0.65rem;
+  right: 0.65rem;
 }
 
 .courts-chip {
   background: rgba(15, 23, 42, 0.75);
   backdrop-filter: blur(4px);
   color: #ffffff;
-  padding: 0.2rem 0.45rem;
+  padding: 0.25rem 0.55rem;
   border-radius: 6px;
-  font-size: 0.675rem;
+  font-size: 0.725rem;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.3rem;
 }
 
 .card-body {
-  padding: 0.85rem;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
   flex: 1;
 }
 
 .card-title {
-  margin: 0 0 0.25rem 0;
-  font-size: 0.95rem;
+  margin: 0 0 0.35rem 0;
+  font-size: 1.05rem;
   font-weight: 700;
   color: var(--text-primary);
 }
@@ -862,10 +774,10 @@ ion-content.sportra-content {
 .card-location {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.3rem;
   color: var(--text-secondary);
-  font-size: 0.775rem;
-  margin-bottom: 0.85rem;
+  font-size: 0.825rem;
+  margin-bottom: 1rem;
 }
 
 .loc-icon { color: var(--primary-color); }
@@ -875,20 +787,20 @@ ion-content.sportra-content {
   justify-content: space-between;
   align-items: center;
   margin-top: auto;
-  padding-top: 0.65rem;
+  padding-top: 0.75rem;
   border-top: 1px solid #f1f5f9;
 }
 
 .price-caption {
   display: block;
-  font-size: 0.625rem;
+  font-size: 0.65rem;
   color: var(--text-secondary);
   text-transform: uppercase;
   font-weight: 700;
 }
 
 .price-amount strong {
-  font-size: 1rem;
+  font-size: 1.1rem;
   color: var(--primary-color);
   font-weight: 800;
 }
@@ -897,61 +809,68 @@ ion-content.sportra-content {
   background: var(--primary-light);
   color: var(--primary-color);
   border: none;
-  padding: 0.35rem 0.65rem;
+  padding: 0.4rem 0.8rem;
   border-radius: 6px;
-  font-size: 0.725rem;
+  font-size: 0.775rem;
   font-weight: 700;
+  transition: background 0.2s;
+}
+
+.court-card:hover .btn-card-action {
+  background: var(--primary-color);
+  color: #ffffff;
 }
 
 /* SKELETONS & EMPTY */
 .skeleton-card { pointer-events: none; }
-.skeleton-img { height: 150px; background: #e2e8f0; }
-.skeleton-line { height: 0.8rem; background: #e2e8f0; border-radius: 4px; margin-bottom: 0.5rem; }
-.skeleton-line.title { width: 70%; height: 1rem; }
+.skeleton-img { height: 180px; background: #e2e8f0; }
+.skeleton-line { height: 0.85rem; background: #e2e8f0; border-radius: 4px; margin-bottom: 0.5rem; }
+.skeleton-line.title { width: 70%; height: 1.1rem; }
 .skeleton-line.subtitle { width: 50%; }
 .card-footer-skeleton { display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
 .skeleton-line.price { width: 35%; margin: 0; }
-.skeleton-btn { width: 70px; height: 26px; background: #e2e8f0; border-radius: 6px; }
+.skeleton-btn { width: 80px; height: 30px; background: #e2e8f0; border-radius: 6px; }
 
 .empty-box {
   background: #ffffff;
   border-radius: 12px;
   border: 1px dashed #cbd5e1;
-  padding: 2.5rem 1rem;
+  padding: 3rem 1.5rem;
   text-align: center;
+  margin-bottom: 2.5rem;
 }
 
 .empty-icon-wrapper {
   background: var(--primary-light);
   color: var(--primary-color);
-  width: 44px;
-  height: 44px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.3rem;
-  margin: 0 auto 0.75rem;
+  font-size: 1.5rem;
+  margin: 0 auto 0.85rem;
 }
 
 .btn-clear-filters {
   background: var(--primary-color);
   color: #ffffff;
   border: none;
-  padding: 0.45rem 0.9rem;
+  padding: 0.5rem 1rem;
   border-radius: 8px;
   font-weight: 700;
-  font-size: 0.775rem;
+  font-size: 0.825rem;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.4rem;
 }
 
 /* FOOTER */
 .footer {
-  margin-top: auto;
-  padding-top: 1.25rem;
+  margin-top: 1rem;
+  padding-top: 1.5rem;
   border-top: 1px solid var(--border-light);
   display: flex;
   justify-content: space-between;
@@ -960,68 +879,34 @@ ion-content.sportra-content {
 
 .footer-brand { display: flex; align-items: center; gap: 0.4rem; }
 .logo-icon-sm {
-  width: 1rem;
-  height: 1rem;
+  width: 1.1rem;
+  height: 1.1rem;
   background-color: var(--primary-color);
   -webkit-mask: url('/Sportra_Logo.svg') no-repeat center / contain;
   mask: url('/Sportra_Logo.svg') no-repeat center / contain;
 }
-.footer-title { font-weight: 800; color: var(--text-primary); font-size: 0.8rem; }
-.copyright { font-size: 0.725rem; color: var(--text-secondary); }
-
-/* COLUMNA DERECHA: MAPA LEAFLET */
-.map-column {
-  height: 100%;
-  width: 100%;
-  position: relative;
-  border-left: 1px solid var(--border-light);
-}
-
-.map-container {
-  width: 100%;
-  height: 100%;
-  z-index: 1;
-}
-
-/* MARCADORES ESTILO AIRBNB (Inyectados dinámicamente) */
-:deep(.custom-price-marker-wrapper) {
-  background: transparent;
-  border: none;
-}
-
-:deep(.map-price-pill) {
-  background: #ffffff;
-  color: #0f172a;
-  font-weight: 800;
-  font-size: 0.8rem;
-  padding: 0.35rem 0.65rem;
-  border-radius: 20px;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
-  text-align: center;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: transform 0.2s ease, background-color 0.2s ease, color 0.2s ease;
-  border: 1px solid var(--border-light);
-}
-
-:deep(.map-price-pill:hover),
-:deep(.map-price-pill.is-active) {
-  background: #0f172a;
-  color: #ffffff;
-  transform: scale(1.12);
-  z-index: 999 !important;
-}
+.footer-title { font-weight: 800; color: var(--text-primary); font-size: 0.85rem; }
+.copyright { font-size: 0.775rem; color: var(--text-secondary); }
 
 /* RESPONSIVIDAD */
 @media (max-width: 1024px) {
-  .split-view-container {
+  .courts-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .navbar-container { padding: 0 1rem; }
+  .btn-owner-text { display: none; }
+  .search-capsule { padding: 0.35rem 0.5rem; }
+  .capsule-section { padding-right: 0.5rem; }
+  .capsule-divider { margin-right: 0.5rem; }
+  .search-popover { width: 90vw; }
+  .courts-grid {
     grid-template-columns: 1fr;
   }
-  .map-column {
-    display: none;
-  }
-  .courts-grid {
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  .results-section {
+    padding: 1rem;
   }
 }
 </style>
