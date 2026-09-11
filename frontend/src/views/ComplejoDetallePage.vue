@@ -1,6 +1,6 @@
 <template>
   <ion-page class="complejo-detail-page">
-    <!-- Top Bar Elegante con Transparencia/Borde Fino -->
+    <!-- Top Bar Elegante -->
     <ion-header class="ion-no-border navbar-header">
       <ion-toolbar class="custom-toolbar">
         <ion-buttons slot="start">
@@ -66,7 +66,6 @@
               @click="contactarWhatsApp"
             >
               <ion-icon name="logo-whatsapp" class="wa-icon"></ion-icon>
-
               <div class="wa-btn-text">
                 <span>Consultar por WhatsApp</span>
                 <small>Respuesta directa con el complejo</small>
@@ -75,31 +74,60 @@
             </button>
           </section>
 
-          <!-- Sección de Disponibilidad de Canchas -->
+          <!-- Sección de Disponibilidad con Calendario Libre -->
           <section class="disponibilidad-section">
             <div class="section-title-wrapper">
               <div>
                 <h2>Horarios y Disponibilidad</h2>
-                <p class="section-sub">Selecciona un día para verificar espacios libres en tiempo real</p>
+                <p class="section-sub">Selecciona cualquier fecha para consultar canchas libres</p>
               </div>
             </div>
 
-            <!-- Selector de Fecha / Tabs Segmentados -->
-            <div class="segment-container">
-              <ion-segment v-model="fechaSeleccionada" @ionChange="cargarDisponibilidad" class="custom-segment">
-                <ion-segment-button value="hoy" class="segment-btn">
-                  <ion-label>
-                    <span class="day-label">Hoy</span>
-                    <span class="date-sub">{{ fechaHoyFormatted }}</span>
-                  </ion-label>
-                </ion-segment-button>
-                <ion-segment-button value="manana" class="segment-btn">
-                  <ion-label>
-                    <span class="day-label">Mañana</span>
-                    <span class="date-sub">{{ fechaMananaFormatted }}</span>
-                  </ion-label>
-                </ion-segment-button>
-              </ion-segment>
+            <!-- Selector de Fecha Libre: Carrusel + Datetime Modal -->
+            <div class="date-picker-container">
+              
+              <div class="date-header-row">
+                <span class="selected-date-label">
+                  <ion-icon name="calendar-outline"></ion-icon>
+                  {{ fechaFormateadaCorta }}
+                </span>
+
+                <!-- Botón de Calendario para Elegir Cualquier Fecha -->
+                <button class="btn-picker-trigger" id="open-date-modal">
+                  <ion-icon name="calendar-sharp"></ion-icon>
+                  <span>Elegir fecha</span>
+                </button>
+              </div>
+
+              <!-- Modal Nativo de Ionic con Datetime -->
+              <ion-modal trigger="open-date-modal" :keep-contents-mounted="true">
+                <ion-datetime
+                  id="datetime"
+                  presentation="date"
+                  :value="fechaSeleccionada"
+                  :min="fechaMinima"
+                  @ionChange="onFechaModalChange($event)"
+                  :show-default-buttons="true"
+                  done-text="Seleccionar"
+                  cancel-text="Cancelar"
+                ></ion-datetime>
+              </ion-modal>
+
+              <!-- Carrusel de Acceso Rápido (Próximos Días) -->
+              <div class="date-chips-scroll">
+                <button
+                  v-for="dia in proximosDias"
+                  :key="dia.iso"
+                  class="date-chip-btn"
+                  :class="{ 'is-selected': dia.iso === fechaSeleccionada }"
+                  @click="seleccionarFecha(dia.iso)"
+                >
+                  <span class="chip-day-name">{{ dia.nombreDia }}</span>
+                  <span class="chip-day-number">{{ dia.numeroDia }}</span>
+                  <span class="chip-month">{{ dia.mes }}</span>
+                </button>
+              </div>
+
             </div>
 
             <!-- Leyenda de Estados de Horario -->
@@ -110,7 +138,7 @@
               <div class="legend-item"><span class="dot bloqueada"></span>Bloqueado</div>
             </div>
 
-            <!-- Skeletons durante cambio de fecha -->
+            <!-- Skeletons durante la carga -->
             <div v-if="cargandoDisponibilidad" class="canchas-skeleton-list mt-3">
               <div v-for="i in 2" :key="i" class="cancha-card-skeleton">
                 <div class="skeleton-line c-title"></div>
@@ -162,8 +190,8 @@
             <!-- Estado Vacío en Disponibilidad -->
             <div v-else class="empty-dispo-box">
               <ion-icon name="calendar-clear-outline" class="empty-icon"></ion-icon>
-              <h4>Sin disponibilidad registrada</h4>
-              <p>No se encontraron horarios para la fecha seleccionada.</p>
+              <h4>Sin disponibilidad para esta fecha</h4>
+              <p>No se encontraron horarios para el {{ fechaFormateadaCorta }}.</p>
             </div>
 
           </section>
@@ -171,7 +199,7 @@
         </div>
       </div>
 
-      <!-- Error State si no encuentra el complejo -->
+      <!-- Error State -->
       <div v-else class="container empty-state-full">
         <ion-icon name="alert-circle-outline" class="error-icon"></ion-icon>
         <h3>No se encontró el complejo</h3>
@@ -188,7 +216,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonBackButton,
-  IonIcon, IonSegment, IonSegmentButton, IonLabel, IonButton
+  IonIcon, IonButton, IonModal, IonDatetime
 } from '@ionic/vue';
 import complejosService from '@/services/complejos.service';
 import echo from '@/services/echo';
@@ -202,19 +230,80 @@ const complejo = ref<ComplejoDetalle | null>(null);
 const disponibilidad = ref<Disponibilidad | null>(null);
 const cargando = ref(true);
 const cargandoDisponibilidad = ref(false);
-const fechaSeleccionada = ref<'hoy' | 'manana'>('hoy');
 
-// Formato legible de fechas para las pestañas
-const fechaHoyFormatted = computed(() => {
-  const d = new Date();
-  return d.toLocaleDateString('es-CR', { day: 'numeric', month: 'short' });
+// Fecha seleccionada en formato ISO 'YYYY-MM-DD'
+const fechaSeleccionada = ref<string>(obtenerFechaHoyISO());
+const fechaMinima = obtenerFechaHoyISO();
+
+function obtenerFechaHoyISO(): string {
+  const hoy = new Date();
+  return hoy.toISOString().split('T')[0];
+}
+
+// Genera los próximos 7 días para el acceso rápido horizontal
+interface DiaItem {
+  iso: string;
+  nombreDia: string;
+  numeroDia: number;
+  mes: string;
+}
+
+const proximosDias = computed<DiaItem[]>(() => {
+  const lista: DiaItem[] = [];
+  const base = new Date();
+
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(base);
+    d.setDate(base.getDate() + i);
+    const iso = d.toISOString().split('T')[0];
+
+    const esHoy = i === 0;
+    const esManana = i === 1;
+
+    let nombreDia = d.toLocaleDateString('es-CR', { weekday: 'short' }).replace('.', '');
+    if (esHoy) nombreDia = 'Hoy';
+    else if (esManana) nombreDia = 'Mañ.';
+
+    lista.push({
+      iso,
+      nombreDia: nombreDia.toUpperCase(),
+      numeroDia: d.getDate(),
+      mes: d.toLocaleDateString('es-CR', { month: 'short' }).replace('.', '').toUpperCase(),
+    });
+  }
+
+  return lista;
 });
 
-const fechaMananaFormatted = computed(() => {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  return d.toLocaleDateString('es-CR', { day: 'numeric', month: 'short' });
+// Etiqueta legible de la fecha seleccionada
+const fechaFormateadaCorta = computed(() => {
+  if (!fechaSeleccionada.value) return '';
+  const [year, month, day] = fechaSeleccionada.value.split('-').map(Number);
+  const dateObj = new Date(year, month - 1, day);
+  
+  return dateObj.toLocaleDateString('es-CR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
 });
+
+function seleccionarFecha(iso: string) {
+  if (fechaSeleccionada.value !== iso) {
+    fechaSeleccionada.value = iso;
+    cargarDisponibilidad();
+  }
+}
+
+function onFechaModalChange(event: CustomEvent) {
+  const val = event.detail.value;
+  if (val) {
+    const iso = val.split('T')[0];
+    fechaSeleccionada.value = iso;
+    cargarDisponibilidad();
+  }
+}
 
 async function cargarComplejo() {
   cargando.value = true;
@@ -231,20 +320,13 @@ async function cargarComplejo() {
 async function cargarDisponibilidad() {
   cargandoDisponibilidad.value = true;
   try {
-    const fecha = calcularFecha(fechaSeleccionada.value);
-    const { data } = await complejosService.disponibilidad(slug, fecha);
+    const { data } = await complejosService.disponibilidad(slug, fechaSeleccionada.value);
     disponibilidad.value = data.data;
   } catch (error) {
     console.error('Error cargando disponibilidad:', error);
   } finally {
     cargandoDisponibilidad.value = false;
   }
-}
-
-function calcularFecha(opcion: 'hoy' | 'manana'): string {
-  const fecha = new Date();
-  if (opcion === 'manana') fecha.setDate(fecha.getDate() + 1);
-  return fecha.toISOString().split('T')[0];
 }
 
 function statusLabel(estado: string): string {
@@ -298,7 +380,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* Reset & Custom Properties */
+/* Custom Properties */
 .complejo-detail-page {
   --primary: #0066ff;
   --primary-hover: #0052cc;
@@ -352,11 +434,6 @@ onUnmounted(() => {
   font-size: 1.25rem;
   cursor: pointer;
   margin-right: 0.5rem;
-  transition: transform 0.2s ease;
-}
-
-.btn-icon-wa:hover {
-  transform: scale(1.08);
 }
 
 /* Hero Visual */
@@ -424,13 +501,10 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  line-height: 1.4;
 }
 
 .complejo-address ion-icon {
   color: var(--primary);
-  font-size: 1rem;
-  flex-shrink: 0;
 }
 
 /* Botón WhatsApp */
@@ -445,20 +519,9 @@ onUnmounted(() => {
   align-items: center;
   gap: 0.75rem;
   cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.15s ease;
 }
 
-.btn-whatsapp-full:hover {
-  background: #20ba5a;
-}
-
-.btn-whatsapp-full:active {
-  transform: scale(0.99);
-}
-
-.wa-icon {
-  font-size: 1.75rem;
-}
+.wa-icon { font-size: 1.75rem; }
 
 .wa-btn-text {
   display: flex;
@@ -467,22 +530,10 @@ onUnmounted(() => {
   flex: 1;
 }
 
-.wa-btn-text span {
-  font-weight: 700;
-  font-size: 0.95rem;
-}
+.wa-btn-text span { font-weight: 700; font-size: 0.95rem; }
+.wa-btn-text small { font-size: 0.75rem; opacity: 0.9; }
 
-.wa-btn-text small {
-  font-size: 0.75rem;
-  opacity: 0.9;
-}
-
-.open-icon {
-  font-size: 1.1rem;
-  opacity: 0.8;
-}
-
-/* Sección de Disponibilidad */
+/* Componente de Selección de Fechas */
 .disponibilidad-section {
   margin-top: 2rem;
 }
@@ -500,36 +551,109 @@ onUnmounted(() => {
   margin: 0 0 1rem 0;
 }
 
-/* Segmento de Fechas */
-.segment-container {
+.date-picker-container {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 0.85rem;
   margin-bottom: 1rem;
 }
 
-.custom-segment {
-  background: #edf2f7;
-  border-radius: 12px;
-  padding: 4px;
+.date-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid #f1f5f9;
 }
 
-.segment-btn {
-  --indicator-color: #ffffff;
-  --color: var(--text-muted);
-  --color-checked: var(--primary);
-  --border-radius: 8px;
-  min-height: 44px;
-}
-
-.day-label {
-  display: block;
-  font-weight: 700;
+.selected-date-label {
   font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--text-main);
+  text-transform: capitalize;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
-.date-sub {
-  display: block;
-  font-size: 0.7rem;
-  opacity: 0.8;
-  margin-top: -2px;
+.selected-date-label ion-icon {
+  color: var(--primary);
+}
+
+.btn-picker-trigger {
+  background: #f0f7ff;
+  border: 1px solid #c7d2fe;
+  color: var(--primary);
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-picker-trigger:hover {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+/* Carrusel Horizontal de Días */
+.date-chips-scroll {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+  scrollbar-width: thin;
+}
+
+.date-chip-btn {
+  flex: 0 0 auto;
+  width: 62px;
+  height: 68px;
+  background: #f8fafc;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.chip-day-name {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.chip-day-number {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-main);
+  line-height: 1.1;
+}
+
+.chip-month {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+}
+
+.date-chip-btn.is-selected {
+  background: var(--primary);
+  border-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(0, 102, 255, 0.25);
+}
+
+.date-chip-btn.is-selected .chip-day-name,
+.date-chip-btn.is-selected .chip-day-number,
+.date-chip-btn.is-selected .chip-month {
+  color: #ffffff;
 }
 
 /* Leyenda */
@@ -547,24 +671,14 @@ onUnmounted(() => {
   font-weight: 600;
 }
 
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
+.legend-item { display: flex; align-items: center; gap: 0.35rem; }
+.dot { width: 8px; height: 8px; border-radius: 50%; }
 .dot.disponible { background-color: #10b981; }
 .dot.ocupada { background-color: #ef4444; }
 .dot.pendiente { background-color: #f59e0b; }
 .dot.bloqueada { background-color: #64748b; }
 
-/* Tarjetas de Cancha */
+/* Tarjetas de Canchas */
 .canchas-list {
   display: flex;
   flex-direction: column;
@@ -587,16 +701,8 @@ onUnmounted(() => {
   border-bottom: 1px dashed var(--border-color);
 }
 
-.cancha-info {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.cancha-icon {
-  color: var(--primary);
-  font-size: 1.2rem;
-}
+.cancha-info { display: flex; align-items: center; gap: 0.5rem; }
+.cancha-icon { color: var(--primary); font-size: 1.2rem; }
 
 .cancha-info h3 {
   font-size: 1.05rem;
@@ -605,18 +711,10 @@ onUnmounted(() => {
   margin: 0;
 }
 
-.cancha-price-badge strong {
-  color: var(--primary);
-  font-size: 1.1rem;
-  font-weight: 800;
-}
+.cancha-price-badge strong { color: var(--primary); font-size: 1.1rem; font-weight: 800; }
+.cancha-price-badge small { color: var(--text-muted); font-size: 0.75rem; }
 
-.cancha-price-badge small {
-  color: var(--text-muted);
-  font-size: 0.75rem;
-}
-
-/* Grilla de Horarios */
+/* Horarios Grid */
 .horarios-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
@@ -631,63 +729,23 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   border: 1px solid transparent;
-  transition: all 0.2s ease;
-  user-select: none;
 }
 
-.time-text {
-  font-size: 0.85rem;
-  font-weight: 700;
-}
+.time-text { font-size: 0.85rem; font-weight: 700; }
+.status-indicator { font-size: 0.65rem; font-weight: 600; text-transform: uppercase; margin-top: 2px; }
 
-.status-indicator {
-  font-size: 0.65rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  margin-top: 2px;
-}
-
-/* Variantes según Estado */
-.slot-disponible {
-  background: #ecfdf5;
-  border-color: #a7f3d0;
-  color: #065f46;
-}
-
-.slot-disponible.is-interactive {
-  cursor: pointer;
-}
-
+.slot-disponible { background: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
 .slot-disponible.is-interactive:hover {
   background: #10b981;
   color: #ffffff;
-  border-color: #10b981;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.25);
+  cursor: pointer;
 }
 
-.slot-ocupada {
-  background: #fef2f2;
-  border-color: #fecaca;
-  color: #991b1b;
-  opacity: 0.7;
-  text-decoration: line-through;
-}
+.slot-ocupada { background: #fef2f2; border-color: #fecaca; color: #991b1b; opacity: 0.7; text-decoration: line-through; }
+.slot-pendiente { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+.slot-bloqueada { background: #f1f5f9; border-color: #e2e8f0; color: #94a3b8; opacity: 0.6; }
 
-.slot-pendiente {
-  background: #fffbeb;
-  border-color: #fde68a;
-  color: #92400e;
-}
-
-.slot-bloqueada {
-  background: #f1f5f9;
-  border-color: #e2e8f0;
-  color: #94a3b8;
-  opacity: 0.6;
-}
-
-/* State Boxes */
+/* Empty States & Skeleton Helpers */
 .empty-dispo-box, .empty-state-full {
   text-align: center;
   background: #ffffff;
@@ -697,31 +755,9 @@ onUnmounted(() => {
   color: var(--text-muted);
 }
 
-.empty-icon, .error-icon {
-  font-size: 2.5rem;
-  color: var(--text-muted);
-  margin-bottom: 0.5rem;
-}
-
-.empty-dispo-box h4 {
-  margin: 0 0 0.25rem 0;
-  color: var(--text-main);
-}
-
-/* Skeleton Loading Helpers */
-.skeleton-hero {
-  height: 200px;
-  background: #e2e8f0;
-  border-radius: 16px;
-  margin-bottom: 1rem;
-}
-
-.skeleton-line {
-  background: #e2e8f0;
-  border-radius: 4px;
-  margin-bottom: 0.5rem;
-}
-
+.empty-icon, .error-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+.skeleton-hero { height: 200px; background: #e2e8f0; border-radius: 16px; margin-bottom: 1rem; }
+.skeleton-line { background: #e2e8f0; border-radius: 4px; margin-bottom: 0.5rem; }
 .skeleton-line.title { width: 60%; height: 24px; }
 .skeleton-line.subtitle { width: 40%; height: 16px; }
 .skeleton-card { height: 120px; background: #e2e8f0; border-radius: 14px; }
@@ -742,13 +778,6 @@ onUnmounted(() => {
 }
 
 .skeleton-line.c-title { width: 35%; height: 18px; }
-
 .mt-3 { margin-top: 0.75rem; }
 .mt-4 { margin-top: 1rem; }
-
-@media (max-width: 480px) {
-  .horarios-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
 </style>
