@@ -33,7 +33,7 @@
         <!-- Banner / Hero de Presentación -->
         <div class="complejo-hero">
           <img 
-            :src="complejo.logo_url || fallbackImage" 
+            :src="getComplejoImage(complejo)" 
             :alt="complejo.nombre"
             class="hero-image"
             @error="handleImageError"
@@ -52,7 +52,7 @@
             <div class="title-row">
               <div class="logo-wrapper" v-if="complejo.logo_url || fallbackImage">
                 <img
-                  :src="complejo.logo_url || fallbackImage"
+                  :src="getComplejoImage(complejo)"
                   :alt="`${complejo.nombre} logo`"
                   class="logo-image"
                   @error="handleImageError"
@@ -203,6 +203,8 @@
                       `slot-${bloque.estado}`, 
                       { 'is-interactive': bloque.estado === 'disponible' }
                     ]"
+                    :disabled="bloque.estado !== 'disponible'"
+                    @click="seleccionarBloque(cancha, bloque)"
                   >
                     <span class="time-text">{{ bloque.hora_inicio }}</span>
                     <span class="status-indicator">
@@ -223,6 +225,26 @@
 
           </section>
 
+          <section class="gallery-section" aria-labelledby="gallery-title">
+            <div class="section-heading-row">
+              <div>
+                <span class="eyebrow">El espacio</span>
+                <h2 id="gallery-title">Conoce la cancha</h2>
+                <p>Un espacio preparado para disfrutar tus partidos de día y de noche.</p>
+              </div>
+              <ion-icon name="images-outline" class="section-heading-icon"></ion-icon>
+            </div>
+            <div class="gallery-grid">
+              <img
+                v-for="(imagen, index) in galleryImages"
+                :key="`${imagen}-${index}`"
+                :src="imagen"
+                :alt="`Instalaciones de ${complejo.nombre}, imagen ${index + 1}`"
+                @error="handleImageError"
+              />
+            </div>
+          </section>
+
         </div>
       </div>
 
@@ -235,6 +257,45 @@
       </div>
 
     </ion-content>
+
+    <ion-modal :is-open="Boolean(bloqueSeleccionado)" @didDismiss="cerrarReserva">
+      <div class="reservation-modal">
+        <div class="reservation-modal-header">
+          <div>
+            <span class="eyebrow">Solicitud de reserva</span>
+            <h2>Reservar cancha</h2>
+            <p>{{ fechaFormateadaCorta }} · {{ bloqueSeleccionado?.hora_inicio }} - {{ bloqueSeleccionado?.hora_fin }}</p>
+          </div>
+          <button class="modal-close" aria-label="Cerrar" @click="cerrarReserva">
+            <ion-icon name="close-outline"></ion-icon>
+          </button>
+        </div>
+
+        <div class="reservation-form">
+          <label>Nombre completo <span>*</span></label>
+          <ion-input v-model="solicitud.nombre" fill="outline" placeholder="Juan Pérez"></ion-input>
+
+          <label>Teléfono <span>*</span></label>
+          <ion-input v-model="solicitud.telefono" fill="outline" type="tel" placeholder="8888-8888"></ion-input>
+
+          <label>Comentario <small>(opcional)</small></label>
+          <ion-textarea v-model="solicitud.comentario" fill="outline" :auto-grow="true" placeholder="¿Algo que debamos saber?"></ion-textarea>
+
+          <div class="reservation-note">
+            <ion-icon name="information-circle-outline"></ion-icon>
+            <p>Te contactaremos por WhatsApp para confirmar la disponibilidad y completar la reserva.</p>
+          </div>
+
+          <div class="modal-actions">
+            <button class="btn-secondary" @click="cerrarReserva">Cancelar</button>
+            <button class="btn-primary" :disabled="!solicitud.nombre || !solicitud.telefono" @click="enviarSolicitud">
+              <ion-icon name="logo-whatsapp"></ion-icon>
+              Solicitar por WhatsApp
+            </button>
+          </div>
+        </div>
+      </div>
+    </ion-modal>
   </ion-page>
 </template>
 
@@ -243,7 +304,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonBackButton,
-  IonIcon, IonButton, IonModal, IonDatetime
+  IonIcon, IonButton, IonModal, IonDatetime, IonInput, IonTextarea
 } from '@ionic/vue';
 import complejosService from '@/services/complejos.service';
 import echo from '@/services/echo';
@@ -257,6 +318,9 @@ const complejo = ref<ComplejoDetalle | null>(null);
 const disponibilidad = ref<Disponibilidad | null>(null);
 const cargando = ref(true);
 const cargandoDisponibilidad = ref(false);
+const bloqueSeleccionado = ref<{ hora_inicio: string; hora_fin: string } | null>(null);
+const canchaSeleccionada = ref<{ nombre: string } | null>(null);
+const solicitud = ref({ nombre: '', telefono: '', comentario: '' });
 
 // Fecha seleccionada en formato ISO 'YYYY-MM-DD'
 const fechaSeleccionada = ref<string>(obtenerFechaHoyISO());
@@ -301,6 +365,13 @@ const proximosDias = computed<DiaItem[]>(() => {
 
   return lista;
 });
+
+const galleryImages = computed(() => [
+  getComplejoImage(complejo.value),
+  '/Images/Soccer_center.jpeg',
+  '/Images/oij.jpeg',
+  fallbackImage,
+]);
 
 // Etiqueta legible de la fecha seleccionada
 const fechaFormateadaCorta = computed(() => {
@@ -366,12 +437,61 @@ function statusLabel(estado: string): string {
   return labels[estado] || estado;
 }
 
+function seleccionarBloque(cancha: { nombre: string }, bloque: { hora_inicio: string; hora_fin: string; estado: string }) {
+  if (bloque.estado !== 'disponible') return;
+  canchaSeleccionada.value = cancha;
+  bloqueSeleccionado.value = bloque;
+}
+
+function cerrarReserva() {
+  bloqueSeleccionado.value = null;
+  canchaSeleccionada.value = null;
+}
+
+function enviarSolicitud() {
+  if (!complejo.value || !bloqueSeleccionado.value || !solicitud.value.nombre || !solicitud.value.telefono) return;
+
+  const mensaje = [
+    `Hola, quisiera reservar ${canchaSeleccionada.value?.nombre || 'la cancha'} en ${complejo.value.nombre}.`,
+    `Fecha: ${fechaFormateadaCorta.value}.`,
+    `Horario: ${bloqueSeleccionado.value.hora_inicio} - ${bloqueSeleccionado.value.hora_fin}.`,
+    `Nombre: ${solicitud.value.nombre}.`,
+    `Teléfono: ${solicitud.value.telefono}.`,
+    solicitud.value.comentario ? `Comentario: ${solicitud.value.comentario}.` : '',
+  ].filter(Boolean).join('\n');
+
+  const numero = complejo.value.whatsapp_numero?.replace(/\D/g, '');
+  if (numero) window.open(`https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`, '_blank');
+  cerrarReserva();
+}
+
 function formatearPrecio(precio: number): string {
   return precio ? precio.toLocaleString('es-CR') : '0';
 }
 
+function getComplejoImage(complejo: any): string {
+  const nombre = (complejo?.nombre || '').toLowerCase();
+
+  if (complejo?.logo_url) {
+    return complejo.logo_url;
+  }
+
+  if (nombre.includes('oij')) {
+    return '/Images/oij.jpeg';
+  }
+
+  if (nombre.includes('soccer') || nombre.includes('center') || nombre.includes('soccer_center')) {
+    return '/Images/Soccer_center.jpeg';
+  }
+
+  return fallbackImage;
+}
+
 function handleImageError(event: Event) {
-  (event.target as HTMLImageElement).src = fallbackImage;
+  const target = event.target as HTMLImageElement;
+  // Evita loop infinito si el fallback también falla
+  if (target.src === fallbackImage) return;
+  target.src = fallbackImage;
 }
 
 async function contactarWhatsApp() {
@@ -409,9 +529,9 @@ onUnmounted(() => {
 <style scoped>
 /* Custom Properties */
 .complejo-detail-page {
-  --primary: #1D5C94;
-  --primary-hover: #113D80;
-  --bg-page: #f4fbff;
+  --primary: #21439a;
+  --primary-hover: #173477;
+  --bg-page: #f7f9fc;
   --text-main: #0f172a;
   --text-muted: #64748b;
   --border-color: #dfeaf7;
@@ -420,16 +540,16 @@ onUnmounted(() => {
 
 .page-content {
   --background: var(--bg-page);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: "Avenir Next", "Segoe UI", sans-serif;
 }
 
 .container {
-  max-width: 800px;
+  max-width: 1060px;
   margin: 0 auto;
 }
 
 .padding-responsive {
-  padding: 1.25rem 1rem 2.5rem;
+  padding: 1.75rem 1.25rem 3.5rem;
 }
 
 /* Header Navbar */
@@ -467,7 +587,7 @@ onUnmounted(() => {
 /* Hero Visual */
 .complejo-hero {
   position: relative;
-  height: 220px;
+  height: 270px;
   width: 100%;
   background: #000;
   overflow: hidden;
@@ -507,7 +627,7 @@ onUnmounted(() => {
   background: #ffffff;
   border-radius: 16px;
   padding: 1.25rem;
-  margin-top: -1.75rem;
+  margin-top: -2.25rem;
   position: relative;
   z-index: 10;
   border: 1px solid var(--border-color);
@@ -647,11 +767,11 @@ onUnmounted(() => {
 
 /* Componente de Selección de Fechas */
 .disponibilidad-section {
-  margin-top: 2rem;
+  margin-top: 3rem;
 }
 
 .section-title-wrapper h2 {
-  font-size: 1.2rem;
+  font-size: 1.55rem;
   font-weight: 800;
   color: var(--text-main);
   margin: 0 0 0.2rem 0;
@@ -667,7 +787,8 @@ onUnmounted(() => {
   background: #ffffff;
   border: 1px solid var(--border-color);
   border-radius: 14px;
-  padding: 0.85rem;
+  padding: 1rem;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.04);
   margin-bottom: 1rem;
 }
 
@@ -719,17 +840,17 @@ onUnmounted(() => {
   display: flex;
   gap: 0.5rem;
   overflow-x: auto;
-  padding-bottom: 0.25rem;
+  padding: 0.2rem 0.1rem 0.35rem;
   scrollbar-width: thin;
 }
 
 .date-chip-btn {
   flex: 0 0 auto;
-  width: 62px;
-  height: 68px;
+  width: 88px;
+  height: 76px;
   background: #f8fafc;
   border: 1px solid var(--border-color);
-  border-radius: 10px;
+  border-radius: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -759,7 +880,7 @@ onUnmounted(() => {
 .date-chip-btn.is-selected {
   background: var(--primary);
   border-color: var(--primary);
-  box-shadow: 0 4px 12px rgba(0, 102, 255, 0.25);
+  box-shadow: 0 8px 18px rgba(33, 67, 154, 0.25);
 }
 
 .date-chip-btn.is-selected .chip-day-name,
@@ -801,7 +922,8 @@ onUnmounted(() => {
   background: #ffffff;
   border-radius: 14px;
   border: 1px solid var(--border-color);
-  padding: 1.1rem;
+  padding: 1.25rem;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
 }
 
 .cancha-card-header {
@@ -834,6 +956,9 @@ onUnmounted(() => {
 }
 
 .slot-btn {
+  width: 100%;
+  min-height: 68px;
+  font: inherit;
   border-radius: 10px;
   padding: 0.5rem 0.25rem;
   display: flex;
@@ -841,6 +966,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   border: 1px solid transparent;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .time-text { font-size: 0.85rem; font-weight: 700; }
@@ -851,6 +977,8 @@ onUnmounted(() => {
   background: #10b981;
   color: #ffffff;
   cursor: pointer;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(16, 185, 129, 0.22);
 }
 
 .slot-ocupada { background: #fef2f2; border-color: #fecaca; color: #991b1b; opacity: 0.7; text-decoration: line-through; }
@@ -892,4 +1020,124 @@ onUnmounted(() => {
 .skeleton-line.c-title { width: 35%; height: 18px; }
 .mt-3 { margin-top: 0.75rem; }
 .mt-4 { margin-top: 1rem; }
+
+/* Galería y solicitud */
+.gallery-section {
+  margin-top: 3.5rem;
+}
+
+.section-heading-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.eyebrow {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--primary);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.section-heading-row h2 {
+  margin: 0;
+  color: var(--text-main);
+  font-size: 1.55rem;
+}
+
+.section-heading-row p {
+  margin: 0.35rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.section-heading-icon {
+  color: var(--primary);
+  font-size: 1.75rem;
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.gallery-grid img {
+  width: 100%;
+  aspect-ratio: 1.25 / 1;
+  border-radius: 12px;
+  object-fit: cover;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
+}
+
+.reservation-modal {
+  max-width: 520px;
+  margin: 0 auto;
+  overflow: hidden;
+  background: #ffffff;
+  color: var(--text-main);
+}
+
+.reservation-modal-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.5rem 1.5rem 1.35rem;
+  background: #188443;
+  color: #ffffff;
+}
+
+.reservation-modal-header .eyebrow { color: #b8f4cc; }
+.reservation-modal-header h2 { margin: 0; font-size: 1.35rem; }
+.reservation-modal-header p { margin: 0.35rem 0 0; color: #d5f8df; font-size: 0.9rem; }
+
+.modal-close {
+  align-self: flex-start;
+  border: 0;
+  background: transparent;
+  color: #d5f8df;
+  cursor: pointer;
+  font-size: 1.55rem;
+}
+
+.reservation-form { padding: 1.5rem; }
+.reservation-form label { display: block; margin: 0.95rem 0 0.45rem; color: #334155; font-weight: 700; }
+.reservation-form label:first-child { margin-top: 0; }
+.reservation-form label span { color: #dc2626; }
+.reservation-form label small { color: #94a3b8; font-weight: 500; }
+.reservation-form ion-input, .reservation-form ion-textarea { --border-radius: 9px; --border-color: #cbd5e1; --highlight-color: var(--primary); }
+
+.reservation-note {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+  padding: 0.8rem;
+  border: 1px solid #fde68a;
+  border-radius: 9px;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 0.8rem;
+}
+
+.reservation-note ion-icon { flex: 0 0 auto; font-size: 1.1rem; }
+.reservation-note p { margin: 0; line-height: 1.45; }
+.modal-actions { display: grid; grid-template-columns: 1fr 1.25fr; gap: 0.75rem; margin-top: 1.4rem; }
+.btn-secondary, .btn-primary { min-height: 44px; border-radius: 9px; border: 1px solid #cbd5e1; font-weight: 800; cursor: pointer; }
+.btn-secondary { background: #ffffff; color: #334155; }
+.btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; border-color: #16a34a; background: #16a34a; color: #ffffff; }
+.btn-primary:disabled { cursor: not-allowed; opacity: 0.5; }
+
+@media (max-width: 640px) {
+  .complejo-hero { height: 205px; }
+  .metrics-grid { grid-template-columns: 1fr; }
+  .gallery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .section-heading-row { align-items: flex-start; }
+  .section-heading-icon { display: none; }
+  .reservation-modal-header, .reservation-form { padding-left: 1.15rem; padding-right: 1.15rem; }
+}
 </style>
