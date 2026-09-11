@@ -4,6 +4,8 @@ import HomePage from '../views/HomePage.vue';
 import ComplejoDetallePage from '../views/ComplejoDetallePage.vue';
 import LoginPage from '../views/LoginPage.vue';
 import PanelPage from '../views/PanelPage.vue';
+import CanchasPage from '../views/CanchasPage.vue';
+import HorariosPage from '../views/HorariosPage.vue';
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -29,6 +31,18 @@ const routes: Array<RouteRecordRaw> = [
     path: '/panel',
     name: 'Panel',
     component: PanelPage,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/panel/canchas',
+    name: 'PanelCanchas',
+    component: CanchasPage,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/panel/canchas/:canchaId/horarios',
+    name: 'PanelHorarios',
+    component: HorariosPage,
     meta: { requiresAuth: true },
   },
 ];

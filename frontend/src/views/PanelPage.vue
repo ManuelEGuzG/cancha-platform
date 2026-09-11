@@ -4,6 +4,7 @@
       <ion-toolbar>
         <ion-title>{{ complejoActual?.nombre || 'Panel' }}</ion-title>
         <ion-buttons slot="end">
+          <ion-button @click="irACanchas">Canchas</ion-button>
           <ion-button @click="cerrarSesion">Salir</ion-button>
         </ion-buttons>
       </ion-toolbar>
@@ -154,6 +155,10 @@ async function cancelar(reservaId: number) {
 async function cerrarSesion() {
   await authStore.logout();
   router.push('/login');
+}
+
+function irACanchas() {
+  router.push({ path: '/panel/canchas', query: { complejoId: complejoIdSeleccionado.value } });
 }
 
 onMounted(async () => {

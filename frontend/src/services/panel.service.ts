@@ -29,4 +29,19 @@ export default {
   cancelarReserva(reservaId: number) {
     return api.delete(`/panel/reservas/${reservaId}`);
   },
+
+  crearBloqueo(payload: {
+    cancha_id: number;
+    fecha: string;
+    hora_inicio: string;
+    hora_fin: string;
+    motivo: string;
+    notas?: string;
+  }) {
+    return api.post('/panel/bloqueos', payload);
+  },
+
+  eliminarBloqueo(bloqueoId: number) {
+    return api.delete(`/panel/bloqueos/${bloqueoId}`);
+  },
 };
