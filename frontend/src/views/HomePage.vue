@@ -194,10 +194,10 @@
           >
             <div class="card-img-wrapper">
               <img
-                :src="complejo.imagen_url || fallbackImage"
-                :alt="complejo.nombre"
-                loading="lazy"
-                @error="handleImageError"
+                :src="complejo.logo_url || fallbackImage"
+  :alt="complejo.nombre"
+  loading="lazy"
+  @error="handleImageError"
               />
               <div class="card-badges">
                 <span class="courts-chip">
@@ -399,14 +399,16 @@ onMounted(cargarProvincias);
 <style scoped>
 /* Reset & CSS Custom Properties */
 .sportra-landing {
-  --primary-color: #0066ff;
-  --primary-hover: #0052cc;
-  --primary-light: #f0f7ff;
-  --primary-border: #c7d2fe;
+  --primary-color: #1D5C94;
+  --primary-hover: #113D80;
+  --primary-light: #edf9ff;
+  --primary-border: #bfe4f6;
   --text-primary: #0f172a;
   --text-secondary: #64748b;
-  --bg-page: #f8fafc;
-  --border-light: #e2e8f0;
+  --bg-page: #f4fbff;
+  --border-light: #dfeaf7;
+  --accent-cyan: #66E3DA;
+  --accent-glow: rgba(102, 227, 218, 0.25);
 }
 
 ion-content.sportra-content {
@@ -492,7 +494,7 @@ ion-content.sportra-content {
 /* Hero Section */
 .hero-section {
   position: relative;
-  background: linear-gradient(135deg, #0066ff 0%, #004bbb 100%);
+  background: linear-gradient(135deg, #66E3DA 0%, #3DA2BB 30%, #1D5C94 68%, #08226C 100%);
   color: #ffffff;
   padding: 3.5rem 1.5rem 4.5rem;
   overflow: hidden;

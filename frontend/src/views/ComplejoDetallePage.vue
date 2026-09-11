@@ -33,7 +33,7 @@
         <!-- Banner / Hero de Presentación -->
         <div class="complejo-hero">
           <img 
-            :src="complejo.imagen_url || fallbackImage" 
+            :src="complejo.logo_url || fallbackImage" 
             :alt="complejo.nombre"
             class="hero-image"
             @error="handleImageError"
@@ -50,7 +50,15 @@
           <!-- Encabezado y Dirección -->
           <section class="info-header-card">
             <div class="title-row">
-              <div>
+              <div class="logo-wrapper" v-if="complejo.logo_url || fallbackImage">
+                <img
+                  :src="complejo.logo_url || fallbackImage"
+                  :alt="`${complejo.nombre} logo`"
+                  class="logo-image"
+                  @error="handleImageError"
+                />
+              </div>
+              <div class="title-copy">
                 <h1 class="complejo-title">{{ complejo.nombre }}</h1>
                 <p class="complejo-address">
                   <ion-icon name="navigate-outline"></ion-icon>
@@ -59,7 +67,26 @@
               </div>
             </div>
 
-            <!-- Botón WhatsApp Destacado -->
+            <div class="metrics-grid">
+              <div class="metric-card">
+                <span class="metric-label">Ubicación</span>
+                <strong>{{ complejo.distrito }}, {{ complejo.canton }}</strong>
+              </div>
+              <div class="metric-card">
+                <span class="metric-label">Canchas</span>
+                <strong>{{ complejo.canchas?.length || 0 }}</strong>
+              </div>
+              <div class="metric-card">
+                <span class="metric-label">Desde</span>
+                <strong>₡{{ formatearPrecio(complejo.canchas?.[0]?.precio_hora || 0) }}</strong>
+              </div>
+            </div>
+
+            <div v-if="complejo.descripcion" class="description-box">
+              <h3>Descripción</h3>
+              <p>{{ complejo.descripcion }}</p>
+            </div>
+
             <button 
               v-if="complejo.whatsapp_numero" 
               class="btn-whatsapp-full" 
@@ -382,12 +409,13 @@ onUnmounted(() => {
 <style scoped>
 /* Custom Properties */
 .complejo-detail-page {
-  --primary: #0066ff;
-  --primary-hover: #0052cc;
-  --bg-page: #f8fafc;
+  --primary: #1D5C94;
+  --primary-hover: #113D80;
+  --bg-page: #f4fbff;
   --text-main: #0f172a;
   --text-muted: #64748b;
-  --border-color: #e2e8f0;
+  --border-color: #dfeaf7;
+  --accent: #66E3DA;
 }
 
 .page-content {
@@ -484,6 +512,90 @@ onUnmounted(() => {
   z-index: 10;
   border: 1px solid var(--border-color);
   box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.logo-wrapper {
+  width: 76px;
+  height: 76px;
+  min-width: 76px;
+  border-radius: 22px;
+  padding: 4px;
+  background: linear-gradient(135deg, rgba(0, 102, 255, 0.12), rgba(16, 185, 129, 0.12));
+  border: 2px solid rgba(0, 102, 255, 0.15);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+}
+
+.logo-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 18px;
+}
+
+.title-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0 1.1rem;
+}
+
+.metric-card {
+  background: linear-gradient(180deg, #f8fbff 0%, #eef6ff 100%);
+  border: 1px solid rgba(0, 102, 255, 0.12);
+  border-radius: 12px;
+  padding: 0.85rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.metric-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.metric-card strong {
+  font-size: 0.9rem;
+  color: var(--text-main);
+  font-weight: 800;
+}
+
+.description-box {
+  background: #f8fafc;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.description-box h3 {
+  margin: 0 0 0.4rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+}
+
+.description-box p {
+  margin: 0;
+  color: var(--text-main);
+  line-height: 1.6;
+  font-size: 0.9rem;
 }
 
 .complejo-title {

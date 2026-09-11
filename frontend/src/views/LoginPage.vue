@@ -119,7 +119,7 @@ function volverAlInicio() {
 
 <style scoped>
 ion-content {
-  --background: #f8fafc;
+  --background: radial-gradient(circle at top, rgba(102, 227, 218, 0.18), transparent 35%), #f4fbff;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
@@ -138,8 +138,8 @@ ion-content {
   top: 1.5rem;
   left: 1.5rem;
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border: 1px solid #dfeaf7;
+  border-radius: 10px;
   padding: 0.5rem 0.85rem;
   color: #64748b;
   font-size: 0.825rem;
@@ -157,9 +157,9 @@ ion-content {
 }
 
 .auth-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(17, 61, 128, 0.1);
+  border-radius: 20px;
   padding: 2.25rem 2rem;
   width: 100%;
   max-width: 420px;
