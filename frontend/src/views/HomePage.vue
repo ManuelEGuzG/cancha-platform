@@ -123,6 +123,18 @@
     </header>
 
     <ion-content :fullscreen="true" class="sportra-content">
+      <section class="hero-section">
+        <div class="hero-glow"></div>
+        <div class="hero-content">
+          <span class="hero-badge">
+            <span class="pulse-dot"></span>
+            Reserva directa en Costa Rica
+          </span>
+          <h1 class="hero-title">Encuentra y reserva <span>tu cancha ideal</span></h1>
+          <p class="hero-subtitle">Explora complejos deportivos verificados por ubicación, horarios y disponibilidad real.</p>
+        </div>
+      </section>
+
       <main class="main-container">
         
         <section class="results-section">
@@ -170,7 +182,7 @@
           >
             <div class="card-img-wrapper">
               <img
-                :src="complejo.imagen_url || fallbackImage"
+                :src="complejo.logo_url || fallbackImage"
                 :alt="complejo.nombre"
                 loading="lazy"
                 @error="handleImageError"
@@ -482,12 +494,70 @@ ion-content.sportra-content {
 /* Hero Section */
 .hero-section {
   position: relative;
-  background: linear-gradient(135deg, #0066ff 0%, #004bbb 100%);
+  background: linear-gradient(135deg, #66E3DA 0%, #3DA2BB 36%, #1D5C94 72%, #08226C 100%);
   color: #ffffff;
   padding: 3.5rem 1.5rem 4.5rem;
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1.2;
+}
+
+.hero-glow {
+  position: absolute;
+  inset: -20% auto auto 50%;
+  transform: translateX(-50%);
+  width: 760px;
+  height: 760px;
+  background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 70%);
+  pointer-events: none;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+  max-width: 820px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255,255,255,0.14);
+  border: 1px solid rgba(255,255,255,0.22);
+  border-radius: 999px;
+  padding: 0.38rem 0.9rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 10px rgba(74, 222, 128, 0.9);
+}
+
+.hero-title {
+  font-size: clamp(2rem, 3vw, 3rem);
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+  margin: 1.25rem 0 0.75rem;
+  font-weight: 800;
+}
+
+.hero-title span {
+  color: #d9f7ff;
+}
+
+.hero-subtitle {
+  margin: 0;
+  color: rgba(255,255,255,0.88);
+  font-size: 1rem;
+  line-height: 1.6;
 }
 
 .capsule-divider {
@@ -646,10 +716,13 @@ ion-content.sportra-content {
   max-width: 1280px;
   margin: 0 auto;
   padding: 1.5rem 1.5rem 3rem;
+  position: relative;
+  z-index: 2;
+  margin-top: -2.2rem;
 }
 
 .results-section {
-  background: #ffffff;
+  background: rgba(255,255,255,0.94);
   border-radius: 16px;
   border: 1px solid var(--border-light);
   padding: 2rem;

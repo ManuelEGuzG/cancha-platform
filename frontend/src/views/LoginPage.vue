@@ -119,7 +119,7 @@ function volverAlInicio() {
 
 <style scoped>
 ion-content {
-  --background: radial-gradient(circle at top, rgba(102, 227, 218, 0.18), transparent 35%), #f4fbff;
+  --background: radial-gradient(circle at top, rgba(102, 227, 218, 0.22), transparent 32%), #f4fbff;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
@@ -152,18 +152,19 @@ ion-content {
 }
 
 .btn-back:hover {
-  color: #0066ff;
+  color: #1D5C94;
   border-color: #cbd5e1;
+  box-shadow: 0 8px 18px rgba(29, 92, 148, 0.08);
 }
 
 .auth-card {
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.94);
   border: 1px solid rgba(17, 61, 128, 0.1);
-  border-radius: 20px;
+  border-radius: 22px;
   padding: 2.25rem 2rem;
   width: 100%;
-  max-width: 420px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+  max-width: 430px;
+  box-shadow: 0 18px 40px -18px rgba(8, 34, 108, 0.22);
 }
 
 .auth-header {
@@ -184,14 +185,13 @@ ion-content {
   height: 1.8rem;
   width: auto;
   object-fit: contain;
-  /* Aplica tinte azul #0066ff al gráfico monochrome de la imagen */
-  filter: invert(32%) sepia(98%) saturate(3148%) hue-rotate(212deg) brightness(101%) contrast(106%);
+  filter: invert(26%) sepia(73%) saturate(713%) hue-rotate(182deg) brightness(94%) contrast(101%);
 }
 
 .logo-text {
   font-weight: 800;
   font-size: 1.8rem;
-  color: #0066ff;
+  color: #1D5C94;
   letter-spacing: -0.03em;
   line-height: 1;
 }
@@ -285,8 +285,8 @@ ion-content {
 }
 
 .custom-input:focus {
-  border-color: #0066ff;
-  box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
+  border-color: #1D5C94;
+  box-shadow: 0 0 0 3px rgba(29, 92, 148, 0.1);
 }
 
 .btn-toggle-pw {
@@ -308,10 +308,10 @@ ion-content {
 
 .btn-submit {
   margin-top: 0.5rem;
-  background: #0066ff;
+  background: linear-gradient(135deg, #1D5C94 0%, #08226C 100%);
   color: #ffffff;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 0.8rem;
   font-size: 0.9rem;
   font-weight: 700;
@@ -319,12 +319,14 @@ ion-content {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s;
-  height: 44px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  height: 46px;
+  box-shadow: 0 12px 22px rgba(29, 92, 148, 0.18);
 }
 
 .btn-submit:hover:not(:disabled) {
-  background: #0052cc;
+  transform: translateY(-1px);
+  box-shadow: 0 14px 24px rgba(29, 92, 148, 0.2);
 }
 
 .btn-submit:disabled {
