@@ -52,13 +52,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonBackButton,
   IonButton, IonSpinner, IonSegment, IonSegmentButton, IonLabel, IonChip,
 } from '@ionic/vue';
 import complejosService from '@/services/complejos.service';
+import echo from '@/services/echo';
 import type { ComplejoDetalle, Disponibilidad } from '@/types';
 
 const route = useRoute();
@@ -134,9 +135,24 @@ async function contactarWhatsApp() {
   }
 }
 
+let canalSuscrito: any = null;
+
 onMounted(async () => {
   await cargarComplejo();
   await cargarDisponibilidad();
+
+  if (complejo.value) {
+    canalSuscrito = echo.channel(`complejo.${complejo.value.id}.disponibilidad`);
+    canalSuscrito.listen('.disponibilidad.actualizada', () => {
+      cargarDisponibilidad();
+    });
+  }
+});
+
+onUnmounted(() => {
+  if (complejo.value) {
+    echo.leaveChannel(`complejo.${complejo.value.id}.disponibilidad`);
+  }
 });
 </script>
 
