@@ -1,188 +1,164 @@
 <template>
   <ion-page class="sportra-landing">
+    <!-- Header Sticky con Buscador Flotante -->
+    <header class="navbar">
+      <div class="navbar-container">
+        <!-- Logo Sportra -->
+        <div class="logo" @click="limpiarFiltros" role="button" tabindex="0">
+          <div class="logo-icon" aria-hidden="true"></div>
+          <span class="logo-text">Sportra</span>
+        </div>
+
+        <!-- Search Capsule Central -->
+        <div class="search-capsule" @click="toggleDropdownSearch">
+          <div class="capsule-section">
+            <span class="capsule-label">Dónde</span>
+            <span class="capsule-value">{{ ubicacionTextoSeleccionada }}</span>
+          </div>
+
+          <div class="capsule-divider"></div>
+
+          <div class="capsule-section">
+            <span class="capsule-label">Búsqueda</span>
+            <span class="capsule-value">{{ busquedaTexto || 'Nombre del complejo...' }}</span>
+          </div>
+
+          <button class="capsule-search-btn" aria-label="Buscar">
+            <ion-icon name="search-outline"></ion-icon>
+          </button>
+
+          <!-- Dropdown Flotante -->
+          <div v-if="searchOpen" class="search-popover" @click.stop>
+            <div class="popover-header">
+              <span>Filtros de Ubicación</span>
+              <button class="btn-close-popover" @click="searchOpen = false">
+                <ion-icon name="close-outline"></ion-icon>
+              </button>
+            </div>
+
+            <div class="popover-field">
+              <label>Buscar por Nombre</label>
+              <div class="popover-input-wrapper">
+                <ion-icon name="search-outline"></ion-icon>
+                <input 
+                  v-model="busquedaTexto" 
+                  type="text" 
+                  placeholder="Ej: Complejo Maracaná..." 
+                />
+                <ion-icon 
+                  v-if="busquedaTexto" 
+                  name="close-circle" 
+                  class="clear-icon" 
+                  @click="busquedaTexto = ''"
+                ></ion-icon>
+              </div>
+            </div>
+
+            <div class="popover-grid">
+              <div class="field-group">
+                <label>Provincia</label>
+                <ion-select
+                  v-model="provinciaId"
+                  interface="popover"
+                  placeholder="Todas"
+                  class="popover-select"
+                  @ionChange="onProvinciaChange"
+                >
+                  <ion-select-option :value="null">Todas</ion-select-option>
+                  <ion-select-option v-for="p in provincias" :key="p.id" :value="p.id">
+                    {{ p.nombre }}
+                  </ion-select-option>
+                </ion-select>
+              </div>
+
+              <div class="field-group">
+                <label>Cantón</label>
+                <ion-select
+                  v-model="cantonId"
+                  interface="popover"
+                  placeholder="Todos"
+                  class="popover-select"
+                  :disabled="!provinciaId && cantones.length === 0"
+                  @ionChange="onCantonChange"
+                >
+                  <ion-select-option :value="null">Todos</ion-select-option>
+                  <ion-select-option v-for="c in cantones" :key="c.id" :value="c.id">
+                    {{ c.nombre }}
+                  </ion-select-option>
+                </ion-select>
+              </div>
+
+              <div class="field-group">
+                <label>Distrito</label>
+                <ion-select
+                  v-model="distritoId"
+                  interface="popover"
+                  placeholder="Todos"
+                  class="popover-select"
+                  :disabled="!cantonId && distritos.length === 0"
+                  @ionChange="cargarComplejos"
+                >
+                  <ion-select-option :value="null">Todos</ion-select-option>
+                  <ion-select-option v-for="d in distritos" :key="d.id" :value="d.id">
+                    {{ d.nombre }}
+                  </ion-select-option>
+                </ion-select>
+              </div>
+            </div>
+
+            <div class="popover-footer">
+              <button class="btn-text-reset" @click="limpiarFiltros">Restablecer</button>
+              <button class="btn-apply" @click="searchOpen = false">Aplicar Búsqueda</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="navbar-actions">
+          <button class="btn-owner" @click="irAlPanel">
+            <ion-icon name="person-circle-outline" class="btn-icon"></ion-icon>
+            <span class="btn-owner-text">Acceso propietarios</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
     <ion-content :fullscreen="true" class="sportra-content">
-      
-      <!-- Navbar Perfectamente Alineado -->
-      <header class="navbar">
-        <div class="navbar-container">
-          <div class="logo" @click="limpiarFiltros" role="button" tabindex="0" title="Restablecer inicio">
-            <div class="logo-icon" aria-hidden="true"></div>
-            <span class="logo-text">Sportra</span>
-          </div>
-
-          <div class="navbar-actions">
-            <button class="btn-owner" @click="irAlPanel" aria-label="Acceso Propietarios">
-              <ion-icon name="person-circle-outline" class="btn-icon"></ion-icon>
-              <span>Acceso propietarios</span>
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <!-- Hero Section con Layout Equilibrado -->
-      <section class="hero-section">
-        <div class="hero-bg-glow"></div>
-        <div class="hero-content">
-          
-          <div class="hero-badge">
-            <span class="pulse-dot"></span>
-            <span>Reserva directa en Costa Rica</span>
-          </div>
-
-          <h1 class="hero-title">
-            Encuentra y reserva <span class="highlight-text">tu cancha</span>
-          </h1>
-          <p class="hero-subtitle">
-            Explora complejos deportivos verificados según tu ubicación y disponibilidad.
-          </p>
-
-          <!-- Tarjeta de Búsqueda Flotante e Impecable -->
-          <div class="search-card">
-            
-            <!-- Buscador Global -->
-            <div class="search-input-wrapper">
-              <ion-icon name="search-outline" class="search-icon"></ion-icon>
-              <input
-                v-model="busquedaTexto"
-                type="text"
-                class="text-input"
-                placeholder="Buscar complejo por nombre..."
-              />
-              <button
-                v-if="busquedaTexto"
-                class="btn-clear-text"
-                @click="busquedaTexto = ''"
-                aria-label="Limpiar texto"
-              >
-                <ion-icon name="close-circle"></ion-icon>
-              </button>
-            </div>
-
-            <!-- Grid de Selectores Geográficos de Altura Unificada -->
-            <div class="search-fields">
-              
-              <!-- Selector Provincia -->
-              <div class="field-group">
-                <label class="field-label">
-                  <ion-icon name="map-outline" class="field-icon"></ion-icon>
-                  <span>Provincia</span>
-                </label>
-                <div class="select-wrapper" :class="{ 'has-value': provinciaId }">
-                  <ion-select
-                    v-model="provinciaId"
-                    interface="popover"
-                    placeholder="Todas las provincias"
-                    @ionChange="onProvinciaChange"
-                  >
-                    <ion-select-option :value="null">Todas las provincias</ion-select-option>
-                    <ion-select-option v-for="p in provincias" :key="p.id" :value="p.id">
-                      {{ p.nombre }}
-                    </ion-select-option>
-                  </ion-select>
-                </div>
-              </div>
-
-              <!-- Selector Cantón -->
-              <div class="field-group">
-                <label class="field-label">
-                  <ion-icon name="location-outline" class="field-icon"></ion-icon>
-                  <span>Cantón</span>
-                </label>
-                <div class="select-wrapper" :class="{ 'has-value': cantonId, 'is-disabled': !provinciaId && cantones.length === 0 }">
-                  <ion-select
-                    v-model="cantonId"
-                    interface="popover"
-                    placeholder="Todos los cantones"
-                    :disabled="!provinciaId && cantones.length === 0"
-                    @ionChange="onCantonChange"
-                  >
-                    <ion-select-option :value="null">Todos los cantones</ion-select-option>
-                    <ion-select-option v-for="c in cantones" :key="c.id" :value="c.id">
-                      {{ c.nombre }}
-                    </ion-select-option>
-                  </ion-select>
-                </div>
-              </div>
-
-              <!-- Selector Distrito -->
-              <div class="field-group">
-                <label class="field-label">
-                  <ion-icon name="navigate-outline" class="field-icon"></ion-icon>
-                  <span>Distrito</span>
-                </label>
-                <div class="select-wrapper" :class="{ 'has-value': distritoId, 'is-disabled': !cantonId && distritos.length === 0 }">
-                  <ion-select
-                    v-model="distritoId"
-                    interface="popover"
-                    placeholder="Todos los distritos"
-                    :disabled="!cantonId && distritos.length === 0"
-                    @ionChange="cargarComplejos"
-                  >
-                    <ion-select-option :value="null">Todos los distritos</ion-select-option>
-                    <ion-select-option v-for="d in distritos" :key="d.id" :value="d.id">
-                      {{ d.nombre }}
-                    </ion-select-option>
-                  </ion-select>
-                </div>
-              </div>
-
-            </div>
-
-            <!-- Footer Interno de la Tarjeta -->
-            <div v-if="filtrosActivos" class="search-footer">
-              <div class="active-badge">
-                <span class="active-dot"></span>
-                <span>Filtros aplicados</span>
-              </div>
-              <button class="btn-reset" @click="limpiarFiltros">
-                <ion-icon name="refresh-outline"></ion-icon>
-                <span>Restablecer ubicación</span>
-              </button>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      <!-- Main Container: Grilla y Resultados -->
       <main class="main-container">
         
-        <!-- Header de Resultados -->
-        <div class="section-header">
-          <div class="section-title-group">
-            <h2>Complejos Deportivos</h2>
-            <span class="results-badge" v-if="!cargando">
-              {{ complejosFiltrados.length }} {{ complejosFiltrados.length === 1 ? 'disponible' : 'disponibles' }}
-            </span>
-          </div>
+        <section class="results-section">
+          <div class="results-header">
+            <div class="results-meta">
+              <h1 class="results-title">
+                {{ complejosFiltrados.length }} {{ complejosFiltrados.length === 1 ? 'complejo deportivo' : 'complejos deportivos' }}
+              </h1>
+              <div v-if="filtrosActivos" class="active-filter-badge">
+                <span class="dot"></span> Filtros aplicados
+              </div>
+            </div>
 
-          <div class="sorting-controls" v-if="complejosFiltrados.length > 1">
-            <span class="sort-label">Ordenar por:</span>
-            <div class="sort-select-wrapper">
-              <select id="sort-select" v-model="orden" class="sort-select">
-                <option value="nombre">Nombre (A-Z)</option>
+            <div class="sorting-controls" v-if="complejosFiltrados.length > 1">
+              <select v-model="orden" class="sort-select">
+                <option value="nombre">Ordenar por nombre</option>
                 <option value="precio-asc">Precio: Menor a Mayor</option>
                 <option value="precio-desc">Precio: Mayor a Menor</option>
               </select>
-              <ion-icon name="chevron-down-outline" class="sort-arrow"></ion-icon>
             </div>
           </div>
-        </div>
 
-        <!-- Estado 1: Loading Skeletons perfectamente estructurados -->
-        <div v-if="cargando" class="courts-grid">
-          <div v-for="i in 6" :key="i" class="court-card skeleton-card">
-            <div class="skeleton-img"></div>
-            <div class="card-body">
-              <div class="skeleton-line title"></div>
-              <div class="skeleton-line subtitle"></div>
-              <div class="card-footer-skeleton">
-                <div class="skeleton-line price"></div>
-                <div class="skeleton-btn"></div>
+          <!-- Loading Skeleton -->
+          <div v-if="cargando" class="courts-grid">
+            <div v-for="i in 6" :key="i" class="court-card skeleton-card">
+              <div class="skeleton-img"></div>
+              <div class="card-body">
+                <div class="skeleton-line title"></div>
+                <div class="skeleton-line subtitle"></div>
+                <div class="card-footer-skeleton">
+                  <div class="skeleton-line price"></div>
+                  <div class="skeleton-btn"></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
         <!-- Estado 2: Tarjetas de Complejos Acomodadas -->
         <div v-else-if="complejosFiltrados.length > 0" class="courts-grid">
@@ -194,10 +170,10 @@
           >
             <div class="card-img-wrapper">
               <img
-                :src="complejo.logo_url || fallbackImage"
-  :alt="complejo.nombre"
-  loading="lazy"
-  @error="handleImageError"
+                :src="complejo.imagen_url || fallbackImage"
+                :alt="complejo.nombre"
+                loading="lazy"
+                @error="handleImageError"
               />
               <div class="card-badges">
                 <span class="courts-chip">
@@ -207,58 +183,53 @@
               </div>
             </div>
 
-            <div class="card-body">
-              <h3 class="card-title">{{ complejo.nombre }}</h3>
-              <div class="card-location">
-                <ion-icon name="location-sharp" class="loc-icon"></ion-icon>
-                <span>{{ complejo.distrito }}, {{ complejo.canton }}</span>
-              </div>
-
-              <div class="card-footer">
-                <div class="price-block">
-                  <span class="price-caption">Precio desde</span>
-                  <div class="price-amount">
-                    <strong>₡{{ formatearPrecio(complejo.precio_desde) }}</strong>
-                    <small>/hr</small>
-                  </div>
+              <div class="card-body">
+                <h3 class="card-title">{{ complejo.nombre }}</h3>
+                <div class="card-location">
+                  <ion-icon name="location-sharp" class="loc-icon"></ion-icon>
+                  <span>{{ complejo.distrito }}, {{ complejo.canton }}</span>
                 </div>
 
-                <button class="btn-card-action">
-                  <span>Ver complejo</span>
-                  <ion-icon name="arrow-forward-outline"></ion-icon>
-                </button>
-              </div>
-            </div>
-          </article>
-        </div>
+                <div class="card-footer">
+                  <div class="price-block">
+                    <span class="price-caption">Precio desde</span>
+                    <div class="price-amount">
+                      <strong>₡{{ formatearPrecio(complejo.precio_desde) }}</strong>
+                    </div>
+                  </div>
 
-        <!-- Estado 3: Sin Resultados -->
-        <div v-else class="state-container empty-box">
-          <div class="empty-icon-wrapper">
-            <ion-icon name="search-outline"></ion-icon>
+                  <button class="btn-card-action">
+                    <span>Ver cancha</span>
+                  </button>
+                </div>
+              </div>
+            </article>
           </div>
-          <h3>No se encontraron resultados</h3>
-          <p v-if="busquedaTexto">No coinciden complejos con "<strong>{{ busquedaTexto }}</strong>".</p>
-          <p v-else>No hay instalaciones disponibles en la ubicación seleccionada.</p>
-          <button class="btn-clear-filters" @click="limpiarFiltros">
-            <ion-icon name="refresh-outline"></ion-icon>
-            <span>Restablecer filtros</span>
-          </button>
-        </div>
+
+          <!-- Sin resultados -->
+          <div v-else class="empty-box">
+            <div class="empty-icon-wrapper">
+              <ion-icon name="search-outline"></ion-icon>
+            </div>
+            <h3>Sin resultados coincidentes</h3>
+            <p v-if="busquedaTexto">No se encontraron complejos para "{{ busquedaTexto }}".</p>
+            <p v-else>No hay complejos disponibles en esta zona.</p>
+            <button class="btn-clear-filters" @click="limpiarFiltros">
+              <ion-icon name="refresh-outline"></ion-icon>
+              <span>Restablecer filtros</span>
+            </button>
+          </div>
+
+          <footer class="footer">
+            <div class="footer-brand">
+              <div class="logo-icon-sm"></div>
+              <span class="footer-title">Sportra CR</span>
+            </div>
+            <span class="copyright">© 2026 Sportra. Todos los derechos reservados.</span>
+          </footer>
+        </section>
 
       </main>
-
-      <!-- Footer Slim Alineado -->
-      <footer class="footer">
-        <div class="footer-content">
-          <div class="footer-brand">
-            <div class="logo-icon-sm"></div>
-            <span class="footer-title">Sportra CR</span>
-          </div>
-          <span class="copyright">© 2026 Sportra. Todos los derechos reservados.</span>
-        </div>
-      </footer>
-
     </ion-content>
   </ion-page>
 </template>
@@ -266,9 +237,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import {
-  IonPage, IonContent, IonSelect, IonSelectOption, IonIcon
-} from '@ionic/vue';
+import { IonPage, IonContent, IonSelect, IonSelectOption, IonIcon } from '@ionic/vue';
+
 import complejosService from '@/services/complejos.service';
 import geografiaService from '@/services/geografia.service';
 import type { Complejo } from '@/types';
@@ -276,16 +246,16 @@ import type { Complejo } from '@/types';
 const router = useRouter();
 const fallbackImage = 'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?auto=format&fit=crop&w=800&q=80';
 
+// Estado de UI y Filtros
 const provincias = ref<any[]>([]);
 const cantones = ref<any[]>([]);
 const distritos = ref<any[]>([]);
-
 const provinciaId = ref<number | null>(null);
 const cantonId = ref<number | null>(null);
 const distritoId = ref<number | null>(null);
-
 const busquedaTexto = ref('');
 const orden = ref<'nombre' | 'precio-asc' | 'precio-desc'>('nombre');
+const searchOpen = ref(false);
 
 const complejos = ref<Complejo[]>([]);
 const cargando = ref(true);
@@ -294,13 +264,29 @@ const filtrosActivos = computed(() => {
   return provinciaId.value !== null || cantonId.value !== null || distritoId.value !== null || busquedaTexto.value !== '';
 });
 
+const ubicacionTextoSeleccionada = computed(() => {
+  if (distritoId.value) {
+    const d = distritos.value.find(item => item.id === distritoId.value);
+    if (d) return d.nombre;
+  }
+  if (cantonId.value) {
+    const c = cantones.value.find(item => item.id === cantonId.value);
+    if (c) return c.nombre;
+  }
+  if (provinciaId.value) {
+    const p = provincias.value.find(item => item.id === provinciaId.value);
+    if (p) return p.nombre;
+  }
+  return 'Toda Costa Rica';
+});
+
 const complejosFiltrados = computed(() => {
   if (!busquedaTexto.value.trim()) return complejos.value;
   const query = busquedaTexto.value.toLowerCase().trim();
   return complejos.value.filter(c =>
     c.nombre.toLowerCase().includes(query) ||
-    c.canton.toLowerCase().includes(query) ||
-    c.distrito.toLowerCase().includes(query)
+    c.canton?.toLowerCase().includes(query) ||
+    c.distrito?.toLowerCase().includes(query)
   );
 });
 
@@ -314,6 +300,10 @@ const complejosOrdenados = computed(() => {
   }
   return lista.sort((a, b) => a.nombre.localeCompare(b.nombre));
 });
+
+function toggleDropdownSearch() {
+  searchOpen.value = !searchOpen.value;
+}
 
 async function cargarProvincias() {
   try {
@@ -336,7 +326,6 @@ async function onProvinciaChange() {
     const { data } = await geografiaService.cantones(provinciaId.value);
     cantones.value = data.data;
   }
-  
   await cargarComplejos();
 }
 
@@ -348,7 +337,6 @@ async function onCantonChange() {
     const { data } = await geografiaService.distritos(cantonId.value);
     distritos.value = data.data;
   }
-
   await cargarComplejos();
 }
 
@@ -393,11 +381,13 @@ function handleImageError(event: Event) {
   (event.target as HTMLImageElement).src = fallbackImage;
 }
 
-onMounted(cargarProvincias);
+onMounted(async () => {
+  await cargarProvincias();
+});
 </script>
 
 <style scoped>
-/* Reset & CSS Custom Properties */
+/* Variables de Marca Sportra */
 .sportra-landing {
   --primary-color: #1D5C94;
   --primary-hover: #113D80;
@@ -413,34 +403,36 @@ onMounted(cargarProvincias);
 
 ion-content.sportra-content {
   --background: var(--bg-page);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
-/* Header Navbar Centrado y Ajustado */
+/* NAVBAR */
 .navbar {
   background: #ffffff;
   border-bottom: 1px solid var(--border-light);
   position: sticky;
   top: 0;
-  z-index: 100;
-  backdrop-filter: blur(8px);
+  z-index: 1000;
+  height: 76px;
+  display: flex;
+  align-items: center;
 }
 
 .navbar-container {
-  max-width: 1140px;
+  width: 100%;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 0.85rem 1.5rem;
+  padding: 0 1.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .logo {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.6rem;
   cursor: pointer;
-  user-select: none;
 }
 
 .logo-icon {
@@ -449,42 +441,38 @@ ion-content.sportra-content {
   background-color: var(--primary-color);
   -webkit-mask: url('/Sportra_Logo.svg') no-repeat center / contain;
   mask: url('/Sportra_Logo.svg') no-repeat center / contain;
-  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.logo:hover .logo-icon {
-  transform: scale(1.08);
 }
 
 .logo-text {
   font-weight: 800;
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   color: var(--primary-color);
   letter-spacing: -0.03em;
-  line-height: 1;
 }
 
-.btn-owner {
-  background: var(--primary-light);
-  border: 1px solid var(--primary-border);
-  border-radius: 8px;
-  padding: 0.5rem 0.9rem;
-  color: var(--primary-color);
-  font-size: 0.85rem;
-  font-weight: 600;
-  display: inline-flex;
+/* SEARCH CAPSULE (Pill) */
+.search-capsule {
+  position: relative;
+  display: flex;
   align-items: center;
-  gap: 0.4rem;
+  background: #ffffff;
+  border: 1px solid var(--border-light);
+  border-radius: 40px;
+  padding: 0.35rem 0.5rem 0.35rem 1.25rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
   cursor: pointer;
   transition: all 0.2s ease;
-  height: 38px;
 }
 
-.btn-owner:hover {
-  background: var(--primary-color);
-  color: #ffffff;
-  border-color: var(--primary-color);
-  box-shadow: 0 4px 12px rgba(0, 102, 255, 0.2);
+.search-capsule:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  border-color: #cbd5e1;
+}
+
+.capsule-section {
+  display: flex;
+  flex-direction: column;
+  padding-right: 1rem;
 }
 
 .btn-icon {
@@ -494,361 +482,276 @@ ion-content.sportra-content {
 /* Hero Section */
 .hero-section {
   position: relative;
-  background: linear-gradient(135deg, #66E3DA 0%, #3DA2BB 30%, #1D5C94 68%, #08226C 100%);
+  background: linear-gradient(135deg, #0066ff 0%, #004bbb 100%);
   color: #ffffff;
   padding: 3.5rem 1.5rem 4.5rem;
   overflow: hidden;
-}
-
-.hero-bg-glow {
-  position: absolute;
-  top: -40%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 700px;
-  height: 700px;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 70%);
-  pointer-events: none;
-}
-
-.hero-content {
-  position: relative;
-  max-width: 820px;
-  margin: 0 auto;
-  text-align: center;
-}
-
-.hero-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: rgba(255, 255, 255, 0.15);
-  padding: 0.35rem 0.85rem;
-  border-radius: 20px;
-  font-size: 0.775rem;
-  font-weight: 600;
-  margin-bottom: 1.25rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.pulse-dot {
-  width: 7px;
-  height: 7px;
-  background-color: #4ade80;
-  border-radius: 50%;
-  box-shadow: 0 0 8px #4ade80;
-}
-
-.hero-title {
-  font-size: clamp(2rem, 4vw, 2.6rem);
-  font-weight: 800;
-  margin: 0 0 0.6rem 0;
-  letter-spacing: -0.03em;
+  text-overflow: ellipsis;
   line-height: 1.2;
 }
 
-.highlight-text {
-  color: #93c5fd;
+.capsule-divider {
+  width: 1px;
+  height: 22px;
+  background-color: var(--border-light);
+  margin-right: 1rem;
 }
 
-.hero-subtitle {
-  font-size: 1rem;
-  color: #e0f2fe;
-  margin: 0 0 2.25rem 0;
-  line-height: 1.5;
+.capsule-search-btn {
+  background: var(--primary-color);
+  color: #ffffff;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
 }
 
-/* Search Card e Inputs Alineados */
-.search-card {
+/* POPOVER DE BÚSQUEDA */
+.search-popover {
+  position: absolute;
+  top: 52px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 440px;
   background: #ffffff;
   border-radius: 16px;
   padding: 1.25rem;
-  box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.12);
-  text-align: left;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--border-light);
+  z-index: 1001;
 }
 
-.search-input-wrapper {
-  position: relative;
+.popover-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
-}
-
-.search-icon {
-  position: absolute;
-  left: 1rem;
-  font-size: 1.15rem;
-  color: #94a3b8;
-  pointer-events: none;
-}
-
-.text-input {
-  width: 100%;
-  height: 46px;
-  border: 1px solid #cbd5e1;
-  background: #f8fafc;
-  border-radius: 10px;
-  padding: 0 2.5rem 0 2.75rem;
-  font-size: 0.925rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-bottom: 0.85rem;
   color: var(--text-primary);
-  outline: none;
-  transition: all 0.2s ease;
 }
 
-.text-input:focus {
-  border-color: var(--primary-color);
-  background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
-}
-
-.btn-clear-text {
-  position: absolute;
-  right: 0.75rem;
+.btn-close-popover {
   background: transparent;
   border: none;
-  color: #94a3b8;
-  font-size: 1.25rem;
+  font-size: 1.2rem;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  padding: 0.2rem;
+  color: var(--text-secondary);
 }
 
-.btn-clear-text:hover {
-  color: var(--text-primary);
-}
-
-.search-fields {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.85rem;
-}
-
-.field-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.field-label {
+.popover-field { margin-bottom: 0.85rem; }
+.popover-field label, .field-group label {
   font-size: 0.725rem;
   font-weight: 700;
   color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
+  display: block;
+  margin-bottom: 0.3rem;
 }
 
-.field-icon {
-  font-size: 0.85rem;
-  color: var(--primary-color);
-}
-
-.select-wrapper {
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-radius: 10px;
-  padding: 0 0.5rem;
-  height: 46px;
+.popover-input-wrapper {
+  position: relative;
   display: flex;
   align-items: center;
-  transition: all 0.2s ease;
 }
 
-.select-wrapper.has-value {
-  border-color: var(--primary-color);
-  background: var(--primary-light);
+.popover-input-wrapper ion-icon {
+  position: absolute;
+  left: 0.75rem;
+  color: var(--text-secondary);
 }
 
-.select-wrapper.is-disabled {
-  background: #f1f5f9;
-  opacity: 0.65;
-}
-
-.select-wrapper ion-select {
-  --padding-start: 0;
-  --padding-top: 0;
-  --padding-bottom: 0;
+.popover-input-wrapper input {
   width: 100%;
-  color: var(--text-primary);
-  font-size: 0.875rem;
-  font-weight: 600;
+  height: 38px;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 0 2rem 0 2.25rem;
+  font-size: 0.85rem;
+  outline: none;
 }
 
-.search-footer {
+.clear-icon { left: auto !important; right: 0.75rem; cursor: pointer; }
+
+.popover-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.popover-select {
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  height: 38px;
+  font-size: 0.8rem;
+  --padding-start: 0.5rem;
+}
+
+.popover-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 1rem;
-  padding-top: 0.85rem;
-  border-top: 1px solid #f1f5f9;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-light);
 }
 
-.active-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.775rem;
-  color: #0284c7;
-  background: #e0f2fe;
-  padding: 0.25rem 0.65rem;
-  border-radius: 6px;
-  font-weight: 700;
-}
-
-.active-dot {
-  width: 6px;
-  height: 6px;
-  background-color: #0284c7;
-  border-radius: 50%;
-}
-
-.btn-reset {
+.btn-text-reset {
   background: transparent;
   border: none;
   color: var(--text-secondary);
-  font-size: 0.8rem;
   font-weight: 600;
+  font-size: 0.8rem;
   cursor: pointer;
-  display: inline-flex;
+}
+
+.btn-apply {
+  background: var(--primary-color);
+  color: #ffffff;
+  border: none;
+  padding: 0.5rem 0.9rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+/* BOTÓN PROPIETARIOS */
+.btn-owner {
+  background: #f1f5f9;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 0.5rem 0.85rem;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: flex;
   align-items: center;
-  gap: 0.35rem;
-  transition: color 0.2s ease;
+  gap: 0.4rem;
+  cursor: pointer;
+  transition: background 0.2s;
 }
 
-.btn-reset:hover {
-  color: #ef4444;
+.btn-owner:hover {
+  background: var(--primary-light);
+  color: var(--primary-color);
+  border-color: var(--primary-border);
 }
 
-/* Grilla de Complejos y Contenido Principal */
+/* MAIN CONTAINER CENTRADO */
 .main-container {
-  max-width: 1140px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 2.5rem 1.5rem;
+  padding: 1.5rem 1.5rem 3rem;
 }
 
-.section-header {
+.results-section {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid var(--border-light);
+  padding: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.results-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.75rem;
+  margin-bottom: 1.5rem;
 }
 
-.section-title-group {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.section-title-group h2 {
-  font-size: 1.4rem;
+.results-title {
+  font-size: 1.35rem;
   font-weight: 800;
   color: var(--text-primary);
   margin: 0;
 }
 
-.results-badge {
-  background: #e0f2fe;
-  color: #0284c7;
-  font-size: 0.775rem;
-  font-weight: 700;
-  padding: 0.2rem 0.6rem;
-  border-radius: 12px;
-}
-
-.sort-label {
-  font-size: 0.825rem;
-  color: var(--text-secondary);
-  margin-right: 0.4rem;
-  font-weight: 600;
-}
-
-.sort-select-wrapper {
-  position: relative;
+.active-filter-badge {
   display: inline-flex;
   align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--primary-color);
+  background: var(--primary-light);
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  font-weight: 700;
+  margin-top: 0.25rem;
+}
+
+.active-filter-badge .dot {
+  width: 6px;
+  height: 6px;
+  background-color: var(--primary-color);
+  border-radius: 50%;
 }
 
 .sort-select {
-  appearance: none;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border-light);
   border-radius: 8px;
-  padding: 0.45rem 2rem 0.45rem 0.75rem;
-  background: #ffffff;
-  color: var(--text-primary);
-  font-size: 0.825rem;
-  font-weight: 600;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.85rem;
   outline: none;
+  background-color: #ffffff;
+  color: var(--text-primary);
+  font-weight: 600;
   cursor: pointer;
 }
 
-.sort-arrow {
-  position: absolute;
-  right: 0.6rem;
-  pointer-events: none;
-  color: var(--text-secondary);
-  font-size: 0.85rem;
-}
-
-/* Layout de Tarjetas (Equal Height & Dynamic Stretch) */
+/* GRILLA Y TARJETAS EN PANTALLA COMPLETA */
 .courts-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 1.5rem;
+  margin-bottom: 2.5rem;
 }
 
 .court-card {
   background: #ffffff;
-  border-radius: 14px;
+  border-radius: 12px;
   border: 1px solid var(--border-light);
   overflow: hidden;
   cursor: pointer;
-  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  transition: all 0.2s ease;
   display: flex;
   flex-direction: column;
-  height: 100%;
 }
 
 .court-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px -6px rgba(0, 0, 0, 0.08);
-  border-color: var(--primary-border);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.08);
+  border-color: var(--primary-color);
 }
 
 .card-img-wrapper {
   position: relative;
   height: 180px;
   background-color: #e2e8f0;
-  overflow: hidden;
 }
 
 .card-img-wrapper img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.35s ease;
-}
-
-.court-card:hover .card-img-wrapper img {
-  transform: scale(1.05);
 }
 
 .card-badges {
   position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
-  z-index: 2;
+  top: 0.65rem;
+  right: 0.65rem;
 }
 
 .courts-chip {
   background: rgba(15, 23, 42, 0.75);
   backdrop-filter: blur(4px);
   color: #ffffff;
-  padding: 0.3rem 0.6rem;
+  padding: 0.25rem 0.55rem;
   border-radius: 6px;
-  font-size: 0.75rem;
+  font-size: 0.725rem;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
@@ -856,18 +759,17 @@ ion-content.sportra-content {
 }
 
 .card-body {
-  padding: 1.15rem;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
   flex: 1;
 }
 
 .card-title {
-  margin: 0 0 0.4rem 0;
-  font-size: 1.1rem;
+  margin: 0 0 0.35rem 0;
+  font-size: 1.05rem;
   font-weight: 700;
   color: var(--text-primary);
-  line-height: 1.35;
 }
 
 .card-location {
@@ -876,53 +778,43 @@ ion-content.sportra-content {
   gap: 0.3rem;
   color: var(--text-secondary);
   font-size: 0.825rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
 }
 
-.loc-icon {
-  color: var(--primary-color);
-  font-size: 0.95rem;
-}
+.loc-icon { color: var(--primary-color); }
 
 .card-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-top: auto;
-  padding-top: 0.85rem;
+  padding-top: 0.75rem;
   border-top: 1px solid #f1f5f9;
 }
 
 .price-caption {
   display: block;
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   color: var(--text-secondary);
   text-transform: uppercase;
   font-weight: 700;
 }
 
 .price-amount strong {
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   color: var(--primary-color);
   font-weight: 800;
-}
-
-.price-amount small {
-  color: var(--text-secondary);
 }
 
 .btn-card-action {
   background: var(--primary-light);
   color: var(--primary-color);
   border: none;
-  padding: 0.5rem 0.85rem;
-  border-radius: 8px;
-  font-size: 0.8rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.775rem;
   font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  transition: all 0.2s ease;
+  transition: background 0.2s;
 }
 
 .court-card:hover .btn-card-action {
@@ -930,91 +822,43 @@ ion-content.sportra-content {
   color: #ffffff;
 }
 
-/* Skeletons Animados */
-.skeleton-card {
-  pointer-events: none;
-}
-
-.skeleton-img {
-  height: 180px;
-  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}
-
-.skeleton-line {
-  height: 0.9rem;
-  background: #e2e8f0;
-  border-radius: 4px;
-  margin-bottom: 0.6rem;
-}
-
+/* SKELETONS & EMPTY */
+.skeleton-card { pointer-events: none; }
+.skeleton-img { height: 180px; background: #e2e8f0; }
+.skeleton-line { height: 0.85rem; background: #e2e8f0; border-radius: 4px; margin-bottom: 0.5rem; }
 .skeleton-line.title { width: 70%; height: 1.1rem; }
 .skeleton-line.subtitle { width: 50%; }
-.card-footer-skeleton {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: auto;
-  padding-top: 0.85rem;
-  border-top: 1px solid #f1f5f9;
-}
-
+.card-footer-skeleton { display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
 .skeleton-line.price { width: 35%; margin: 0; }
-.skeleton-btn { width: 85px; height: 32px; background: #e2e8f0; border-radius: 8px; }
-
-@keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-/* Empty State */
-.state-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 3.5rem 1rem;
-  text-align: center;
-}
+.skeleton-btn { width: 80px; height: 30px; background: #e2e8f0; border-radius: 6px; }
 
 .empty-box {
   background: #ffffff;
-  border-radius: 14px;
+  border-radius: 12px;
   border: 1px dashed #cbd5e1;
+  padding: 3rem 1.5rem;
+  text-align: center;
+  margin-bottom: 2.5rem;
 }
 
 .empty-icon-wrapper {
   background: var(--primary-light);
   color: var(--primary-color);
-  width: 54px;
-  height: 54px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.5rem;
-  margin-bottom: 0.85rem;
-}
-
-.empty-box h3 {
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin: 0 0 0.4rem 0;
-}
-
-.empty-box p {
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-  margin: 0 0 1.25rem 0;
+  margin: 0 auto 0.85rem;
 }
 
 .btn-clear-filters {
   background: var(--primary-color);
   color: #ffffff;
   border: none;
-  padding: 0.6rem 1.2rem;
+  padding: 0.5rem 1rem;
   border-radius: 8px;
   font-weight: 700;
   font-size: 0.825rem;
@@ -1022,63 +866,48 @@ ion-content.sportra-content {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  transition: background-color 0.2s ease;
 }
 
-.btn-clear-filters:hover {
-  background: var(--primary-hover);
-}
-
-/* Footer Slim */
+/* FOOTER */
 .footer {
-  background: #ffffff;
+  margin-top: 1rem;
+  padding-top: 1.5rem;
   border-top: 1px solid var(--border-light);
-  padding: 1.25rem 1.5rem;
-}
-
-.footer-content {
-  max-width: 1140px;
-  margin: 0 auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.footer-brand {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
+.footer-brand { display: flex; align-items: center; gap: 0.4rem; }
 .logo-icon-sm {
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 1.1rem;
+  height: 1.1rem;
   background-color: var(--primary-color);
   -webkit-mask: url('/Sportra_Logo.svg') no-repeat center / contain;
   mask: url('/Sportra_Logo.svg') no-repeat center / contain;
 }
+.footer-title { font-weight: 800; color: var(--text-primary); font-size: 0.85rem; }
+.copyright { font-size: 0.775rem; color: var(--text-secondary); }
 
-.footer-title {
-  font-weight: 800;
-  color: var(--text-primary);
-  font-size: 0.9rem;
+/* RESPONSIVIDAD */
+@media (max-width: 1024px) {
+  .courts-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
-.copyright {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-}
-
-/* Responsividad Fina */
-@media (max-width: 768px) {
-  .search-fields {
+@media (max-width: 640px) {
+  .navbar-container { padding: 0 1rem; }
+  .btn-owner-text { display: none; }
+  .search-capsule { padding: 0.35rem 0.5rem; }
+  .capsule-section { padding-right: 0.5rem; }
+  .capsule-divider { margin-right: 0.5rem; }
+  .search-popover { width: 90vw; }
+  .courts-grid {
     grid-template-columns: 1fr;
   }
-  
-  .footer-content {
-    flex-direction: column;
-    gap: 0.75rem;
-    text-align: center;
+  .results-section {
+    padding: 1rem;
   }
 }
 </style>
