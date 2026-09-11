@@ -9,6 +9,7 @@ use App\Http\Controllers\Panel\ReservaController;
 use App\Http\Controllers\Public\ComplejoPublicoController;
 use App\Http\Controllers\Public\GeografiaPublicaController;
 use App\Http\Controllers\Panel\EstadisticaController;
+use App\Http\Controllers\Panel\AuditoriaController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -56,4 +57,6 @@ Route::prefix('panel')->middleware('auth:sanctum')->group(function () {
 
     Route::post('/bloqueos', [BloqueoController::class, 'store']);
     Route::delete('/bloqueos/{bloqueo}', [BloqueoController::class, 'destroy']);
+
+    Route::get('/complejos/{complejo:id}/auditoria', [AuditoriaController::class, 'index']);
 });

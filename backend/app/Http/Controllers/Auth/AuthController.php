@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
+use Spatie\Activitylog\Facades\Activity;
 
 class AuthController extends Controller
 {
@@ -29,6 +30,10 @@ class AuthController extends Controller
 
         $token = $user->createToken('panel-token')->plainTextToken;
 
+        activity('auth')
+            ->causedBy($user)
+            ->log('login');
+
         return response()->json([
             'user' => $this->formatearUsuario($user),
             'token' => $token,
@@ -45,6 +50,10 @@ class AuthController extends Controller
         if ($token instanceof PersonalAccessToken) {
             $token->delete();
         }
+
+        activity('auth')
+            ->causedBy($user)
+            ->log('logout');
 
         return response()->json(['message' => 'Sesión cerrada correctamente.']);
     }

@@ -6,9 +6,13 @@ use App\Scopes\TenantScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 class Cancha extends Model
 {
+    use LogsActivity;
+
     protected $fillable = [
         'complejo_id',
         'deporte_id',
@@ -24,6 +28,15 @@ class Cancha extends Model
     protected static function booted(): void
     {
         static::addGlobalScope(new TenantScope);
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['nombre', 'precio_hora', 'activa'])
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges()
+            ->useLogName('cancha');
     }
 
     public function complejo(): BelongsTo
