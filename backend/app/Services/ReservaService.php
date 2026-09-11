@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Events\DisponibilidadActualizada;
 use App\Exceptions\HorarioNoDisponibleException;
 use App\Models\Bloqueo;
 use App\Models\Cancha;
@@ -11,22 +12,13 @@ use Illuminate\Support\Facades\DB;
 
 class ReservaService
 {
-    /**
-     * Crea una reserva de forma segura ante condiciones de carrera:
-     * bloquea (a nivel de base de datos) las filas relevantes de esa
-     * cancha/fecha antes de verificar solapamiento e insertar.
-     *
-     * @throws HorarioNoDisponibleException
-     */
     public function crear(Cancha $cancha, array $datos): Reserva
     {
-        return DB::transaction(function () use ($cancha, $datos) {
+        $reserva = DB::transaction(function () use ($cancha, $datos) {
             $fecha = Carbon::parse($datos['fecha'])->toDateString();
             $horaInicio = $datos['hora_inicio'];
             $horaFin = $datos['hora_fin'];
 
-            // Bloqueo pesimista: nadie más puede leer/escribir estas filas
-            // hasta que esta transacción termine.
             $reservasExistentes = Reserva::where('cancha_id', $cancha->id)
                 ->whereDate('fecha', $fecha)
                 ->whereIn('estado', ['pendiente', 'confirmada'])
@@ -63,6 +55,14 @@ class ReservaService
                 'observaciones' => $datos['observaciones'] ?? null,
             ]);
         });
+
+        broadcast(new DisponibilidadActualizada(
+            complejoId: $cancha->complejo_id,
+            canchaId: $cancha->id,
+            fecha: $reserva->fecha->toDateString(),
+        ));
+
+        return $reserva;
     }
 
     private function seSolapan(string $inicioA, string $finA, string $inicioB, string $finB): bool

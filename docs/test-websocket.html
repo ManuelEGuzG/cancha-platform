@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Test WebSocket - Disponibilidad</title>
+    <script src="https://js.pusher.com/8.2/pusher.min.js"></script>
+</head>
+<body>
+    <h1>Escuchando cambios de disponibilidad...</h1>
+    <div id="log" style="font-family: monospace; white-space: pre-wrap;"></div>
+
+    <script>
+        const pusher = new Pusher('nfixya6o0zhfxwin2prw', {
+            wsHost: '127.0.0.1',
+            wsPort: 8080,
+            forceTLS: false,
+            enabledTransports: ['ws'],
+            cluster: '',
+        });
+
+        const complejoId = 1;
+
+        const channel = pusher.subscribe(`complejo.${complejoId}.disponibilidad`);
+
+        channel.bind('disponibilidad.actualizada', function (data) {
+            const log = document.getElementById('log');
+            log.textContent += `\n[${new Date().toLocaleTimeString()}] Cambio recibido: ${JSON.stringify(data)}`;
+        });
+
+        pusher.connection.bind('connected', () => {
+            document.getElementById('log').textContent += '\n✅ Conectado a Reverb correctamente.';
+        });
+
+        pusher.connection.bind('error', (err) => {
+            document.getElementById('log').textContent += '\n❌ Error de conexión: ' + JSON.stringify(err);
+        });
+    </script>
+</body>
+</html>

@@ -2,20 +2,20 @@
 
 namespace App\Http\Controllers\Panel;
 
+use App\Events\DisponibilidadActualizada;
 use App\Exceptions\HorarioNoDisponibleException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Panel\CrearReservaRequest;
 use App\Models\Cancha;
 use App\Models\Reserva;
 use App\Services\ReservaService;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests; // 1. Importar el trait
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class ReservaController extends Controller
 {
-    use AuthorizesRequests; // 2. Usar el trait aquí
-
     public function __construct(
         private readonly ReservaService $reservaService,
     ) {
@@ -43,7 +43,7 @@ class ReservaController extends Controller
     {
         $cancha = Cancha::findOrFail($request->integer('cancha_id'));
 
-        $this->authorize('gestionar', $cancha);
+        Gate::authorize('gestionar', $cancha);
 
         try {
             $reserva = $this->reservaService->crear($cancha, [
@@ -60,9 +60,15 @@ class ReservaController extends Controller
 
     public function destroy(Reserva $reserva): JsonResponse
     {
-        $this->authorize('gestionar', $reserva->cancha);
+        Gate::authorize('gestionar', $reserva->cancha);
 
         $reserva->update(['estado' => 'cancelada']);
+
+        broadcast(new DisponibilidadActualizada(
+            complejoId: $reserva->cancha->complejo_id,
+            canchaId: $reserva->cancha_id,
+            fecha: Carbon::parse($reserva->fecha)->toDateString(),
+        ));
 
         return response()->json(['message' => 'Reserva cancelada correctamente.']);
     }
