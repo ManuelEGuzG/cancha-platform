@@ -1,59 +1,105 @@
 <template>
   <ion-page class="panel-page">
-    <ion-header class="panel-header">
-      <ion-toolbar class="panel-toolbar">
-        <ion-title>{{ complejoActual?.nombre || 'Panel' }}</ion-title>
-        <ion-buttons slot="end">
-          <ion-button class="header-link" @click="irACanchas">Canchas</ion-button>
-          <ion-button class="header-link danger" @click="cerrarSesion">Salir</ion-button>
-        </ion-buttons>
-      </ion-toolbar>
-    </ion-header>
+    <!-- Navbar flotante estilo Cápsula Glass -->
+    <header class="top-navbar-floating">
+      <div class="navbar-pill">
+        <!-- Logo Brand SPORTRA -->
+        <div class="brand-logo">
+          <div class="logo-circle-icon">
+            <ion-icon name="football-outline"></ion-icon>
+          </div>
+          <span class="brand-name">SPORTRA<span class="dot-neon">.</span></span>
+        </div>
+
+        <!-- Acciones del Menú -->
+        <div class="navbar-actions">
+          <button class="nav-chip-btn" @click="irACanchas">
+            <ion-icon name="tennisball-outline" class="chip-icon"></ion-icon>
+            <span>Canchas</span>
+          </button>
+
+          <button class="nav-chip-btn danger" @click="cerrarSesion">
+            <ion-icon name="log-out-outline" class="chip-icon"></ion-icon>
+            <span>Salir</span>
+          </button>
+        </div>
+      </div>
+    </header>
 
     <ion-content class="panel-content">
+      <!-- Glow Background Effects -->
+      <div class="page-background-glow glow-float-1"></div>
+      <div class="page-background-glow glow-float-2"></div>
+      <div class="bg-grid"></div>
+
+      <!-- Spinner Inicial -->
       <div v-if="cargandoInicial" class="loading-shell">
-        <ion-spinner name="crescent"></ion-spinner>
+        <ion-spinner name="crescent" class="main-spinner"></ion-spinner>
       </div>
 
+      <!-- Dashboard Shell -->
       <div v-else class="dashboard-shell">
         <section class="topbar">
           <div>
-            <span class="eyebrow">Gestión deportiva</span>
-            <h1>Panel del complejo</h1>
+            <span class="eyebrow">Gestión Deportiva</span>
+            <h1 class="page-title">{{ complejoActual?.nombre || 'Panel del Complejo' }}</h1>
           </div>
           <div class="topbar-actions">
-            <button class="btn-primary" @click="irACanchas">Gestionar canchas</button>
+            <button class="btn-primary-neon" @click="irACanchas">
+              <ion-icon name="shapes-outline"></ion-icon>
+              Gestionar Canchas
+            </button>
           </div>
         </section>
 
-        <div v-if="misComplejos.length > 1" class="selector-card">
+        <!-- Selector de Complejos (Si tiene más de 1) -->
+        <div v-if="misComplejos.length > 1" class="selector-card-glass">
           <label class="selector-label">Complejo activo</label>
-          <ion-select v-model="complejoIdSeleccionado" @ionChange="cargarAgenda" class="complex-select">
-            <ion-select-option v-for="c in misComplejos" :key="c.id" :value="c.id">{{ c.nombre }}</ion-select-option>
+          <ion-select 
+            v-model="complejoIdSeleccionado" 
+            @ionChange="cargarAgenda" 
+            class="complex-select-dark"
+            interface="popover"
+          >
+            <ion-select-option v-for="c in misComplejos" :key="c.id" :value="c.id">
+              {{ c.nombre }}
+            </ion-select-option>
           </ion-select>
         </div>
 
+        <!-- Tarjetas de Estadísticas -->
         <section class="stats-grid" v-if="estadisticas">
-          <div class="stat-card">
-            <span class="stat-label">Canchas</span>
+          <div class="stat-card-glass">
+            <div class="stat-header">
+              <span class="stat-label">Canchas</span>
+              <ion-icon name="shapes-outline" class="stat-icon"></ion-icon>
+            </div>
             <strong>{{ estadisticas.total_canchas }}</strong>
           </div>
-          <div class="stat-card">
-            <span class="stat-label">Reservas hoy</span>
+          <div class="stat-card-glass">
+            <div class="stat-header">
+              <span class="stat-label">Reservas Hoy</span>
+              <ion-icon name="calendar-outline" class="stat-icon"></ion-icon>
+            </div>
             <strong>{{ estadisticas.reservas_hoy }}</strong>
           </div>
-          <div class="stat-card">
-            <span class="stat-label">Este mes</span>
+          <div class="stat-card-glass">
+            <div class="stat-header">
+              <span class="stat-label">Este Mes</span>
+              <ion-icon name="stats-chart-outline" class="stat-icon"></ion-icon>
+            </div>
             <strong>{{ estadisticas.reservas_mes.total }}</strong>
           </div>
         </section>
 
+        <!-- Content Grid -->
         <section class="content-grid">
-          <div class="panel-card wide-card">
+          <!-- Columna Agenda -->
+          <div class="panel-card-glass wide-card">
             <div class="card-header">
               <div>
                 <span class="card-kicker">Agenda</span>
-                <h2>Horarios del día</h2>
+                <h2 class="card-title">Horarios del Día</h2>
               </div>
             </div>
 
@@ -61,21 +107,27 @@
               <div v-for="cancha in agenda.canchas" :key="cancha.cancha_id" class="agenda-item">
                 <div class="agenda-head">
                   <h3>{{ cancha.nombre }}</h3>
-                  <span>{{ cancha.deporte }}</span>
+                  <span class="badge-deporte">{{ cancha.deporte }}</span>
                 </div>
 
                 <div class="timeline-list">
                   <div v-for="r in cancha.reservas" :key="r.id" class="timeline-row reservation">
-                    <div class="timeline-time">{{ r.hora_inicio }} - {{ r.hora_fin }}</div>
+                    <div class="timeline-time">
+                      <ion-icon name="time-outline"></ion-icon>
+                      {{ r.hora_inicio }} - {{ r.hora_fin }}
+                    </div>
                     <div class="timeline-content">
                       <strong>{{ r.nombre_cliente }}</strong>
-                      <small>{{ r.estado }}</small>
+                      <small class="status-tag">{{ r.estado }}</small>
                     </div>
-                    <button class="mini-button danger" @click="cancelar(r.id)">Cancelar</button>
+                    <button class="mini-button-danger" @click="cancelar(r.id)">Cancelar</button>
                   </div>
 
                   <div v-for="b in cancha.bloqueos" :key="'b' + b.id" class="timeline-row blocked">
-                    <div class="timeline-time">{{ b.hora_inicio }} - {{ b.hora_fin }}</div>
+                    <div class="timeline-time">
+                      <ion-icon name="lock-closed-outline"></ion-icon>
+                      {{ b.hora_inicio }} - {{ b.hora_fin }}
+                    </div>
                     <div class="timeline-content">
                       <strong>Bloqueado</strong>
                       <small>{{ b.motivo }}</small>
@@ -83,25 +135,33 @@
                   </div>
                 </div>
 
-                <p v-if="!cancha.reservas.length && !cancha.bloqueos.length" class="empty-inline">Sin reservas ni bloqueos hoy.</p>
+                <p v-if="!cancha.reservas.length && !cancha.bloqueos.length" class="empty-inline">
+                  Sin reservas ni bloqueos registrados para hoy.
+                </p>
               </div>
             </div>
 
             <p v-else class="empty-message">No hay agenda disponible para este complejo.</p>
           </div>
 
-          <div class="panel-card">
+          <!-- Columna Nueva Reserva -->
+          <div class="panel-card-glass">
             <div class="card-header">
               <div>
                 <span class="card-kicker">Operación</span>
-                <h2>Nueva reserva</h2>
+                <h2 class="card-title">Nueva Reserva</h2>
               </div>
             </div>
 
             <div class="form-grid">
               <div class="field-group full">
                 <label>Cancha</label>
-                <ion-select v-model="nuevaReserva.cancha_id" interface="popover" placeholder="Selecciona una cancha">
+                <ion-select 
+                  v-model="nuevaReserva.cancha_id" 
+                  interface="popover" 
+                  placeholder="Selecciona una cancha" 
+                  class="custom-input-dark"
+                >
                   <ion-select-option v-for="cancha in agenda?.canchas" :key="cancha.cancha_id" :value="cancha.cancha_id">
                     {{ cancha.nombre }}
                   </ion-select-option>
@@ -109,35 +169,59 @@
               </div>
 
               <div class="field-group full">
-                <label>Nombre del cliente</label>
-                <ion-input v-model="nuevaReserva.nombre_cliente" placeholder="Ej. Ana García"></ion-input>
+                <label>Nombre del Cliente</label>
+                <ion-input 
+                  v-model="nuevaReserva.nombre_cliente" 
+                  placeholder="Ej. Ana García" 
+                  class="custom-input-dark"
+                ></ion-input>
               </div>
 
               <div class="field-group full">
                 <label>Teléfono</label>
-                <ion-input v-model="nuevaReserva.telefono_cliente" placeholder="Opcional"></ion-input>
+                <ion-input 
+                  v-model="nuevaReserva.telefono_cliente" 
+                  placeholder="Opcional" 
+                  class="custom-input-dark"
+                ></ion-input>
               </div>
 
               <div class="field-group">
                 <label>Fecha</label>
-                <ion-input v-model="nuevaReserva.fecha" type="date"></ion-input>
+                <ion-input 
+                  v-model="nuevaReserva.fecha" 
+                  type="date" 
+                  class="custom-input-dark"
+                ></ion-input>
               </div>
 
               <div class="field-group">
-                <label>Hora inicio</label>
-                <ion-input v-model="nuevaReserva.hora_inicio" type="time"></ion-input>
+                <label>Hora Inicio</label>
+                <ion-input 
+                  v-model="nuevaReserva.hora_inicio" 
+                  type="time" 
+                  class="custom-input-dark"
+                ></ion-input>
               </div>
 
-              <div class="field-group">
-                <label>Hora fin</label>
-                <ion-input v-model="nuevaReserva.hora_fin" type="time"></ion-input>
+              <div class="field-group full">
+                <label>Hora Fin</label>
+                <ion-input 
+                  v-model="nuevaReserva.hora_fin" 
+                  type="time" 
+                  class="custom-input-dark"
+                ></ion-input>
               </div>
             </div>
 
-            <button class="btn-submit" @click="crearReserva">Guardar reserva</button>
+            <button class="btn-submit-neon" @click="crearReserva">Guardar Reserva</button>
 
-            <p v-if="mensajeReserva" :class="['message-banner', errorReserva ? 'error' : 'success']">{{ mensajeReserva }}</p>
+            <p v-if="mensajeReserva" :class="['message-banner', errorReserva ? 'error' : 'success']">
+              <ion-icon :name="errorReserva ? 'alert-circle-outline' : 'checkmark-circle-outline'"></ion-icon>
+              <span>{{ mensajeReserva }}</span>
+            </p>
           </div>
+
         </section>
       </div>
     </ion-content>
@@ -148,11 +232,36 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import {
-  IonPage, IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent,
-  IonSpinner, IonSelect, IonSelectOption, IonItem, IonLabel, IonInput,
+  IonPage, IonContent, IonSpinner, IonSelect, IonSelectOption, IonInput, IonIcon
 } from '@ionic/vue';
+import { addIcons } from 'ionicons';
+import { 
+  footballOutline, 
+  tennisballOutline, 
+  logOutOutline, 
+  shapesOutline, 
+  calendarOutline, 
+  statsChartOutline, 
+  timeOutline, 
+  lockClosedOutline, 
+  alertCircleOutline, 
+  checkmarkCircleOutline 
+} from 'ionicons/icons';
 import { useAuthStore } from '@/stores/auth';
 import panelService from '@/services/panel.service';
+
+addIcons({
+  'football-outline': footballOutline,
+  'tennisball-outline': tennisballOutline,
+  'log-out-outline': logOutOutline,
+  'shapes-outline': shapesOutline,
+  'calendar-outline': calendarOutline,
+  'stats-chart-outline': statsChartOutline,
+  'time-outline': timeOutline,
+  'lock-closed-outline': lockClosedOutline,
+  'alert-circle-outline': alertCircleOutline,
+  'checkmark-circle-outline': checkmarkCircleOutline,
+});
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -225,42 +334,199 @@ function irACanchas() {
 }
 
 onMounted(async () => {
-  const { data } = await panelService.misComplejos();
-  misComplejos.value = data.data;
+  try {
+    const { data } = await panelService.misComplejos();
+    misComplejos.value = data.data;
 
-  if (misComplejos.value.length > 0) {
-    complejoIdSeleccionado.value = misComplejos.value[0].id;
-    await cargarAgenda();
+    if (misComplejos.value.length > 0) {
+      complejoIdSeleccionado.value = misComplejos.value[0].id;
+      await cargarAgenda();
+    }
+  } catch (err) {
+    console.error('Error cargando los complejos:', err);
+  } finally {
+    cargandoInicial.value = false;
   }
-
-  cargandoInicial.value = false;
 });
 </script>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
+
 .panel-page {
-  --bg-page: #f4fbff;
-  --panel-surface: #ffffff;
-  --panel-muted: #edf9ff;
-  --primary: #1D5C94;
-  --primary-dark: #08226C;
-  --text-main: #0f172a;
-  --text-soft: #64748b;
-  --border: #dfeaf7;
-  --danger: #ef4444;
-  --success: #10b981;
-  --accent: #66E3DA;
+  font-family: 'Inter', -apple-system, sans-serif;
+  color: #f3f4f6;
+  background-color: #030712;
 }
 
+/* NAVBAR CÁPSULA FLOTANTE (ESTILO SPORTRA) */
+.top-navbar-floating {
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: 1.25rem 1.5rem 0.5rem;
+  background: transparent;
+}
+
+.navbar-pill {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: rgba(11, 15, 25, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  padding: 0.6rem 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.logo-circle-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid #84cc16;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(132, 204, 22, 0.08);
+  box-shadow: 0 0 12px rgba(132, 204, 22, 0.3);
+}
+
+.logo-circle-icon ion-icon {
+  color: #84cc16;
+  font-size: 1.1rem;
+}
+
+.brand-name {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 800;
+  font-size: 1.2rem;
+  letter-spacing: 0.04em;
+  color: #ffffff;
+}
+
+.dot-neon {
+  color: #84cc16;
+}
+
+/* ACCIONES DE NAVEGACIÓN */
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nav-chip-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  padding: 0.45rem 1rem;
+  color: #ffffff;
+  font-size: 0.825rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.nav-chip-btn .chip-icon {
+  font-size: 0.95rem;
+  color: #84cc16;
+}
+
+.nav-chip-btn:hover {
+  background: rgba(132, 204, 22, 0.15);
+  border-color: rgba(132, 204, 22, 0.4);
+  transform: translateY(-1px);
+}
+
+.nav-chip-btn.danger {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+.nav-chip-btn.danger .chip-icon {
+  color: #f87171;
+}
+
+.nav-chip-btn.danger:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #ffffff;
+}
+
+/* VIEWPORT & BACKGROUND */
 .panel-content {
-  --background: var(--bg-page);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --background: #030712;
 }
 
+.page-background-glow {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(100px);
+}
+
+.glow-float-1 {
+  top: 5%;
+  left: 10%;
+  width: 450px;
+  height: 450px;
+  background: radial-gradient(circle, rgba(132, 204, 22, 0.08) 0%, rgba(3, 7, 18, 0) 70%);
+}
+
+.glow-float-2 {
+  bottom: 10%;
+  right: 15%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(163, 230, 53, 0.05) 0%, rgba(3, 7, 18, 0) 70%);
+}
+
+.bg-grid {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+}
+
+/* SPINNER */
+.loading-shell {
+  min-height: 70vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.main-spinner {
+  width: 42px;
+  height: 42px;
+  color: #84cc16;
+}
+
+/* DASHBOARD CONTAINER */
 .dashboard-shell {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 1.5rem;
+  padding: 1.5rem 1.5rem 2.5rem;
+  position: relative;
+  z-index: 2;
 }
 
 .topbar {
@@ -268,138 +534,176 @@ onMounted(async () => {
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+
+.eyebrow {
+  display: block;
+  color: #84cc16;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.725rem;
+  font-weight: 800;
+}
+
+.page-title {
+  font-family: 'Space Grotesk', sans-serif;
+  margin: 0.2rem 0 0;
+  color: #ffffff;
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.topbar-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.btn-primary-neon {
+  background: #84cc16;
+  color: #030712;
+  border: none;
+  border-radius: 12px;
+  padding: 0.75rem 1.25rem;
+  font-weight: 800;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 0 20px rgba(132, 204, 22, 0.25);
+}
+
+.btn-primary-neon:hover {
+  background: #a3e635;
+  transform: translateY(-2px);
+  box-shadow: 0 0 30px rgba(132, 204, 22, 0.4);
+}
+
+.selector-card-glass {
+  background: rgba(11, 15, 25, 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.selector-label {
+  display: block;
+  color: #84cc16;
+  font-size: 0.725rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.4rem;
+}
+
+.complex-select-dark {
+  background: #030712;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: #ffffff;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.75rem;
+}
+
+.stat-card-glass {
+  background: rgba(11, 15, 25, 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 1.25rem;
+}
+
+.stat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.stat-label {
+  color: #94a3b8;
+  font-size: 0.725rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 800;
+}
+
+.stat-icon {
+  color: #84cc16;
+  font-size: 1.2rem;
+}
+
+.stat-card-glass strong {
+  font-family: 'Space Grotesk', sans-serif;
+  color: #ffffff;
+  font-size: clamp(1.5rem, 3vw, 2.2rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 1.5rem;
+}
+
+.panel-card-glass {
+  background: rgba(11, 15, 25, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 1.5rem;
+}
+
+.wide-card {
+  min-height: 100%;
+}
+
+.card-header {
   margin-bottom: 1.25rem;
 }
 
-.eyebrow,
 .card-kicker {
   display: inline-block;
-  color: var(--primary);
+  color: #84cc16;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: 0.7rem;
   font-weight: 800;
 }
 
-.topbar h1,
-.card-header h2 {
-  margin: 0.25rem 0 0;
-  color: var(--text-main);
-  letter-spacing: -0.03em;
-}
-
-.topbar h1 {
-  font-size: clamp(1.8rem, 3vw, 2.5rem);
-}
-
-.topbar-actions {
-  display: flex;
-  gap: 0.7rem;
-}
-
-.btn-primary,
-.btn-submit,
-.mini-button {
-  border: none;
-  border-radius: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-primary,
-.btn-submit {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+.card-title {
+  font-family: 'Space Grotesk', sans-serif;
+  margin: 0.2rem 0 0;
   color: #ffffff;
-  padding: 0.8rem 1rem;
-  box-shadow: 0 10px 20px rgba(0, 102, 255, 0.2);
-}
-
-.btn-primary:hover,
-.btn-submit:hover {
-  transform: translateY(-1px);
-}
-
-.selector-card,
-.panel-card,
-.stat-card {
-  background: var(--panel-surface);
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
-}
-
-.selector-card {
-  padding: 1rem 1.1rem;
-  margin-bottom: 1.25rem;
-}
-
-.selector-label {
-  display: block;
-  color: var(--text-soft);
-  font-size: 0.75rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
-}
-
-.complex-select {
-  --background: #f8fafc;
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.stat-card {
-  padding: 1.1rem 1rem;
-}
-
-.stat-label {
-  color: var(--text-soft);
-  display: block;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-bottom: 0.5rem;
-  font-weight: 700;
-}
-
-.stat-card strong {
-  color: var(--text-main);
-  font-size: clamp(1.4rem, 3vw, 2rem);
-  letter-spacing: -0.04em;
-}
-
-.content-grid {
-  display: grid;
-  grid-template-columns: 1.5fr 1fr;
-  gap: 1.25rem;
-}
-
-.panel-card {
-  padding: 1.15rem;
-}
-
-.card-header {
-  margin-bottom: 1rem;
+  font-size: 1.35rem;
+  font-weight: 800;
 }
 
 .agenda-list {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.25rem;
 }
 
 .agenda-item {
-  padding: 1rem;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: #f8fafc;
+  padding: 1.2rem;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 18px;
+  background: rgba(3, 7, 18, 0.6);
 }
 
 .agenda-head {
@@ -407,20 +711,22 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  margin-bottom: 0.8rem;
+  margin-bottom: 1rem;
 }
 
 .agenda-head h3 {
   margin: 0;
-  font-size: 1.02rem;
-  color: var(--text-main);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #ffffff;
 }
 
-.agenda-head span {
-  font-size: 0.72rem;
-  background: var(--panel-muted);
-  color: var(--primary);
-  padding: 0.3rem 0.55rem;
+.badge-deporte {
+  font-size: 0.7rem;
+  background: rgba(132, 204, 22, 0.12);
+  border: 1px solid rgba(132, 204, 22, 0.3);
+  color: #84cc16;
+  padding: 0.25rem 0.6rem;
   border-radius: 999px;
   font-weight: 700;
 }
@@ -428,78 +734,90 @@ onMounted(async () => {
 .timeline-list {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.65rem;
 }
 
 .timeline-row {
   display: grid;
-  grid-template-columns: 120px 1fr auto;
+  grid-template-columns: 130px 1fr auto;
   gap: 0.75rem;
   align-items: center;
-  padding: 0.7rem 0.8rem;
+  padding: 0.75rem 0.9rem;
   border-radius: 12px;
   border: 1px solid transparent;
 }
 
 .timeline-row.reservation {
-  background: rgba(16, 185, 129, 0.08);
-  border-color: rgba(16, 185, 129, 0.15);
+  background: rgba(132, 204, 22, 0.06);
+  border-color: rgba(132, 204, 22, 0.15);
 }
 
 .timeline-row.blocked {
-  background: rgba(15, 23, 42, 0.04);
-  border-color: rgba(100, 116, 139, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.06);
 }
 
 .timeline-time {
-  font-weight: 800;
-  color: var(--text-main);
-  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 700;
+  color: #84cc16;
+  font-size: 0.775rem;
 }
 
 .timeline-content {
   display: flex;
   flex-direction: column;
-  gap: 0.12rem;
 }
 
 .timeline-content strong {
   font-size: 0.85rem;
-  color: var(--text-main);
+  color: #ffffff;
 }
 
-.timeline-content small {
-  font-size: 0.7rem;
-  color: var(--text-soft);
+.status-tag {
+  font-size: 0.68rem;
+  color: #94a3b8;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  font-weight: 700;
 }
 
-.mini-button {
-  background: transparent;
-  border: 1px solid rgba(239, 68, 68, 0.22);
-  color: var(--danger);
-  padding: 0.45rem 0.7rem;
-  font-size: 0.7rem;
+.mini-button-danger {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.725rem;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mini-button-danger:hover {
+  background: rgba(239, 68, 68, 0.25);
+  color: #ffffff;
 }
 
 .empty-inline,
 .empty-message {
   margin: 0.6rem 0 0;
-  color: var(--text-soft);
-  font-size: 0.85rem;
+  color: #64748b;
+  font-size: 0.825rem;
 }
 
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.9rem;
+  gap: 1rem;
 }
 
 .field-group {
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
+  gap: 0.4rem;
 }
 
 .field-group.full {
@@ -507,53 +825,89 @@ onMounted(async () => {
 }
 
 .field-group label {
-  color: var(--text-soft);
-  font-weight: 700;
-  font-size: 0.76rem;
+  color: #84cc16;
+  font-weight: 800;
+  font-size: 0.7rem;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.05em;
 }
 
-.field-group ion-input,
-.field-group ion-select {
-  --background: #f8fafc;
-  --border-radius: 12px;
-  --padding-start: 0.8rem;
-  --padding-end: 0.8rem;
-  min-height: 46px;
-  border: 1px solid var(--border);
+.custom-input-dark {
+  --background: #030712;
+  --color: #ffffff;
+  --placeholder-color: #475569;
+  --padding-start: 0.85rem;
+  --padding-end: 0.85rem;
+  min-height: 44px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
+  font-size: 0.875rem;
+  transition: border-color 0.25s ease;
 }
 
-.btn-submit {
+.custom-input-dark:focus-within {
+  border-color: #84cc16;
+}
+
+.btn-submit-neon {
   width: 100%;
-  margin-top: 1rem;
+  margin-top: 1.25rem;
+  background: #84cc16;
+  color: #030712;
+  border: none;
+  border-radius: 12px;
+  padding: 0.85rem;
+  font-size: 0.9rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 0 20px rgba(132, 204, 22, 0.3);
+}
+
+.btn-submit-neon:hover {
+  background: #a3e635;
+  transform: translateY(-2px);
+  box-shadow: 0 0 30px rgba(132, 204, 22, 0.45);
 }
 
 .message-banner {
-  margin-top: 0.9rem;
-  padding: 0.7rem 0.8rem;
-  border-radius: 10px;
-  font-size: 0.82rem;
+  margin-top: 1rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  font-size: 0.825rem;
   font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.message-banner ion-icon {
+  font-size: 1.1rem;
 }
 
 .message-banner.success {
-  background: rgba(16, 185, 129, 0.1);
-  border: 1px solid rgba(16, 185, 129, 0.18);
-  color: #047857;
+  background: rgba(132, 204, 22, 0.12);
+  border: 1px solid rgba(132, 204, 22, 0.3);
+  color: #84cc16;
 }
 
 .message-banner.error {
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.18);
-  color: #b91c1c;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
 }
 
-@media (max-width: 800px) {
+@media (max-width: 850px) {
+  .top-navbar-floating {
+    padding: 0.75rem 0.75rem 0.25rem;
+  }
+
+  .navbar-pill {
+    padding: 0.5rem 0.85rem;
+  }
+  
   .stats-grid,
-  .content-grid,
-  .form-grid {
+  .content-grid {
     grid-template-columns: 1fr;
   }
 
@@ -565,29 +919,5 @@ onMounted(async () => {
   .timeline-row {
     grid-template-columns: 1fr;
   }
-}
-
-.panel-header {
-  box-shadow: 0 1px 0 rgba(148, 163, 184, 0.18);
-}
-
-.panel-toolbar {
-  --background: rgba(255, 255, 255, 0.92);
-  --color: var(--text-main);
-  backdrop-filter: blur(8px);
-}
-
-.header-link {
-  --background: transparent;
-  --color: var(--primary);
-  font-weight: 700;
-}
-
-.header-link.danger {
-  --color: var(--danger);
-}
-
-.wide-card {
-  min-height: 100%;
 }
 </style>

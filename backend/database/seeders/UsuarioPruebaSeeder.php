@@ -11,25 +11,33 @@ class UsuarioPruebaSeeder extends Seeder
 {
     public function run(): void
     {
-        $admin = User::create([
-            'name' => 'Admin Plataforma',
-            'email' => 'admin@canchaplatform.test',
-            'password' => 'password', // se hashea automáticamente por el cast 'hashed'
-            'is_platform_admin' => true,
-        ]);
+        // Administrador General
+        User::updateOrCreate(
+            ['email' => 'admin@canchaplatform.test'],
+            [
+                'name' => 'Admin Plataforma',
+                'password' => 'password',
+                'is_platform_admin' => true,
+            ]
+        );
 
-        $propietario = User::create([
-            'name' => 'Propietario Soccer Center',
-            'email' => 'propietario@soccercenter.test',
-            'password' => 'password',
-            'telefono' => '88887777',
-        ]);
+        // Propietario Principal
+        $propietario = User::updateOrCreate(
+            ['email' => 'propietario@soccercenter.test'],
+            [
+                'name' => 'Propietario Soccer Center',
+                'password' => 'password',
+                'telefono' => '88887777',
+            ]
+        );
 
-        $soccerCenter = Complejo::where('slug', 'soccer-center')->firstOrFail();
-        $rolPropietario = Rol::where('nombre', Rol::PROPIETARIO)->firstOrFail();
+        $soccerCenter = Complejo::where('slug', 'soccer-center')->first();
+        $rolPropietario = Rol::where('nombre', Rol::PROPIETARIO)->first();
 
-        $propietario->complejos()->attach($soccerCenter->id, [
-            'rol_id' => $rolPropietario->id,
-        ]);
+        if ($soccerCenter && $rolPropietario) {
+            $propietario->complejos()->syncWithoutDetaching([
+                $soccerCenter->id => ['rol_id' => $rolPropietario->id],
+            ]);
+        }
     }
 }

@@ -1,36 +1,39 @@
 <template>
-  <ion-page class="complejo-detail-page">
-    <!-- Top Bar Elegante -->
-    <ion-header class="ion-no-border navbar-header">
-      <ion-toolbar class="custom-toolbar">
-        <ion-buttons slot="start">
-          <ion-back-button default-href="/home" text="" class="custom-back-btn"></ion-back-button>
-        </ion-buttons>
-        <ion-title class="nav-title">
-          {{ complejo?.nombre || 'Detalle del Complejo' }}
-        </ion-title>
-        <ion-buttons slot="end" v-if="complejo?.whatsapp_numero">
-          <button class="btn-icon-wa" @click="contactarWhatsApp" title="Contactar por WhatsApp">
-            <ion-icon name="logo-whatsapp"></ion-icon>
-          </button>
-        </ion-buttons>
-      </ion-toolbar>
-    </ion-header>
+  <ion-page class="sportra-app">
+    <!-- Navbar Flotante Neón Glass -->
+    <header class="navbar-container">
+      <div class="navbar-bar">
+        <div class="brand-box" @click="irAHome" role="button" tabindex="0">
+          <div class="brand-badge glow-pulse">
+            <ion-icon name="football-outline" class="brand-icon"></ion-icon>
+          </div>
+          <span class="brand-name">SPORTRA<span class="neon-dot">.</span></span>
+        </div>
 
-    <ion-content :fullscreen="true" class="page-content">
-      
+        <div class="header-right">
+          <button class="btn-portal-glow" @click="irAHome">
+            <ion-icon name="arrow-back-outline"></ion-icon>
+            <span>Volver</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <ion-content :fullscreen="true" class="sportra-main-viewport">
+      <div class="page-background-glow glow-float-1"></div>
+      <div class="page-background-glow glow-float-2"></div>
+      <div class="bg-grid"></div>
+
       <!-- Skeleton Loading General -->
-      <div v-if="cargando" class="container padding-responsive">
-        <div class="skeleton-hero"></div>
-        <div class="skeleton-line title"></div>
-        <div class="skeleton-line subtitle"></div>
-        <div class="skeleton-card mt-4"></div>
+      <div v-if="cargando" class="detail-wrapper loading-state">
+        <ion-spinner name="crescent" class="lime-spinner"></ion-spinner>
+        <span>Cargando detalles del complejo...</span>
       </div>
 
-      <!-- Contenido Principal cuando está cargado -->
-      <div v-else-if="complejo" class="main-wrapper">
+      <!-- Contenido Principal -->
+      <div v-else-if="complejo" class="detail-wrapper">
         
-        <!-- Banner / Hero de Presentación -->
+        <!-- Hero Visual con Overlays Neón -->
         <div class="complejo-hero">
           <img 
             :src="getComplejoImage(complejo)" 
@@ -45,10 +48,10 @@
           </div>
         </div>
 
-        <div class="container padding-responsive">
+        <main class="main-content-layout">
           
-          <!-- Encabezado y Dirección -->
-          <section class="info-header-card">
+          <!-- Card de Información del Complejo -->
+          <section class="glass-card info-header-card">
             <div class="title-row">
               <div class="logo-wrapper" v-if="complejo.logo_url || fallbackImage">
                 <img
@@ -59,6 +62,7 @@
                 />
               </div>
               <div class="title-copy">
+                <span class="eyebrow">Complejo Deportivo</span>
                 <h1 class="complejo-title">{{ complejo.nombre }}</h1>
                 <p class="complejo-address">
                   <ion-icon name="navigate-outline"></ion-icon>
@@ -74,44 +78,45 @@
               </div>
               <div class="metric-card">
                 <span class="metric-label">Canchas</span>
-                <strong>{{ complejo.canchas?.length || 0 }}</strong>
+                <strong>{{ complejo.canchas?.length || 0 }} disponibles</strong>
               </div>
               <div class="metric-card">
                 <span class="metric-label">Desde</span>
-                <strong>₡{{ formatearPrecio(complejo.canchas?.[0]?.precio_hora || 0) }}</strong>
+                <strong class="highlight-val">₡{{ formatearPrecio(complejo.canchas?.[0]?.precio_hora || 0) }}</strong>
               </div>
             </div>
 
             <div v-if="complejo.descripcion" class="description-box">
-              <h3>Descripción</h3>
+              <h3>Sobre este complejo</h3>
               <p>{{ complejo.descripcion }}</p>
             </div>
 
             <button 
               v-if="complejo.whatsapp_numero" 
-              class="btn-whatsapp-full" 
+              class="btn-whatsapp-full wave-effect" 
               @click="contactarWhatsApp"
             >
               <ion-icon name="logo-whatsapp" class="wa-icon"></ion-icon>
               <div class="wa-btn-text">
                 <span>Consultar por WhatsApp</span>
-                <small>Respuesta directa con el complejo</small>
+                <small>Respuesta directa con la administración</small>
               </div>
               <ion-icon name="open-outline" class="open-icon"></ion-icon>
             </button>
           </section>
 
-          <!-- Sección de Disponibilidad con Calendario Libre -->
+          <!-- Sección de Horarios y Disponibilidad -->
           <section class="disponibilidad-section">
             <div class="section-title-wrapper">
               <div>
+                <span class="eyebrow">Reserva en línea</span>
                 <h2>Horarios y Disponibilidad</h2>
-                <p class="section-sub">Selecciona cualquier fecha para consultar canchas libres</p>
+                <p class="section-sub">Selecciona cualquier fecha para consultar canchas libres en tiempo real</p>
               </div>
             </div>
 
-            <!-- Selector de Fecha Libre: Carrusel + Datetime Modal -->
-            <div class="date-picker-container">
+            <!-- Selector de Fecha Libre -->
+            <div class="glass-card date-picker-container">
               
               <div class="date-header-row">
                 <span class="selected-date-label">
@@ -119,28 +124,30 @@
                   {{ fechaFormateadaCorta }}
                 </span>
 
-                <!-- Botón de Calendario para Elegir Cualquier Fecha -->
                 <button class="btn-picker-trigger" id="open-date-modal">
                   <ion-icon name="calendar-sharp"></ion-icon>
                   <span>Elegir fecha</span>
                 </button>
               </div>
 
-              <!-- Modal Nativo de Ionic con Datetime -->
-              <ion-modal trigger="open-date-modal" :keep-contents-mounted="true">
-                <ion-datetime
-                  id="datetime"
-                  presentation="date"
-                  :value="fechaSeleccionada"
-                  :min="fechaMinima"
-                  @ionChange="onFechaModalChange($event)"
-                  :show-default-buttons="true"
-                  done-text="Seleccionar"
-                  cancel-text="Cancelar"
-                ></ion-datetime>
+              <!-- Modal Nativo Ionic de Datetime Estilizado -->
+              <ion-modal trigger="open-date-modal" :keep-contents-mounted="true" class="dark-datetime-modal">
+                <div class="date-modal-wrapper">
+                  <ion-datetime
+                    id="datetime"
+                    presentation="date"
+                    :value="fechaSeleccionada"
+                    :min="fechaMinima"
+                    @ionChange="onFechaModalChange($event)"
+                    :show-default-buttons="true"
+                    done-text="Seleccionar"
+                    cancel-text="Cancelar"
+                    class="custom-neon-datetime"
+                  ></ion-datetime>
+                </div>
               </ion-modal>
 
-              <!-- Carrusel de Acceso Rápido (Próximos Días) -->
+              <!-- Carrusel de Acceso Rápido Dinámico -->
               <div class="date-chips-scroll">
                 <button
                   v-for="dia in proximosDias"
@@ -157,22 +164,18 @@
 
             </div>
 
-            <!-- Leyenda de Estados de Horario -->
-            <div class="legend-bar">
+            <!-- Leyenda de Estados -->
+            <div class="glass-card legend-bar">
               <div class="legend-item"><span class="dot disponible"></span>Disponible</div>
               <div class="legend-item"><span class="dot ocupada"></span>Ocupado</div>
               <div class="legend-item"><span class="dot pendiente"></span>Pendiente</div>
               <div class="legend-item"><span class="dot bloqueada"></span>Bloqueado</div>
             </div>
 
-            <!-- Skeletons durante la carga -->
-            <div v-if="cargandoDisponibilidad" class="canchas-skeleton-list mt-3">
-              <div v-for="i in 2" :key="i" class="cancha-card-skeleton">
-                <div class="skeleton-line c-title"></div>
-                <div class="grid-skeleton">
-                  <div v-for="j in 6" :key="j" class="skeleton-chip"></div>
-                </div>
-              </div>
+            <!-- Loading de Horarios -->
+            <div v-if="cargandoDisponibilidad" class="dispo-loading-box">
+              <ion-spinner name="crescent" class="lime-spinner"></ion-spinner>
+              <span>Actualizando disponibilidad...</span>
             </div>
 
             <!-- Grilla de Canchas y Bloques de Horario -->
@@ -181,21 +184,26 @@
               <div 
                 v-for="cancha in disponibilidad.canchas" 
                 :key="cancha.cancha_id" 
-                class="cancha-card"
+                class="glass-card cancha-card"
               >
                 <div class="cancha-card-header">
                   <div class="cancha-info">
-                    <ion-icon name="football-outline" class="cancha-icon"></ion-icon>
-                    <h3>{{ cancha.nombre }}</h3>
+                    <div class="cancha-icon-box">
+                      <ion-icon name="football-outline"></ion-icon>
+                    </div>
+                    <div>
+                      <h3>{{ cancha.nombre }}</h3>
+                      <span class="deporte-subtitle">Fútbol</span>
+                    </div>
                   </div>
                   <div class="cancha-price-badge">
                     <strong>₡{{ formatearPrecio(cancha.precio_hora) }}</strong>
-                    <small>/hora</small>
+                    <small>/ hora</small>
                   </div>
                 </div>
 
                 <div class="horarios-grid">
-                  <div
+                  <button
                     v-for="bloque in cancha.bloques"
                     :key="bloque.hora_inicio"
                     class="slot-btn"
@@ -210,87 +218,112 @@
                     <span class="status-indicator">
                       {{ statusLabel(bloque.estado) }}
                     </span>
-                  </div>
+                  </button>
                 </div>
               </div>
 
             </div>
 
-            <!-- Estado Vacío en Disponibilidad -->
-            <div v-else class="empty-dispo-box">
-              <ion-icon name="calendar-clear-outline" class="empty-icon"></ion-icon>
+            <!-- Estado Vacío -->
+            <div v-else class="glass-card empty-dispo-box">
+              <div class="empty-icon-glow">
+                <ion-icon name="calendar-clear-outline"></ion-icon>
+              </div>
               <h4>Sin disponibilidad para esta fecha</h4>
-              <p>No se encontraron horarios para el {{ fechaFormateadaCorta }}.</p>
+              <p>No se encontraron horarios configurados para el {{ fechaFormateadaCorta }}.</p>
             </div>
 
           </section>
 
-          <section class="gallery-section" aria-labelledby="gallery-title">
-            <div class="section-heading-row">
+          <!-- Galería de Instalaciones -->
+          <section class="gallery-section">
+            <div class="section-title-wrapper">
               <div>
-                <span class="eyebrow">El espacio</span>
-                <h2 id="gallery-title">Conoce la cancha</h2>
-                <p>Un espacio preparado para disfrutar tus partidos de día y de noche.</p>
+                <span class="eyebrow">Instalaciones</span>
+                <h2>Conoce el espacio</h2>
+                <p class="section-sub">Espacios acondicionados para la práctica deportiva de día y noche.</p>
               </div>
-              <ion-icon name="images-outline" class="section-heading-icon"></ion-icon>
             </div>
             <div class="gallery-grid">
-              <img
-                v-for="(imagen, index) in galleryImages"
-                :key="`${imagen}-${index}`"
-                :src="imagen"
-                :alt="`Instalaciones de ${complejo.nombre}, imagen ${index + 1}`"
-                @error="handleImageError"
-              />
+              <div 
+                v-for="(imagen, index) in galleryImages" 
+                :key="`${imagen}-${index}`" 
+                class="gallery-item-glass"
+              >
+                <img
+                  :src="imagen"
+                  :alt="`Instalaciones de ${complejo.nombre}, imagen ${index + 1}`"
+                  @error="handleImageError"
+                />
+              </div>
             </div>
           </section>
 
-        </div>
+        </main>
       </div>
 
       <!-- Error State -->
-      <div v-else class="container empty-state-full">
-        <ion-icon name="alert-circle-outline" class="error-icon"></ion-icon>
+      <div v-else class="detail-wrapper empty-state-full">
+        <div class="empty-icon-glow">
+          <ion-icon name="alert-circle-outline"></ion-icon>
+        </div>
         <h3>No se encontró el complejo</h3>
-        <p>El complejo deportivo que buscas no existe o no está activo actualmente.</p>
-        <ion-button router-link="/home" fill="clear">Volver al Inicio</ion-button>
+        <p>El complejo deportivo que buscas no existe o no se encuentra disponible actualmente.</p>
+        <button class="btn-portal-glow" @click="irAHome">Volver al Inicio</button>
       </div>
 
     </ion-content>
 
-    <ion-modal :is-open="Boolean(bloqueSeleccionado)" @didDismiss="cerrarReserva">
-      <div class="reservation-modal">
+    <!-- Modal de Reserva Neón Glass -->
+    <ion-modal :is-open="Boolean(bloqueSeleccionado)" @didDismiss="cerrarReserva" class="glass-modal-container">
+      <div class="reservation-modal-glass">
         <div class="reservation-modal-header">
           <div>
-            <span class="eyebrow">Solicitud de reserva</span>
-            <h2>Reservar cancha</h2>
+            <span class="eyebrow">Solicitud instantánea</span>
+            <h2>Reservar Cancha</h2>
             <p>{{ fechaFormateadaCorta }} · {{ bloqueSeleccionado?.hora_inicio }} - {{ bloqueSeleccionado?.hora_fin }}</p>
           </div>
-          <button class="modal-close" aria-label="Cerrar" @click="cerrarReserva">
+          <button class="modal-close-btn" aria-label="Cerrar" @click="cerrarReserva">
             <ion-icon name="close-outline"></ion-icon>
           </button>
         </div>
 
         <div class="reservation-form">
-          <label>Nombre completo <span>*</span></label>
-          <ion-input v-model="solicitud.nombre" fill="outline" placeholder="Juan Pérez"></ion-input>
+          <div class="field-block">
+            <label>Nombre completo <span>*</span></label>
+            <div class="input-glow-box">
+              <input v-model="solicitud.nombre" type="text" placeholder="Ej: Juan Pérez" />
+            </div>
+          </div>
 
-          <label>Teléfono <span>*</span></label>
-          <ion-input v-model="solicitud.telefono" fill="outline" type="tel" placeholder="8888-8888"></ion-input>
+          <div class="field-block">
+            <label>Teléfono <span>*</span></label>
+            <div class="input-glow-box">
+              <input v-model="solicitud.telefono" type="tel" placeholder="Ej: 8888-8888" />
+            </div>
+          </div>
 
-          <label>Comentario <small>(opcional)</small></label>
-          <ion-textarea v-model="solicitud.comentario" fill="outline" :auto-grow="true" placeholder="¿Algo que debamos saber?"></ion-textarea>
+          <div class="field-block">
+            <label>Comentario <small>(opcional)</small></label>
+            <div class="input-glow-box">
+              <textarea v-model="solicitud.comentario" rows="3" placeholder="¿Algún requerimiento especial?"></textarea>
+            </div>
+          </div>
 
           <div class="reservation-note">
             <ion-icon name="information-circle-outline"></ion-icon>
-            <p>Te contactaremos por WhatsApp para confirmar la disponibilidad y completar la reserva.</p>
+            <p>Se abrirá WhatsApp para enviar la confirmación del bloque reservado al complejo.</p>
           </div>
 
           <div class="modal-actions">
-            <button class="btn-secondary" @click="cerrarReserva">Cancelar</button>
-            <button class="btn-primary" :disabled="!solicitud.nombre || !solicitud.telefono" @click="enviarSolicitud">
+            <button class="btn-modal-cancel" @click="cerrarReserva">Cancelar</button>
+            <button 
+              class="btn-modal-submit" 
+              :disabled="!solicitud.nombre || !solicitud.telefono" 
+              @click="enviarSolicitud"
+            >
               <ion-icon name="logo-whatsapp"></ion-icon>
-              Solicitar por WhatsApp
+              Solicitar Reserva
             </button>
           </div>
         </div>
@@ -301,16 +334,46 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import {
-  IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonBackButton,
-  IonIcon, IonButton, IonModal, IonDatetime, IonInput, IonTextarea
+  IonPage, IonContent, IonIcon, IonModal, IonDatetime, IonSpinner
 } from '@ionic/vue';
+import { addIcons } from 'ionicons';
+import { 
+  footballOutline, 
+  arrowBackOutline, 
+  locationSharp, 
+  navigateOutline, 
+  logoWhatsapp, 
+  openOutline, 
+  calendarOutline, 
+  calendarSharp, 
+  calendarClearOutline, 
+  alertCircleOutline, 
+  closeOutline, 
+  informationCircleOutline 
+} from 'ionicons/icons';
 import complejosService from '@/services/complejos.service';
 import echo from '@/services/echo';
 import type { ComplejoDetalle, Disponibilidad } from '@/types';
 
+addIcons({
+  'football-outline': footballOutline,
+  'arrow-back-outline': arrowBackOutline,
+  'location-sharp': locationSharp,
+  'navigate-outline': navigateOutline,
+  'logo-whatsapp': logoWhatsapp,
+  'open-outline': openOutline,
+  'calendar-outline': calendarOutline,
+  'calendar-sharp': calendarSharp,
+  'calendar-clear-outline': calendarClearOutline,
+  'alert-circle-outline': alertCircleOutline,
+  'close-outline': closeOutline,
+  'information-circle-outline': informationCircleOutline
+});
+
 const route = useRoute();
+const router = useRouter();
 const slug = route.params.slug as string;
 const fallbackImage = 'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?auto=format&fit=crop&w=800&q=80';
 
@@ -322,16 +385,17 @@ const bloqueSeleccionado = ref<{ hora_inicio: string; hora_fin: string } | null>
 const canchaSeleccionada = ref<{ nombre: string } | null>(null);
 const solicitud = ref({ nombre: '', telefono: '', comentario: '' });
 
-// Fecha seleccionada en formato ISO 'YYYY-MM-DD'
 const fechaSeleccionada = ref<string>(obtenerFechaHoyISO());
 const fechaMinima = obtenerFechaHoyISO();
 
 function obtenerFechaHoyISO(): string {
   const hoy = new Date();
-  return hoy.toISOString().split('T')[0];
+  const year = hoy.getFullYear();
+  const month = String(hoy.getMonth() + 1).padStart(2, '0');
+  const day = String(hoy.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
-// Genera los próximos 7 días para el acceso rápido horizontal
 interface DiaItem {
   iso: string;
   nombreDia: string;
@@ -339,32 +403,55 @@ interface DiaItem {
   mes: string;
 }
 
+const DIAS_A_MOSTRAR = 14;
+
 const proximosDias = computed<DiaItem[]>(() => {
   const lista: DiaItem[] = [];
   const base = new Date();
 
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(base);
-    d.setDate(base.getDate() + i);
-    const iso = d.toISOString().split('T')[0];
-
-    const esHoy = i === 0;
-    const esManana = i === 1;
-
-    let nombreDia = d.toLocaleDateString('es-CR', { weekday: 'short' }).replace('.', '');
-    if (esHoy) nombreDia = 'Hoy';
-    else if (esManana) nombreDia = 'Mañ.';
-
-    lista.push({
-      iso,
-      nombreDia: nombreDia.toUpperCase(),
-      numeroDia: d.getDate(),
-      mes: d.toLocaleDateString('es-CR', { month: 'short' }).replace('.', '').toUpperCase(),
-    });
+  for (let i = 0; i < DIAS_A_MOSTRAR; i++) {
+    const d = new Date(base.getFullYear(), base.getMonth(), base.getDate() + i);
+    lista.push(formatearObjetoDia(d));
   }
 
-  return lista;
+  if (fechaSeleccionada.value) {
+    const existe = lista.some(dia => dia.iso === fechaSeleccionada.value);
+    if (!existe) {
+      const [year, month, day] = fechaSeleccionada.value.split('-').map(Number);
+      const fechaEspecial = new Date(year, month - 1, day);
+      lista.push(formatearObjetoDia(fechaEspecial));
+    }
+  }
+
+  return lista.sort((a, b) => a.iso.localeCompare(b.iso));
 });
+
+function formatearObjetoDia(d: Date): DiaItem {
+  const hoy = new Date();
+  const manana = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + 1);
+
+  const year = d.getFullYear();
+  const monthStr = String(d.getMonth() + 1).padStart(2, '0');
+  const dayStr = String(d.getDate()).padStart(2, '0');
+  const iso = `${year}-${monthStr}-${dayStr}`;
+
+  const hoyIso = obtenerFechaHoyISO();
+  const mananaIso = `${manana.getFullYear()}-${String(manana.getMonth() + 1).padStart(2, '0')}-${String(manana.getDate()).padStart(2, '0')}`;
+
+  const esHoy = iso === hoyIso;
+  const esManana = iso === mananaIso;
+
+  let nombreDia = d.toLocaleDateString('es-CR', { weekday: 'short' }).replace('.', '');
+  if (esHoy) nombreDia = 'Hoy';
+  else if (esManana) nombreDia = 'Mañ.';
+
+  return {
+    iso,
+    nombreDia: nombreDia.toUpperCase(),
+    numeroDia: d.getDate(),
+    mes: d.toLocaleDateString('es-CR', { month: 'short' }).replace('.', '').toUpperCase(),
+  };
+}
 
 const galleryImages = computed(() => [
   getComplejoImage(complejo.value),
@@ -373,18 +460,20 @@ const galleryImages = computed(() => [
   fallbackImage,
 ]);
 
-// Etiqueta legible de la fecha seleccionada
+// Parseo explicito en hora local para evitar el desajuste UTC
 const fechaFormateadaCorta = computed(() => {
   if (!fechaSeleccionada.value) return '';
   const [year, month, day] = fechaSeleccionada.value.split('-').map(Number);
   const dateObj = new Date(year, month - 1, day);
   
-  return dateObj.toLocaleDateString('es-CR', {
+  const texto = dateObj.toLocaleDateString('es-CR', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
     year: 'numeric'
   });
+
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
 });
 
 function seleccionarFecha(iso: string) {
@@ -397,7 +486,7 @@ function seleccionarFecha(iso: string) {
 function onFechaModalChange(event: CustomEvent) {
   const val = event.detail.value;
   if (val) {
-    const iso = val.split('T')[0];
+    const iso = Array.isArray(val) ? val[0].split('T')[0] : val.split('T')[0];
     fechaSeleccionada.value = iso;
     cargarDisponibilidad();
   }
@@ -489,7 +578,6 @@ function getComplejoImage(complejo: any): string {
 
 function handleImageError(event: Event) {
   const target = event.target as HTMLImageElement;
-  // Evita loop infinito si el fallback también falla
   if (target.src === fallbackImage) return;
   target.src = fallbackImage;
 }
@@ -503,6 +591,10 @@ async function contactarWhatsApp() {
   } catch (error) {
     console.error('Error generando enlace de WhatsApp:', error);
   }
+}
+
+function irAHome() {
+  router.push('/home');
 }
 
 let canalSuscrito: any = null;
@@ -527,70 +619,167 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* Custom Properties */
-.complejo-detail-page {
-  --primary: #21439a;
-  --primary-hover: #173477;
-  --bg-page: #f7f9fc;
-  --text-main: #0f172a;
-  --text-muted: #64748b;
-  --border-color: #dfeaf7;
-  --accent: #66E3DA;
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* BASE LAYOUT */
+ion-content.sportra-main-viewport {
+  --background: #030712;
+  font-family: 'Inter', -apple-system, sans-serif;
+  color: #f3f4f6;
 }
 
-.page-content {
-  --background: var(--bg-page);
-  font-family: "Avenir Next", "Segoe UI", sans-serif;
+/* NAVBAR NEON GLASS */
+.navbar-container {
+  position: fixed;
+  top: 1.25rem;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  padding: 0 1.5rem;
 }
 
-.container {
-  max-width: 1060px;
+.navbar-bar {
+  max-width: 1280px;
   margin: 0 auto;
+  background: rgba(11, 15, 25, 0.75);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 99px;
+  padding: 0.5rem 0.6rem 0.5rem 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 1px rgba(132, 204, 22, 0.2);
 }
 
-.padding-responsive {
-  padding: 1.75rem 1.25rem 3.5rem;
+.brand-box {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+  user-select: none;
 }
 
-/* Header Navbar */
-.navbar-header {
-  background: #ffffff;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.custom-toolbar {
-  --background: #ffffff;
-  --border-width: 0;
-}
-
-.nav-title {
-  font-weight: 700;
-  font-size: 1.05rem;
-  color: var(--text-main);
-}
-
-.btn-icon-wa {
-  background: #25d366;
-  color: #ffffff;
-  border: none;
-  width: 36px;
-  height: 36px;
+.brand-badge {
+  width: 38px;
+  height: 38px;
+  background: rgba(132, 204, 22, 0.15);
+  border: 1px solid rgba(132, 204, 22, 0.4);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.25rem;
-  cursor: pointer;
-  margin-right: 0.5rem;
+  box-shadow: 0 0 15px rgba(132, 204, 22, 0.2);
 }
 
-/* Hero Visual */
+.brand-icon {
+  font-size: 1.25rem;
+  color: #84cc16;
+}
+
+.brand-name {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 800;
+  font-size: 1.35rem;
+  color: #ffffff;
+  letter-spacing: -0.04em;
+}
+
+.neon-dot {
+  color: #84cc16;
+  text-shadow: 0 0 8px rgba(132, 204, 22, 0.8);
+}
+
+.btn-portal-glow {
+  background: #ffffff;
+  color: #030712;
+  border: none;
+  padding: 0.5rem 1.1rem;
+  border-radius: 99px;
+  font-weight: 800;
+  font-size: 0.825rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-portal-glow:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 255, 255, 0.25);
+}
+
+/* BACKGROUND GLOW EFFECTS */
+.page-background-glow {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(90px);
+}
+
+.glow-float-1 {
+  top: 5%;
+  left: 10%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(132, 204, 22, 0.12) 0%, rgba(3, 7, 18, 0) 70%);
+}
+
+.glow-float-2 {
+  bottom: 10%;
+  right: 10%;
+  width: 450px;
+  height: 450px;
+  background: radial-gradient(circle, rgba(163, 230, 53, 0.08) 0%, rgba(3, 7, 18, 0) 70%);
+}
+
+.bg-grid {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+  mask-image: radial-gradient(circle at center, black 40%, transparent 80%);
+}
+
+/* WRAPPER PRINCIPAL */
+.detail-wrapper {
+  position: relative;
+  z-index: 2;
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 7rem 1.5rem 5rem;
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10rem 0;
+  gap: 1.25rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.lime-spinner {
+  color: #84cc16;
+  width: 46px;
+  height: 46px;
+}
+
+/* HERO VISUAL */
 .complejo-hero {
   position: relative;
-  height: 270px;
+  height: 320px;
   width: 100%;
-  background: #000;
+  border-radius: 28px;
   overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
 }
 
 .hero-image {
@@ -602,53 +791,65 @@ onUnmounted(() => {
 .hero-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(15, 23, 42, 0.75) 0%, transparent 60%);
+  background: linear-gradient(to top, rgba(3, 7, 18, 0.95) 0%, rgba(3, 7, 18, 0.2) 60%, transparent 100%);
 }
 
 .hero-badge {
   position: absolute;
-  bottom: 1rem;
-  left: 1rem;
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(8px);
-  color: #ffffff;
-  padding: 0.35rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
+  bottom: 1.25rem;
+  left: 1.25rem;
+  background: rgba(11, 15, 25, 0.75);
+  backdrop-filter: blur(12px);
+  color: #84cc16;
+  padding: 0.4rem 0.9rem;
+  border-radius: 99px;
+  font-size: 0.825rem;
+  font-weight: 700;
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  gap: 0.4rem;
+  border: 1px solid rgba(132, 204, 22, 0.3);
 }
 
-/* Card Principal de Información */
+/* CARDS GLASS COMUNES */
+.glass-card {
+  background: rgba(11, 15, 25, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 1.75rem;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+}
+
+.main-content-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+/* CARD INFO HEAD */
 .info-header-card {
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 1.25rem;
-  margin-top: -2.25rem;
+  margin-top: -3.5rem;
   position: relative;
   z-index: 10;
-  border: 1px solid var(--border-color);
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
 }
 
 .title-row {
   display: flex;
   align-items: center;
-  gap: 0.9rem;
+  gap: 1.25rem;
 }
 
 .logo-wrapper {
-  width: 76px;
-  height: 76px;
-  min-width: 76px;
+  width: 82px;
+  height: 82px;
+  min-width: 82px;
   border-radius: 22px;
-  padding: 4px;
-  background: linear-gradient(135deg, rgba(0, 102, 255, 0.12), rgba(16, 185, 129, 0.12));
-  border: 2px solid rgba(0, 102, 255, 0.15);
-  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+  padding: 3px;
+  background: rgba(132, 204, 22, 0.2);
+  border: 1px solid rgba(132, 204, 22, 0.4);
+  box-shadow: 0 0 20px rgba(132, 204, 22, 0.15);
 }
 
 .logo-image {
@@ -659,101 +860,119 @@ onUnmounted(() => {
   border-radius: 18px;
 }
 
-.title-copy {
-  flex: 1;
-  min-width: 0;
+.eyebrow {
+  display: inline-block;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 800;
+  color: #84cc16;
+}
+
+.complejo-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0.1rem 0 0.35rem 0;
+  letter-spacing: -0.03em;
+}
+
+.complejo-address {
+  font-size: 0.875rem;
+  color: #94a3b8;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.complejo-address ion-icon {
+  color: #84cc16;
 }
 
 .metrics-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.75rem;
-  margin: 1rem 0 1.1rem;
+  gap: 1rem;
+  margin: 1.5rem 0;
 }
 
 .metric-card {
-  background: linear-gradient(180deg, #f8fbff 0%, #eef6ff 100%);
-  border: 1px solid rgba(0, 102, 255, 0.12);
-  border-radius: 12px;
-  padding: 0.85rem 0.75rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 0.25rem;
 }
 
 .metric-label {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--text-muted);
-  font-weight: 700;
-}
-
-.metric-card strong {
-  font-size: 0.9rem;
-  color: var(--text-main);
+  color: #64748b;
   font-weight: 800;
 }
 
+.metric-card strong {
+  font-size: 0.95rem;
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.metric-card .highlight-val {
+  color: #84cc16;
+  font-size: 1.1rem;
+}
+
 .description-box {
-  background: #f8fafc;
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 0.9rem 1rem;
-  margin-bottom: 1rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
 }
 
 .description-box h3 {
   margin: 0 0 0.4rem;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: #84cc16;
   letter-spacing: 0.08em;
+  font-weight: 800;
 }
 
 .description-box p {
   margin: 0;
-  color: var(--text-main);
+  color: #cbd5e1;
   line-height: 1.6;
   font-size: 0.9rem;
 }
 
-.complejo-title {
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: var(--text-main);
-  margin: 0 0 0.35rem 0;
-  letter-spacing: -0.02em;
-}
-
-.complejo-address {
-  font-size: 0.875rem;
-  color: var(--text-muted);
-  margin: 0 0 1.25rem 0;
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.complejo-address ion-icon {
-  color: var(--primary);
-}
-
-/* Botón WhatsApp */
+/* BOTÓN WHATSAPP */
 .btn-whatsapp-full {
   width: 100%;
   background: #25d366;
-  color: #ffffff;
+  color: #030712;
   border: none;
-  border-radius: 12px;
-  padding: 0.75rem 1rem;
+  border-radius: 16px;
+  padding: 0.85rem 1.25rem;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.85rem;
   cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 10px 30px rgba(37, 211, 102, 0.25);
 }
 
-.wa-icon { font-size: 1.75rem; }
+.btn-whatsapp-full:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 35px rgba(37, 211, 102, 0.4);
+}
+
+.wa-icon { font-size: 1.85rem; }
 
 .wa-btn-text {
   display: flex;
@@ -762,156 +981,180 @@ onUnmounted(() => {
   flex: 1;
 }
 
-.wa-btn-text span { font-weight: 700; font-size: 0.95rem; }
-.wa-btn-text small { font-size: 0.75rem; opacity: 0.9; }
+.wa-btn-text span { font-weight: 800; font-size: 0.95rem; }
+.wa-btn-text small { font-size: 0.75rem; opacity: 0.85; font-weight: 600; }
+.open-icon { font-size: 1.2rem; }
 
-/* Componente de Selección de Fechas */
+/* SECCIÓN DISPONIBILIDAD */
 .disponibilidad-section {
-  margin-top: 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
 }
 
 .section-title-wrapper h2 {
-  font-size: 1.55rem;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.6rem;
   font-weight: 800;
-  color: var(--text-main);
-  margin: 0 0 0.2rem 0;
+  color: #ffffff;
+  margin: 0.1rem 0 0.25rem 0;
 }
 
 .section-sub {
-  font-size: 0.825rem;
-  color: var(--text-muted);
-  margin: 0 0 1rem 0;
+  font-size: 0.85rem;
+  color: #94a3b8;
+  margin: 0;
 }
 
 .date-picker-container {
-  background: #ffffff;
-  border: 1px solid var(--border-color);
-  border-radius: 14px;
-  padding: 1rem;
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.04);
-  margin-bottom: 1rem;
+  padding: 1.25rem;
 }
 
 .date-header-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.85rem;
-  padding-bottom: 0.6rem;
-  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 1rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .selected-date-label {
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: var(--text-main);
-  text-transform: capitalize;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #ffffff;
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
 }
 
 .selected-date-label ion-icon {
-  color: var(--primary);
+  color: #84cc16;
 }
 
 .btn-picker-trigger {
-  background: #f0f7ff;
-  border: 1px solid #c7d2fe;
-  color: var(--primary);
-  padding: 0.35rem 0.75rem;
-  border-radius: 8px;
+  background: rgba(132, 204, 22, 0.12);
+  border: 1px solid rgba(132, 204, 22, 0.3);
+  color: #84cc16;
+  padding: 0.45rem 0.85rem;
+  border-radius: 99px;
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: 800;
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.4rem;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .btn-picker-trigger:hover {
-  background: var(--primary);
-  color: #ffffff;
+  background: #84cc16;
+  color: #030712;
 }
 
-/* Carrusel Horizontal de Días */
+/* CARRUSEL DIAS DINÁMICO */
 .date-chips-scroll {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.75rem;
   overflow-x: auto;
-  padding: 0.2rem 0.1rem 0.35rem;
+  padding: 0.25rem 0.25rem 0.5rem 0.25rem;
   scrollbar-width: thin;
+  scrollbar-color: rgba(132, 204, 22, 0.3) transparent;
+  -webkit-overflow-scrolling: touch;
+}
+
+.date-chips-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.date-chips-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 10px;
+}
+
+.date-chips-scroll::-webkit-scrollbar-thumb {
+  background: rgba(132, 204, 22, 0.3);
+  border-radius: 10px;
 }
 
 .date-chip-btn {
-  flex: 0 0 auto;
-  width: 88px;
+  flex: 0 0 86px;
   height: 76px;
-  background: #f8fafc;
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
+  background: #030712;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .chip-day-name {
   font-size: 0.65rem;
-  font-weight: 700;
-  color: var(--text-muted);
+  font-weight: 800;
+  color: #64748b;
 }
 
 .chip-day-number {
-  font-size: 1.15rem;
+  font-size: 1.25rem;
   font-weight: 800;
-  color: var(--text-main);
+  color: #ffffff;
   line-height: 1.1;
 }
 
 .chip-month {
   font-size: 0.6rem;
-  color: var(--text-muted);
+  color: #64748b;
+  font-weight: 700;
+}
+
+.date-chip-btn:hover {
+  border-color: rgba(132, 204, 22, 0.4);
 }
 
 .date-chip-btn.is-selected {
-  background: var(--primary);
-  border-color: var(--primary);
-  box-shadow: 0 8px 18px rgba(33, 67, 154, 0.25);
+  background: #84cc16;
+  border-color: #84cc16;
+  box-shadow: 0 0 20px rgba(132, 204, 22, 0.4);
 }
 
 .date-chip-btn.is-selected .chip-day-name,
 .date-chip-btn.is-selected .chip-day-number,
 .date-chip-btn.is-selected .chip-month {
-  color: #ffffff;
+  color: #030712;
 }
 
-/* Leyenda */
+/* LEYENDA */
 .legend-bar {
   display: flex;
-  gap: 1rem;
+  gap: 1.25rem;
   flex-wrap: wrap;
-  margin-bottom: 1.25rem;
-  background: #ffffff;
-  padding: 0.6rem 0.85rem;
-  border-radius: 10px;
-  border: 1px solid var(--border-color);
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  font-weight: 600;
+  padding: 0.85rem 1.25rem;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  font-weight: 700;
 }
 
-.legend-item { display: flex; align-items: center; gap: 0.35rem; }
+.legend-item { display: flex; align-items: center; gap: 0.4rem; }
 .dot { width: 8px; height: 8px; border-radius: 50%; }
-.dot.disponible { background-color: #10b981; }
+.dot.disponible { background-color: #84cc16; box-shadow: 0 0 8px #84cc16; }
 .dot.ocupada { background-color: #ef4444; }
 .dot.pendiente { background-color: #f59e0b; }
 .dot.bloqueada { background-color: #64748b; }
 
-/* Tarjetas de Canchas */
+.dispo-loading-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 3rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+/* LISTA DE CANCHAS */
 .canchas-list {
   display: flex;
   flex-direction: column;
@@ -919,225 +1162,360 @@ onUnmounted(() => {
 }
 
 .cancha-card {
-  background: #ffffff;
-  border-radius: 14px;
-  border: 1px solid var(--border-color);
-  padding: 1.25rem;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+  padding: 1.5rem;
 }
 
 .cancha-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px dashed var(--border-color);
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
 }
 
-.cancha-info { display: flex; align-items: center; gap: 0.5rem; }
-.cancha-icon { color: var(--primary); font-size: 1.2rem; }
+.cancha-info { display: flex; align-items: center; gap: 0.75rem; }
+
+.cancha-icon-box {
+  width: 40px;
+  height: 40px;
+  background: rgba(132, 204, 22, 0.12);
+  border: 1px solid rgba(132, 204, 22, 0.3);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #84cc16;
+  font-size: 1.15rem;
+}
 
 .cancha-info h3 {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--text-main);
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #ffffff;
   margin: 0;
 }
 
-.cancha-price-badge strong { color: var(--primary); font-size: 1.1rem; font-weight: 800; }
-.cancha-price-badge small { color: var(--text-muted); font-size: 0.75rem; }
+.deporte-subtitle {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 600;
+}
 
-/* Horarios Grid */
+.cancha-price-badge strong { color: #84cc16; font-size: 1.2rem; font-weight: 800; }
+.cancha-price-badge small { color: #64748b; font-size: 0.75rem; }
+
+/* HORARIOS GRID */
 .horarios-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
-  gap: 0.6rem;
+  grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
+  gap: 0.75rem;
 }
 
 .slot-btn {
   width: 100%;
-  min-height: 68px;
+  min-height: 70px;
   font: inherit;
-  border-radius: 10px;
-  padding: 0.5rem 0.25rem;
+  border-radius: 14px;
+  padding: 0.6rem 0.3rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   border: 1px solid transparent;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.time-text { font-size: 0.85rem; font-weight: 700; }
-.status-indicator { font-size: 0.65rem; font-weight: 600; text-transform: uppercase; margin-top: 2px; }
+.time-text { font-size: 0.9rem; font-weight: 800; }
+.status-indicator { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; margin-top: 3px; letter-spacing: 0.04em; }
 
-.slot-disponible { background: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
+.slot-disponible { 
+  background: rgba(132, 204, 22, 0.08); 
+  border-color: rgba(132, 204, 22, 0.3); 
+  color: #a3e635; 
+}
+
 .slot-disponible.is-interactive:hover {
-  background: #10b981;
-  color: #ffffff;
+  background: #84cc16;
+  color: #030712;
   cursor: pointer;
   transform: translateY(-2px);
-  box-shadow: 0 8px 16px rgba(16, 185, 129, 0.22);
+  box-shadow: 0 0 20px rgba(132, 204, 22, 0.4);
 }
 
-.slot-ocupada { background: #fef2f2; border-color: #fecaca; color: #991b1b; opacity: 0.7; text-decoration: line-through; }
-.slot-pendiente { background: #fffbeb; border-color: #fde68a; color: #92400e; }
-.slot-bloqueada { background: #f1f5f9; border-color: #e2e8f0; color: #94a3b8; opacity: 0.6; }
+.slot-ocupada { background: rgba(239, 68, 68, 0.08); border-color: rgba(239, 68, 68, 0.2); color: #f87171; opacity: 0.6; text-decoration: line-through; }
+.slot-pendiente { background: rgba(245, 158, 11, 0.08); border-color: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+.slot-bloqueada { background: rgba(255, 255, 255, 0.03); border-color: rgba(255, 255, 255, 0.08); color: #64748b; opacity: 0.5; }
 
-/* Empty States & Skeleton Helpers */
+/* EMPTY STATES */
 .empty-dispo-box, .empty-state-full {
   text-align: center;
-  background: #ffffff;
-  padding: 2.5rem 1rem;
-  border-radius: 14px;
-  border: 1px dashed var(--border-color);
-  color: var(--text-muted);
+  padding: 3.5rem 1.5rem;
 }
 
-.empty-icon, .error-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
-.skeleton-hero { height: 200px; background: #e2e8f0; border-radius: 16px; margin-bottom: 1rem; }
-.skeleton-line { background: #e2e8f0; border-radius: 4px; margin-bottom: 0.5rem; }
-.skeleton-line.title { width: 60%; height: 24px; }
-.skeleton-line.subtitle { width: 40%; height: 16px; }
-.skeleton-card { height: 120px; background: #e2e8f0; border-radius: 14px; }
-.skeleton-chip { height: 48px; background: #e2e8f0; border-radius: 10px; }
-
-.grid-skeleton {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.5rem;
-  margin-top: 0.75rem;
-}
-
-.cancha-card-skeleton {
-  background: #ffffff;
-  padding: 1rem;
-  border-radius: 14px;
-  margin-bottom: 1rem;
-}
-
-.skeleton-line.c-title { width: 35%; height: 18px; }
-.mt-3 { margin-top: 0.75rem; }
-.mt-4 { margin-top: 1rem; }
-
-/* Galería y solicitud */
-.gallery-section {
-  margin-top: 3.5rem;
-}
-
-.section-heading-row {
+.empty-icon-glow {
+  width: 60px;
+  height: 60px;
+  background: rgba(132, 204, 22, 0.12);
+  border-radius: 50%;
   display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.25rem;
+  color: #84cc16;
+  font-size: 1.85rem;
 }
 
-.eyebrow {
-  display: block;
-  margin-bottom: 0.35rem;
-  color: var(--primary);
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+.empty-dispo-box h4, .empty-state-full h3 {
+  color: #ffffff;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.25rem;
+  margin: 0 0 0.5rem;
 }
 
-.section-heading-row h2 {
-  margin: 0;
-  color: var(--text-main);
-  font-size: 1.55rem;
+.empty-dispo-box p, .empty-state-full p {
+  color: #94a3b8;
+  font-size: 0.875rem;
+  margin: 0 0 1.5rem;
 }
 
-.section-heading-row p {
-  margin: 0.35rem 0 0;
-  color: var(--text-muted);
-  font-size: 0.9rem;
-}
-
-.section-heading-icon {
-  color: var(--primary);
-  font-size: 1.75rem;
+/* GALERIA */
+.gallery-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
 }
 
 .gallery-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
-.gallery-grid img {
-  width: 100%;
-  aspect-ratio: 1.25 / 1;
-  border-radius: 12px;
-  object-fit: cover;
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
-}
-
-.reservation-modal {
-  max-width: 520px;
-  margin: 0 auto;
+.gallery-item-glass {
+  border-radius: 20px;
   overflow: hidden;
-  background: #ffffff;
-  color: var(--text-main);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  aspect-ratio: 1.25 / 1;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.gallery-item-glass img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.gallery-item-glass:hover img {
+  transform: scale(1.08);
+}
+
+/* MODAL DE RESERVA NEÓN GLASS */
+.glass-modal-container {
+  --background: transparent;
+  --backdrop-opacity: 0.8;
+}
+
+.reservation-modal-glass {
+  max-width: 520px;
+  margin: auto;
+  background: rgba(11, 15, 25, 0.95);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(132, 204, 22, 0.3);
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), 0 0 30px rgba(132, 204, 22, 0.15);
+  color: #ffffff;
 }
 
 .reservation-modal-header {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
-  padding: 1.5rem 1.5rem 1.35rem;
-  background: #188443;
-  color: #ffffff;
+  padding: 1.75rem 1.75rem 1.25rem;
+  background: rgba(132, 204, 22, 0.08);
+  border-bottom: 1px solid rgba(132, 204, 22, 0.2);
 }
 
-.reservation-modal-header .eyebrow { color: #b8f4cc; }
-.reservation-modal-header h2 { margin: 0; font-size: 1.35rem; }
-.reservation-modal-header p { margin: 0.35rem 0 0; color: #d5f8df; font-size: 0.9rem; }
+.reservation-modal-header h2 { 
+  margin: 0.2rem 0 0; 
+  font-family: 'Space Grotesk', sans-serif; 
+  font-size: 1.45rem; 
+  color: #ffffff; 
+}
 
-.modal-close {
+.reservation-modal-header p { 
+  margin: 0.35rem 0 0; 
+  color: #a3e635; 
+  font-size: 0.875rem; 
+  font-weight: 600; 
+}
+
+.modal-close-btn {
   align-self: flex-start;
-  border: 0;
-  background: transparent;
-  color: #d5f8df;
+  border: none;
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  font-size: 1.55rem;
+  font-size: 1.4rem;
+  transition: background 0.2s ease;
 }
 
-.reservation-form { padding: 1.5rem; }
-.reservation-form label { display: block; margin: 0.95rem 0 0.45rem; color: #334155; font-weight: 700; }
-.reservation-form label:first-child { margin-top: 0; }
-.reservation-form label span { color: #dc2626; }
-.reservation-form label small { color: #94a3b8; font-weight: 500; }
-.reservation-form ion-input, .reservation-form ion-textarea { --border-radius: 9px; --border-color: #cbd5e1; --highlight-color: var(--primary); }
+.modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.reservation-form { 
+  padding: 1.75rem; 
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.field-block label { 
+  font-size: 0.68rem; 
+  font-weight: 800; 
+  color: #84cc16; 
+  display: block; 
+  margin-bottom: 0.4rem; 
+  text-transform: uppercase; 
+  letter-spacing: 0.04em; 
+}
+
+.field-block label span { color: #ef4444; }
+.field-block label small { color: #64748b; text-transform: none; }
+
+.input-glow-box input,
+.input-glow-box textarea {
+  width: 100%;
+  background: #030712;
+  border: 1px solid rgba(132, 204, 22, 0.25);
+  border-radius: 14px;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: #ffffff;
+  outline: none;
+  font-family: inherit;
+  transition: all 0.25s ease;
+}
+
+.input-glow-box input:focus,
+.input-glow-box textarea:focus {
+  border-color: #84cc16;
+  box-shadow: 0 0 15px rgba(132, 204, 22, 0.25);
+}
 
 .reservation-note {
   display: flex;
   gap: 0.6rem;
-  margin-top: 1.25rem;
-  padding: 0.8rem;
-  border: 1px solid #fde68a;
-  border-radius: 9px;
-  background: #fffbeb;
-  color: #92400e;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(132, 204, 22, 0.3);
+  border-radius: 14px;
+  background: rgba(132, 204, 22, 0.05);
+  color: #cbd5e1;
   font-size: 0.8rem;
+  align-items: center;
 }
 
-.reservation-note ion-icon { flex: 0 0 auto; font-size: 1.1rem; }
+.reservation-note ion-icon { flex: 0 0 auto; font-size: 1.2rem; color: #84cc16; }
 .reservation-note p { margin: 0; line-height: 1.45; }
-.modal-actions { display: grid; grid-template-columns: 1fr 1.25fr; gap: 0.75rem; margin-top: 1.4rem; }
-.btn-secondary, .btn-primary { min-height: 44px; border-radius: 9px; border: 1px solid #cbd5e1; font-weight: 800; cursor: pointer; }
-.btn-secondary { background: #ffffff; color: #334155; }
-.btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; border-color: #16a34a; background: #16a34a; color: #ffffff; }
-.btn-primary:disabled { cursor: not-allowed; opacity: 0.5; }
 
-@media (max-width: 640px) {
-  .complejo-hero { height: 205px; }
+.modal-actions { 
+  display: grid; 
+  grid-template-columns: 1fr 1.35fr; 
+  gap: 0.85rem; 
+  margin-top: 0.5rem; 
+}
+
+.btn-modal-cancel {
+  background: transparent;
+  color: #94a3b8;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.8rem 1rem;
+  border-radius: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.btn-modal-cancel:hover {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.btn-modal-submit {
+  background: #25d366;
+  color: #030712;
+  border: none;
+  padding: 0.8rem 1rem;
+  border-radius: 14px;
+  font-weight: 800;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(37, 211, 102, 0.3);
+}
+
+.btn-modal-submit:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* FIX ION-DATETIME DARK NEON */
+.dark-datetime-modal {
+  --width: auto;
+  --height: auto;
+  --background: transparent;
+  --backdrop-opacity: 0.75;
+}
+
+.date-modal-wrapper {
+  margin: auto;
+  border-radius: 24px;
+  overflow: hidden;
+  border: 1px solid rgba(132, 204, 22, 0.3);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.9), 0 0 25px rgba(132, 204, 22, 0.2);
+  background: #0b0f19;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.custom-neon-datetime {
+  --background: #0b0f19;
+  --color: #ffffff;
+  --color-accent: #84cc16;
+  --color-accent-text: #030712;
+  border-radius: 24px;
+}
+
+.custom-neon-datetime::part(button) {
+  color: #84cc16;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .complejo-hero { height: 240px; }
   .metrics-grid { grid-template-columns: 1fr; }
   .gallery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .section-heading-row { align-items: flex-start; }
-  .section-heading-icon { display: none; }
-  .reservation-modal-header, .reservation-form { padding-left: 1.15rem; padding-right: 1.15rem; }
+  .title-row { flex-direction: column; align-items: flex-start; }
+}
+
+@media (max-width: 480px) {
+  .detail-wrapper { padding: 8rem 1rem 3rem; }
+  .modal-actions { grid-template-columns: 1fr; }
 }
 </style>
