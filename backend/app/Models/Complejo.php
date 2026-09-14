@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+
 class Complejo extends Model
 {
     protected $fillable = [
@@ -44,4 +45,8 @@ class Complejo extends Model
     {
         return 'slug'; // permite /api/complejos/{slug} en vez de {id}
     }
+    public function pagosSuscripcion(): \Illuminate\Database\Eloquent\Relations\HasMany
+{
+    return $this->hasMany(PagoSuscripcion::class);
+}
 }

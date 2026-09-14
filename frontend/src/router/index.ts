@@ -6,8 +6,15 @@ import LoginPage from '../views/LoginPage.vue';
 import PanelPage from '../views/PanelPage.vue';
 import CanchasPage from '../views/CanchasPage.vue';
 import HorariosPage from '../views/HorariosPage.vue';
+import AdminPage from '../views/AdminPage.vue';
 
 const routes: Array<RouteRecordRaw> = [
+  {
+  path: '/admin',
+  name: 'Admin',
+  component: AdminPage,
+  meta: { requiresAuth: true },
+},
   {
     path: '/',
     redirect: '/home',

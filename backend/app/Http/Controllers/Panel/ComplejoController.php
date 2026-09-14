@@ -88,4 +88,17 @@ class ComplejoController extends Controller
             ],
         ]);
     }
+    public function store(\App\Http\Requests\Admin\CrearComplejoRequest $request): JsonResponse
+{
+    abort_unless($request->user()->is_platform_admin, 403);
+
+    $complejo = Complejo::create([
+        ...$request->validated(),
+        'slug' => \Illuminate\Support\Str::slug($request->string('nombre')->toString()) . '-' . uniqid(),
+        'activo' => true,
+        'suscripcion_activa' => false,
+    ]);
+
+    return response()->json(['data' => $complejo], 201);
+}
 }

@@ -15,14 +15,18 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->api(prepend: [
-            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
-        ]);
+    $middleware->api(prepend: [
+        \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+    ]);
 
-        $middleware->throttleApi();
+    $middleware->throttleApi();
 
-        $middleware->redirectGuestsTo(fn (Request $request) => null);
-    })
+    $middleware->redirectGuestsTo(fn (Request $request) => null);
+
+    $middleware->alias([
+        'platform.admin' => \App\Http\Middleware\EnsurePlatformAdmin::class,
+    ]);
+})
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),

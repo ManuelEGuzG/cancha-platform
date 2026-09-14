@@ -13,6 +13,10 @@ class CanchaPolicy
             return true;
         }
 
+        if (!$cancha->complejo->activo) {
+            return false;
+        }
+
         return $user->perteneceAComplejo($cancha->complejo_id);
     }
 }

@@ -11,6 +11,21 @@ use App\Http\Controllers\Public\GeografiaPublicaController;
 use App\Http\Controllers\Panel\EstadisticaController;
 use App\Http\Controllers\Panel\AuditoriaController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\FacturacionController;
+use App\Http\Controllers\Admin\UsuarioAdminController;
+
+Route::prefix('panel/admin')->middleware(['auth:sanctum', 'platform.admin'])->group(function () {
+    Route::get('/usuarios', [UsuarioAdminController::class, 'index']);
+    Route::post('/usuarios', [UsuarioAdminController::class, 'store']);
+    Route::patch('/usuarios/{user}/estado', [UsuarioAdminController::class, 'toggleEstado']);
+    Route::get('/usuarios/{user}/actividad', [UsuarioAdminController::class, 'actividad']);
+
+    Route::get('/facturacion/resumen', [FacturacionController::class, 'resumen']);
+    Route::get('/facturacion/movimientos', [FacturacionController::class, 'movimientos']);
+    Route::post('/complejos/{complejo}/pagos', [FacturacionController::class, 'registrarPago']);
+    Route::get('/complejos/{complejo}/pagos', [FacturacionController::class, 'historialPagos']);
+    Route::patch('/complejos/{complejo}/estado', [FacturacionController::class, 'toggleEstadoComplejo']);
+});
 
 Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login'])
@@ -59,4 +74,6 @@ Route::prefix('panel')->middleware('auth:sanctum')->group(function () {
     Route::delete('/bloqueos/{bloqueo}', [BloqueoController::class, 'destroy']);
 
     Route::get('/complejos/{complejo:id}/auditoria', [AuditoriaController::class, 'index']);
+
+    Route::post('/complejos', [ComplejoController::class, 'store'])->middleware('platform.admin');
 });

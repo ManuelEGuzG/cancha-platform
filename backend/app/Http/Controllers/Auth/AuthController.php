@@ -16,29 +16,34 @@ use Spatie\Activitylog\Facades\Activity;
 class AuthController extends Controller
 {
     public function login(LoginRequest $request): JsonResponse
-    {
-        $credentials = $request->validated();
+{
+    $credentials = $request->validated();
 
-        if (!Auth::attempt($credentials)) {
-            throw ValidationException::withMessages([
-                'email' => ['Las credenciales proporcionadas son incorrectas.'],
-            ]);
-        }
-
-        /** @var User $user */
-        $user = Auth::user();
-
-        $token = $user->createToken('panel-token')->plainTextToken;
-
-        activity('auth')
-            ->causedBy($user)
-            ->log('login');
-
-        return response()->json([
-            'user' => $this->formatearUsuario($user),
-            'token' => $token,
+    if (!Auth::attempt($credentials)) {
+        throw ValidationException::withMessages([
+            'email' => ['Las credenciales proporcionadas son incorrectas.'],
         ]);
     }
+
+    /** @var User $user */
+    $user = Auth::user();
+
+    if (!$user->activo) {
+        Auth::logout();
+        throw ValidationException::withMessages([
+            'email' => ['Esta cuenta ha sido bloqueada. Contacta al administrador.'],
+        ]);
+    }
+
+    $token = $user->createToken('panel-token')->plainTextToken;
+
+    activity('auth')->causedBy($user)->log('login');
+
+    return response()->json([
+        'user' => $this->formatearUsuario($user),
+        'token' => $token,
+    ]);
+}
 
     public function logout(Request $request): JsonResponse
     {

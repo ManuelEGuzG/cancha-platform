@@ -13,6 +13,10 @@ class ComplejoPolicy
             return true;
         }
 
+        if (!$complejo->activo) {
+            return false; // complejo bloqueado por el admin
+        }
+
         return $user->perteneceAComplejo($complejo->id);
     }
 }

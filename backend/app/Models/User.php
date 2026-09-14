@@ -12,13 +12,14 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
-    protected $fillable = [
-        'name',
-        'email',
-        'password',
-        'telefono',
-        'is_platform_admin',
-    ];
+   protected $fillable = [
+    'name',
+    'email',
+    'password',
+    'telefono',
+    'is_platform_admin',
+    'activo',
+];
 
     protected $hidden = [
         'password',
@@ -26,13 +27,14 @@ class User extends Authenticatable
     ];
 
     protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-            'is_platform_admin' => 'boolean',
-        ];
-    }
+{
+    return [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+        'is_platform_admin' => 'boolean',
+        'activo' => 'boolean',
+    ];
+}
 
     /**
      * Todos los complejos a los que este usuario tiene acceso,

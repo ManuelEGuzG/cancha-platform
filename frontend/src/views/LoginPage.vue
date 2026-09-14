@@ -137,7 +137,7 @@ async function ingresar() {
   error.value = '';
   try {
     await authStore.login(email.value, password.value);
-    router.push('/panel');
+    router.push(authStore.usuario?.is_platform_admin ? '/admin' : '/panel');
   } catch (e) {
     error.value = 'Correo o contraseña incorrectos.';
   } finally {
