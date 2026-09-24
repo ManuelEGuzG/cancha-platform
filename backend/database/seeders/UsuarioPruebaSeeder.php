@@ -11,33 +11,31 @@ class UsuarioPruebaSeeder extends Seeder
 {
     public function run(): void
     {
-        // Administrador General
+        // 1. Administrador General
         User::updateOrCreate(
             ['email' => 'admin@canchaplatform.test'],
             [
                 'name' => 'Admin Plataforma',
-                'password' => 'password',
+                'password' => bcrypt('password'),
                 'is_platform_admin' => true,
             ]
         );
 
-        // Propietario Principal
+        // 2. Propietario Principal asignado a un complejo garantizado
         $propietario = User::updateOrCreate(
             ['email' => 'propietario@soccercenter.test'],
             [
                 'name' => 'Propietario Soccer Center',
-                'password' => 'password',
+                'password' => bcrypt('password'),
                 'telefono' => '88887777',
             ]
         );
 
-        $soccerCenter = Complejo::where('slug', 'soccer-center')->first();
-        $rolPropietario = Rol::where('nombre', Rol::PROPIETARIO)->first();
+        $soccerCenter = Complejo::where('slug', 'soccer-center')->firstOrFail();
+        $rolPropietario = Rol::where('nombre', Rol::PROPIETARIO)->firstOrFail();
 
-        if ($soccerCenter && $rolPropietario) {
-            $propietario->complejos()->syncWithoutDetaching([
-                $soccerCenter->id => ['rol_id' => $rolPropietario->id],
-            ]);
-        }
+        $propietario->complejos()->syncWithoutDetaching([
+            $soccerCenter->id => ['rol_id' => $rolPropietario->id],
+        ]);
     }
 }

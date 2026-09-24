@@ -13,9 +13,8 @@ class DatabaseSeeder extends Seeder
             GeografiaSeeder::class,
             DeporteSeeder::class,
             ComplejoSeeder::class,
-            HorarioRegularSeeder::class,
             UsuarioPruebaSeeder::class,
-            DatosPruebaSeeder::class,
+            ReservaSeeder::class,
         ]);
     }
 }

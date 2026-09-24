@@ -9,7 +9,7 @@ class RolSeeder extends Seeder
 {
     public function run(): void
     {
-        Rol::create(['nombre' => Rol::PROPIETARIO]);
-        Rol::create(['nombre' => Rol::ENCARGADO]);
+        Rol::firstOrCreate(['nombre' => Rol::PROPIETARIO]);
+        Rol::firstOrCreate(['nombre' => Rol::ENCARGADO]);
     }
 }
