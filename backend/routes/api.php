@@ -43,6 +43,12 @@ Route::prefix('auth')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
     });
+
+    Route::prefix('2fa')->middleware(['auth:sanctum', 'account.active', 'platform.admin', 'throttle:5,1'])->group(function () {
+        Route::post('/setup', [AuthController::class, 'iniciarDosFactores']);
+        Route::post('/confirm', [AuthController::class, 'confirmarDosFactores']);
+        Route::post('/disable', [AuthController::class, 'desactivarDosFactores']);
+    });
 });
 
 Route::prefix('complejos')->group(function () {

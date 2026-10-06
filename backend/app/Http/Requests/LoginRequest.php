@@ -16,6 +16,7 @@ class LoginRequest extends FormRequest
         return [
             'email' => ['required', 'email'],
             'password' => ['required', 'string'],
+            'code' => ['nullable', 'string', 'regex:/^[A-Za-z0-9-]{6,64}$/'],
         ];
     }
 }

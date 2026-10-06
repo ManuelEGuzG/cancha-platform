@@ -24,6 +24,8 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
     ];
 
     protected function casts(): array
@@ -33,6 +35,9 @@ class User extends Authenticatable
         'password' => 'hashed',
         'is_platform_admin' => 'boolean',
         'activo' => 'boolean',
+        'two_factor_secret' => 'encrypted',
+        'two_factor_enabled_at' => 'datetime',
+        'two_factor_recovery_codes' => 'encrypted:array',
     ];
 }
 

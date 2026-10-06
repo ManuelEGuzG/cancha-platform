@@ -32,6 +32,7 @@ class Reserva extends Model
 
     protected $casts = [
         'fecha' => 'date',
+        'nombre_cliente' => 'string',
         'cedula_cliente' => 'encrypted',
         'expira_en' => 'datetime',
     ];
@@ -44,7 +45,7 @@ class Reserva extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['nombre_cliente', 'fecha', 'hora_inicio', 'hora_fin', 'estado'])
+            ->logOnly(['fecha', 'hora_inicio', 'hora_fin', 'estado'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges()
             ->useLogName('reserva');

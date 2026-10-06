@@ -76,4 +76,19 @@ class ActiveAccountTest extends TestCase
             ->getJson('/api/panel/reservas')
             ->assertForbidden();
     }
+
+    public function test_api_login_returns_non_cacheable_bearer_without_session_cookie(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->postJson('/api/auth/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $response->assertOk()
+            ->assertHeader('Cache-Control', 'no-store, private')
+            ->assertJsonStructure(['token', 'user']);
+        $this->assertFalse($response->headers->has('Set-Cookie'));
+    }
 }

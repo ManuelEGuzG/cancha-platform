@@ -1,11 +1,12 @@
 import js from '@eslint/js'
 import vue from 'eslint-plugin-vue'
-import { withVueTs, vueTsConfigs } from '@vue/eslint-config-typescript'
+import tseslint from 'typescript-eslint'
+import vueParser from 'vue-eslint-parser'
 import globals from 'globals'
 
 const sourceFiles = ['**/*.{js,cjs,mjs,ts,tsx,vue}']
 
-export default withVueTs(
+export default tseslint.config(
   {
     ignores: [
       '**/.DS_Store',
@@ -39,7 +40,18 @@ export default withVueTs(
   },
   js.configs.recommended,
   vue.configs['flat/essential'],
-  vueTsConfigs.recommended,
+  ...tseslint.configs.recommended,
+  {
+    files: ['**/*.vue'],
+    languageOptions: {
+      parser: vueParser,
+      parserOptions: {
+        parser: tseslint.parser,
+        extraFileExtensions: ['.vue'],
+        sourceType: 'module',
+      },
+    },
+  },
   {
     files: sourceFiles,
     rules: {
