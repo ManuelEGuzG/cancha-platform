@@ -15,8 +15,11 @@ class ComplejoResource extends JsonResource
             'slug' => $this->slug,
             'logo_url' => $this->logo_url,
             'direccion_texto' => $this->direccion_texto,
+            'latitud' => $this->latitud,
+            'longitud' => $this->longitud,
             'distrito' => $this->distrito->nombre,
             'canton' => $this->distrito->canton->nombre,
+            'provincia' => $this->distrito->canton->provincia->nombre,
             'total_canchas' => $this->canchas_count ?? $this->canchas->count(),
             'precio_desde' => $this->canchas->min('precio_hora'),
         ];

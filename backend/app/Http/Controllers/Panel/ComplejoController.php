@@ -65,7 +65,7 @@ class ComplejoController extends Controller
                 ->whereDate('fecha', $fecha->toDateString())
                 ->whereIn('estado', ['pendiente', 'confirmada'])
                 ->orderBy('hora_inicio')
-                ->get(['id', 'nombre_cliente', 'telefono_cliente', 'hora_inicio', 'hora_fin', 'estado', 'origen']);
+                ->get(['id', 'nombre_cliente', 'telefono_cliente', 'hora_inicio', 'hora_fin', 'estado', 'origen', 'solicitud_id', 'expira_en']);
 
             $bloqueos = $cancha->bloqueos()
                 ->whereDate('fecha', $fecha->toDateString())

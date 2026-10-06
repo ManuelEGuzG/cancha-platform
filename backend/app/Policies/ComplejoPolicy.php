@@ -10,7 +10,7 @@ class ComplejoPolicy
     public function gestionar(User $user, Complejo $complejo): bool
     {
         if ($user->is_platform_admin) {
-            return true;
+            return false;
         }
 
         if (!$complejo->activo) {

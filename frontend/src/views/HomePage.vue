@@ -116,6 +116,12 @@
                     </ion-select>
                   </div>
                 </div>
+
+                <button class="btn-clear nearby-search-button" @click="buscarCercanas">
+                  <ion-icon :icon="locationOutline"></ion-icon>
+                  <span>Buscar cerca de mí</span>
+                </button>
+                <p v-if="errorUbicacion" class="location-error" role="alert">{{ errorUbicacion }}</p>
               </div>
 
               <div class="modal-footer">
@@ -248,6 +254,7 @@
               <option value="nombre">Ordenar por: Nombre (A-Z)</option>
               <option value="precio-asc">Precio: Menor a Mayor</option>
               <option value="precio-desc">Precio: Mayor a Menor</option>
+              <option v-if="ubicacionUsuario" value="cercania">Más cercanas</option>
             </select>
           </div>
         </div>
@@ -391,14 +398,17 @@ const provinciaId = ref<number | null>(null);
 const cantonId = ref<number | null>(null);
 const distritoId = ref<number | null>(null);
 const busquedaTexto = ref('');
-const orden = ref<'nombre' | 'precio-asc' | 'precio-desc'>('nombre');
+const orden = ref<'nombre' | 'precio-asc' | 'precio-desc' | 'cercania'>('nombre');
+const ubicacionUsuario = ref<{ latitud: number; longitud: number } | null>(null);
+const errorUbicacion = ref('');
 const searchOpen = ref(false);
 
 const complejos = ref<Complejo[]>([]);
 const cargando = ref(true);
 
 const filtrosActivos = computed(() => {
-  return provinciaId.value !== null || cantonId.value !== null || distritoId.value !== null || busquedaTexto.value !== '';
+  return provinciaId.value !== null || cantonId.value !== null || distritoId.value !== null
+    || busquedaTexto.value !== '' || ubicacionUsuario.value !== null;
 });
 
 const ubicacionTextoSeleccionada = computed(() => {
@@ -436,8 +446,40 @@ const complejosOrdenados = computed(() => {
   if (orden.value === 'precio-desc') {
     return lista.sort((a, b) => b.precio_desde - a.precio_desde);
   }
+  if (orden.value === 'cercania' && ubicacionUsuario.value) {
+    return lista.sort((a, b) => distanciaKm(a, ubicacionUsuario.value!) - distanciaKm(b, ubicacionUsuario.value!));
+  }
   return lista.sort((a, b) => a.nombre.localeCompare(b.nombre));
 });
+
+function distanciaKm(complejo: Complejo, origen: { latitud: number; longitud: number }): number {
+  if (complejo.latitud === null || complejo.longitud === null) return Number.POSITIVE_INFINITY;
+  const radianes = Math.PI / 180;
+  const deltaLatitud = (Number(complejo.latitud) - origen.latitud) * radianes;
+  const deltaLongitud = (Number(complejo.longitud) - origen.longitud) * radianes;
+  const a = Math.sin(deltaLatitud / 2) ** 2
+    + Math.cos(origen.latitud * radianes) * Math.cos(Number(complejo.latitud) * radianes)
+    * Math.sin(deltaLongitud / 2) ** 2;
+
+  return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function buscarCercanas() {
+  errorUbicacion.value = '';
+  if (!navigator.geolocation) {
+    errorUbicacion.value = 'Este dispositivo no permite consultar la ubicación.';
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(({ coords }) => {
+    ubicacionUsuario.value = { latitud: coords.latitude, longitud: coords.longitude };
+    orden.value = 'cercania';
+    searchOpen.value = false;
+    scrollToCanchas();
+  }, () => {
+    errorUbicacion.value = 'No se pudo obtener la ubicación. Revisa los permisos del navegador.';
+  }, { enableHighAccuracy: false, maximumAge: 300000, timeout: 10000 });
+}
 
 function scrollToCanchas() {
   if (contentRef.value && seccionCanchasRef.value) {
@@ -513,6 +555,9 @@ async function limpiarFiltros() {
   provinciaId.value = null;
   cantonId.value = null;
   distritoId.value = null;
+  ubicacionUsuario.value = null;
+  errorUbicacion.value = '';
+  orden.value = 'nombre';
   cantones.value = [];
   distritos.value = [];
   await cargarComplejos();

@@ -15,6 +15,10 @@ export default {
     return api.get(`/panel/complejos/${complejoId}/estadisticas`);
   },
 
+  listarReservas(params?: { fecha?: string; page?: number }) {
+    return api.get('/panel/reservas', { params });
+  },
+
   crearReserva(payload: {
     cancha_id: number;
     nombre_cliente: string;
@@ -28,6 +32,10 @@ export default {
 
   cancelarReserva(reservaId: number) {
     return api.delete(`/panel/reservas/${reservaId}`);
+  },
+
+  responderSolicitud(reservaId: number, decision: 'aceptar' | 'rechazar') {
+    return api.post(`/panel/reservas/${reservaId}/${decision}`);
   },
 
   crearBloqueo(payload: {

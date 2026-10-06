@@ -4,8 +4,11 @@ export interface Complejo {
   slug: string;
   logo_url: string | null;
   direccion_texto: string | null;
+  latitud: string | null;
+  longitud: string | null;
   distrito: string;
   canton: string;
+  provincia: string;
   total_canchas: number;
   precio_desde: number;
 }
@@ -24,6 +27,8 @@ export interface ComplejoDetalle {
   descripcion: string | null;
   logo_url: string | null;
   direccion_texto: string | null;
+  latitud: string | null;
+  longitud: string | null;
   telefono: string | null;
   whatsapp_numero: string | null;
   distrito: string;
@@ -35,7 +40,7 @@ export interface ComplejoDetalle {
 export interface BloqueDisponibilidad {
   hora_inicio: string;
   hora_fin: string;
-  estado: 'disponible' | 'ocupada' | 'pendiente' | 'bloqueada';
+  estado: 'disponible' | 'reservado' | 'en_tramite' | 'cerrada' | 'en_mantenimiento';
 }
 
 export interface DisponibilidadCancha {

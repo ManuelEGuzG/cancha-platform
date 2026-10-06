@@ -1,0 +1,388 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+:root {
+  --sporta-ink: #17251e;
+  --sporta-muted: #66736b;
+  --sporta-canvas: #f1f6f1;
+  --sporta-surface: #ffffff;
+  --sporta-line: #d7e2d8;
+  --sporta-forest: #17634b;
+  --sporta-forest-dark: #103b2e;
+  --sporta-lime: #d4ed66;
+  --sporta-coral: #d96e5a;
+  --sporta-coral-soft: #fff0eb;
+  --sporta-shadow-soft: 0 10px 28px rgba(23, 49, 35, 0.08);
+}
+
+html,
+body,
+ion-app {
+  background: var(--sporta-canvas);
+  color: var(--sporta-ink);
+  font-family: "DM Sans", sans-serif;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: "DM Sans", sans-serif;
+  letter-spacing: 0;
+}
+
+ion-app ion-router-outlet .ion-page.sportra-app ion-content.sportra-main-viewport[fullscreen],
+ion-app ion-router-outlet .ion-page.panel-page ion-content.panel-content,
+ion-app ion-router-outlet .ion-page.horarios-page ion-content.horarios-content {
+  --background: var(--sporta-canvas);
+  color: var(--sporta-ink);
+  font-family: "DM Sans", sans-serif;
+}
+
+ion-app ion-router-outlet .ion-page.sportra-app,
+ion-app ion-router-outlet .ion-page.panel-page,
+ion-app ion-router-outlet .ion-page.horarios-page,
+ion-app ion-router-outlet .ion-page.sportra-admin-page {
+  background: var(--sporta-canvas);
+  color: var(--sporta-ink);
+  font-family: "DM Sans", sans-serif;
+}
+
+ion-app ion-router-outlet .ion-page.sportra-app :is(.page-title, .card-title, .main-section-title, .section-title-wrapper h2, .card-court-title),
+ion-app ion-router-outlet .ion-page.panel-page :is(.page-title, .card-title),
+ion-app ion-router-outlet .ion-page.horarios-page :is(.page-title, .card-title),
+ion-app ion-router-outlet .ion-page.sportra-admin-page :is(.page-title, .card-header h3) {
+  color: var(--sporta-ink);
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+ion-app ion-router-outlet .ion-page.sportra-app .hero-title-main {
+  color: #ffffff;
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 68px;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 0.98;
+}
+
+ion-app ion-router-outlet .ion-page.sportra-app .lime-gradient-text,
+ion-app ion-router-outlet .ion-page.sportra-app .neon-dot,
+ion-app ion-router-outlet .ion-page.panel-page .dot-neon,
+ion-app ion-router-outlet .ion-page.horarios-page .dot-neon,
+ion-app ion-router-outlet .ion-page.sportra-admin-page .neon-dot {
+  color: var(--sporta-lime);
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  text-shadow: none;
+}
+
+ion-app ion-router-outlet .ion-page.sportra-app .navbar-container,
+ion-app ion-router-outlet .ion-page.sportra-admin-page .navbar-container {
+  top: 16px;
+}
+
+ion-app ion-router-outlet .ion-page.sportra-app .navbar-bar,
+ion-app ion-router-outlet .ion-page.sportra-admin-page .navbar-bar,
+ion-app ion-router-outlet .ion-page.panel-page .navbar-pill,
+ion-app ion-router-outlet .ion-page.horarios-page .navbar-pill {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid var(--sporta-line);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(17, 42, 29, 0.1);
+  backdrop-filter: blur(16px);
+}
+
+ion-app ion-router-outlet .ion-page :is(.brand-name, .brand-logo .brand-name) {
+  color: var(--sporta-ink);
+  font-family: "Barlow Condensed", sans-serif;
+  letter-spacing: 0;
+}
+
+ion-app ion-router-outlet .ion-page :is(.brand-badge, .logo-circle-icon) {
+  background: var(--sporta-forest);
+  border: 0;
+  border-radius: 5px;
+  box-shadow: none;
+}
+
+ion-app ion-router-outlet .ion-page :is(.brand-icon, .logo-circle-icon ion-icon) {
+  color: var(--sporta-lime);
+}
+
+ion-app ion-router-outlet .ion-page.sportra-app .hero-wrapper {
+  min-height: 760px;
+  padding: 9rem 1.5rem 4rem;
+  background-color: var(--sporta-forest-dark);
+  background-image: linear-gradient(90deg, rgba(12, 42, 31, 0.92) 0%, rgba(15, 54, 40, 0.78) 44%, rgba(17, 43, 34, 0.2) 100%), url("/Images/oij.jpeg");
+  background-position: center 42%;
+  background-size: cover;
+}
+
+ion-app ion-router-outlet .ion-page.sportra-app :is(.hero-bg-glow, .hero-bg-grid, .page-background-glow, .bg-grid) {
+  display: none;
+}
+
+ion-app ion-router-outlet .ion-page.sportra-app .hero-text-side {
+  max-width: 660px;
+}
+
+ion-app ion-router-outlet .ion-page.sportra-app .hero-lead {
+  max-width: 520px;
+  color: rgba(255, 255, 255, 0.84);
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+ion-app ion-router-outlet .ion-page.sportra-app .pill-tag {
+  color: var(--sporta-lime);
+  background: rgba(18, 61, 46, 0.76);
+  border: 1px solid rgba(212, 237, 102, 0.42);
+  border-radius: 4px;
+  box-shadow: none;
+}
+
+ion-app ion-router-outlet .ion-page.sportra-app .navbar-bar .brand-name,
+ion-app ion-router-outlet .ion-page.sportra-admin-page .navbar-bar .brand-name {
+  color: var(--sporta-ink);
+}
+
+ion-app ion-router-outlet .ion-page.sportra-app .hero-search-bar {
+  background: #f7faf6;
+  border: 1px solid var(--sporta-line);
+  border-radius: 5px;
+  box-shadow: none;
+}
+
+ion-app ion-router-outlet .ion-page.sportra-app .hero-search-bar :is(.item-tag, .item-text) {
+  color: var(--sporta-ink);
+}
+
+ion-app ion-router-outlet .ion-page.sportra-app :is(.search-btn-neon, .btn-cta-lime, .btn-submit-neon, .spotlight-btn),
+ion-app ion-router-outlet .ion-page.panel-page :is(.btn-primary-neon, .btn-submit-neon, .btn-secondary-glass),
+ion-app ion-router-outlet .ion-page.horarios-page :is(.btn-submit-neon, .btn-secondary-glass, .btn-dark-glass),
+ion-app ion-router-outlet .ion-page.sportra-admin-page :is(.btn-submit-neon, .btn-pay) {
+  color: #142219;
+  background: var(--sporta-lime);
+  border: 1px solid var(--sporta-lime);
+  border-radius: 4px;
+  box-shadow: none;
+}
+
+ion-app ion-router-outlet .ion-page.sportra-app :is(.btn-portal-glow, .btn-clear, .secondary-btn),
+ion-app ion-router-outlet .ion-page.panel-page .nav-chip-btn,
+ion-app ion-router-outlet .ion-page.horarios-page .nav-chip-btn {
+  color: var(--sporta-forest);
+  background: var(--sporta-surface);
+  border: 1px solid var(--sporta-line);
+  border-radius: 4px;
+}
+
+ion-app ion-router-outlet .ion-page.sportra-app :is(.main-section-title, .counter-pill),
+ion-app ion-router-outlet .ion-page.panel-page :is(.page-title, .card-title, .card-kicker),
+ion-app ion-router-outlet .ion-page.horarios-page :is(.page-title, .card-title, .card-kicker),
+ion-app ion-router-outlet .ion-page.sportra-admin-page :is(.page-title, .card-header h3, .metric-value) {
+  color: var(--sporta-ink);
+}
+
+ion-app ion-router-outlet .ion-page :is(.eyebrow, .card-kicker, .stat-icon, .loc-lime, .sort-icon-lime) {
+  color: var(--sporta-forest);
+}
+
+ion-app ion-router-outlet .ion-page :is(.panel-card-glass, .stat-card-glass, .selector-card-glass, .panel-card, .section-card, .metric-card, .glass-card, .auth-card-glass, .spotlight-card) {
+  color: var(--sporta-ink);
+  background: var(--sporta-surface);
+  border: 1px solid var(--sporta-line);
+  border-radius: 6px;
+  box-shadow: var(--sporta-shadow-soft);
+  backdrop-filter: none;
+}
+
+ion-app ion-router-outlet .ion-page :is(.stat-card-glass, .metric-card, .selector-card-glass, .auth-card-glass, .panel-card-glass, .panel-card, .section-card, .glass-card) :is(h1, h2, h3, h4, strong, label, .stat-label, .metric-label, .field-label, .card-title, .complejo-title) {
+  color: var(--sporta-ink);
+}
+
+ion-app ion-router-outlet .ion-page :is(.stat-label, .metric-label, .page-subtitle, .section-sub, .complejo-address, .auth-subtitle, .field-group label, .field-block label) {
+  color: var(--sporta-muted);
+}
+
+ion-app ion-router-outlet .ion-page :is(.custom-input-dark, .neon-input, .input-glow-box input, .input-glow-wrapper input, .neon-select, .filter-select, .neon-sort-select) {
+  --background: #ffffff;
+  --color: var(--sporta-ink);
+  color: var(--sporta-ink);
+  background: #ffffff;
+  border: 1px solid var(--sporta-line);
+  border-radius: 4px;
+  box-shadow: none;
+}
+
+ion-app ion-router-outlet .ion-page :is(.custom-input-dark, .neon-input, .input-glow-box input, .input-glow-wrapper input, .neon-select, .filter-select, .neon-sort-select):focus,
+ion-app ion-router-outlet .ion-page :is(.custom-input-dark, .neon-input, .input-glow-box input, .input-glow-wrapper input, .neon-select, .filter-select, .neon-sort-select):focus-within {
+  border-color: var(--sporta-forest);
+  box-shadow: 0 0 0 3px rgba(23, 99, 75, 0.13);
+}
+
+ion-app ion-router-outlet .ion-page.sportra-app .filter-modal,
+ion-app ion-router-outlet .ion-page.sportra-app .reservation-modal-glass {
+  color: var(--sporta-ink);
+  background: #ffffff;
+  border: 1px solid var(--sporta-line);
+  border-radius: 6px;
+  box-shadow: 0 24px 70px rgba(19, 42, 29, 0.2);
+  backdrop-filter: none;
+}
+
+ion-app ion-router-outlet .ion-page.sportra-app .filter-modal :is(.modal-title, .modal-top span, .field-block label),
+ion-app ion-router-outlet .ion-page.sportra-app .reservation-modal-glass :is(h2, label, .eyebrow) {
+  color: var(--sporta-ink);
+}
+
+ion-app ion-router-outlet .ion-page.sportra-app .complejo-hero {
+  border: 0;
+  border-radius: 5px;
+  box-shadow: var(--sporta-shadow-soft);
+}
+
+ion-app ion-router-outlet .ion-page.sportra-app .hero-overlay {
+  background: linear-gradient(0deg, rgba(13, 42, 31, 0.82), rgba(13, 42, 31, 0.04) 72%);
+}
+
+ion-app ion-router-outlet .ion-page.sportra-app .slot-disponible {
+  color: var(--sporta-forest);
+  background: #e8f3e9;
+  border-color: #bdd8c5;
+}
+
+ion-app ion-router-outlet .ion-page.sportra-app :is(.slot-ocupada, .slot-pendiente, .slot-bloqueada) {
+  color: var(--sporta-muted);
+  background: #eef1ed;
+  border-color: var(--sporta-line);
+}
+
+ion-app ion-router-outlet .ion-page.sportra-admin-page .neon-table th {
+  color: var(--sporta-muted);
+  background: #f4f7f3;
+}
+
+ion-app ion-router-outlet .ion-page.sportra-admin-page .neon-table :is(td, th) {
+  border-color: var(--sporta-line);
+}
+
+ion-app ion-router-outlet .ion-page :is(.active-filter-tag, .status-pill.active, .status-tag, .role-badge) {
+  color: var(--sporta-forest);
+  background: #e8f3e9;
+  border-color: #c9dfcd;
+}
+
+ion-app ion-router-outlet .ion-page :is(.btn-logout, .nav-chip-btn.danger, .btn-danger, .mini-button-danger) {
+  color: #9d3c2f;
+  background: var(--sporta-coral-soft);
+  border-color: #efc5b9;
+  border-radius: 4px;
+}
+
+ion-app ion-router-outlet .ion-page :is(.error-banner, .notification-toast) {
+  color: #9d3c2f;
+  background: var(--sporta-coral-soft);
+  border-color: #efc5b9;
+  border-radius: 5px;
+}
+
+ion-app ion-router-outlet .ion-page :is(.app-footer, .empty-state, .empty-message, .empty-inline, .empty-dispo-box) {
+  color: var(--sporta-muted);
+}
+
+ion-app ion-router-outlet .ion-page :is(.page-background-glow, .glow-float-1, .glow-float-2, .glow-pulse, .glow-text-shadow) {
+  animation: none;
+  box-shadow: none;
+  text-shadow: none;
+}
+
+ion-app ion-router-outlet .ion-page :is(.navbar-bar, .navbar-pill, button, input, select, textarea) {
+  letter-spacing: 0;
+}
+
+ion-app ion-router-outlet .ion-page :is(button, a, input, select, textarea, ion-select, ion-input):focus-visible {
+  outline: 3px solid rgba(23, 99, 75, 0.38);
+  outline-offset: 2px;
+}
+
+@media (max-width: 768px) {
+  ion-app ion-router-outlet .ion-page.sportra-app .navbar-container,
+  ion-app ion-router-outlet .ion-page.sportra-admin-page .navbar-container {
+    top: 8px;
+    padding-inline: 10px;
+  }
+
+  ion-app ion-router-outlet .ion-page.sportra-app .navbar-bar,
+  ion-app ion-router-outlet .ion-page.sportra-admin-page .navbar-bar {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 9px;
+  }
+
+  ion-app ion-router-outlet .ion-page.sportra-app .brand-box {
+    justify-content: center;
+    width: 100%;
+  }
+
+  ion-app ion-router-outlet .ion-page.sportra-app .hero-search-bar {
+    width: 100%;
+    min-height: 48px;
+  }
+
+  ion-app ion-router-outlet .ion-page.sportra-app .hero-wrapper {
+    min-height: 720px;
+    padding: 9rem 1.1rem 3rem;
+    background-position: 58% center;
+  }
+
+  ion-app ion-router-outlet .ion-page.sportra-app .hero-title-main {
+    font-size: 52px;
+  }
+
+  ion-app ion-router-outlet .ion-page.sportra-app .hero-lead {
+    font-size: 15px;
+  }
+
+  ion-app ion-router-outlet .ion-page.sportra-app .filter-modal {
+    position: fixed;
+    top: 150px;
+    left: 4vw;
+    width: 92vw;
+    max-height: calc(100dvh - 170px);
+    overflow-y: auto;
+    transform: none;
+    padding: 1rem;
+  }
+
+  ion-app ion-router-outlet .ion-page.sportra-admin-page .metrics-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+    gap: 8px;
+  }
+
+  ion-app ion-router-outlet .ion-page.sportra-admin-page .metric-card {
+    min-width: 0;
+    padding: 10px;
+  }
+
+  ion-app ion-router-outlet .ion-page.panel-page .dashboard-shell,
+  ion-app ion-router-outlet .ion-page.horarios-page .management-layout,
+  ion-app ion-router-outlet .ion-page.sportra-admin-page .admin-wrapper {
+    padding-inline: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

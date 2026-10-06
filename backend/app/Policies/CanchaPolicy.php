@@ -10,7 +10,7 @@ class CanchaPolicy
     public function gestionar(User $user, Cancha $cancha): bool
     {
         if ($user->is_platform_admin) {
-            return true;
+            return false;
         }
 
         if (!$cancha->complejo->activo) {

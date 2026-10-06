@@ -19,10 +19,15 @@ class Cancha extends Model
         'nombre',
         'precio_hora',
         'activa',
+        'estado_verificacion',
+        'observaciones_admin',
+        'verificado_por',
+        'verificado_en',
     ];
 
     protected $casts = [
         'activa' => 'boolean',
+        'verificado_en' => 'datetime',
     ];
 
     protected static function booted(): void

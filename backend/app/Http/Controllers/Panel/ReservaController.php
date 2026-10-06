@@ -12,6 +12,7 @@ use App\Services\ReservaService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
 class ReservaController extends Controller
@@ -23,6 +24,8 @@ class ReservaController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        abort_if($request->user()->is_platform_admin, 403, 'Use los reportes administrativos para consultar reservas.');
+
         $request->validate([
             'fecha' => ['nullable', 'date'],
             'cancha_id' => ['nullable', 'integer', 'exists:canchas,id'],
@@ -71,5 +74,62 @@ class ReservaController extends Controller
         ));
 
         return response()->json(['message' => 'Reserva cancelada correctamente.']);
+    }
+
+    public function aceptar(Reserva $reserva): JsonResponse
+    {
+        return $this->responderSolicitud($reserva, 'aceptada');
+    }
+
+    public function rechazar(Reserva $reserva): JsonResponse
+    {
+        return $this->responderSolicitud($reserva, 'rechazada');
+    }
+
+    private function responderSolicitud(Reserva $reserva, string $decision): JsonResponse
+    {
+        Gate::authorize('gestionar', $reserva->cancha);
+
+        if (!$reserva->solicitud_id) {
+            return response()->json(['message' => 'La reserva no pertenece a una solicitud pública.'], 409);
+        }
+
+        $reservas = DB::transaction(function () use ($reserva, $decision) {
+            Cancha::query()
+                ->whereKey($reserva->cancha_id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $pendientes = Reserva::query()
+                ->where('solicitud_id', $reserva->solicitud_id)
+                ->where('estado', 'pendiente')
+                ->where('expira_en', '>', now())
+                ->lockForUpdate()
+                ->get();
+
+            if ($pendientes->isEmpty()) {
+                abort(409, 'La solicitud ya fue resuelta o venció.');
+            }
+
+            foreach ($pendientes as $pendiente) {
+                $pendiente->update([
+                    'estado' => $decision === 'aceptada' ? 'confirmada' : 'cancelada',
+                    'decision_propietario' => $decision,
+                ]);
+            }
+
+            return $pendientes;
+        }, attempts: 5);
+
+        broadcast(new DisponibilidadActualizada(
+            complejoId: $reserva->cancha->complejo_id,
+            canchaId: $reserva->cancha_id,
+            fecha: Carbon::parse($reserva->fecha)->toDateString(),
+        ));
+
+        return response()->json([
+            'message' => $decision === 'aceptada' ? 'Solicitud aceptada.' : 'Solicitud rechazada.',
+            'data' => $reservas,
+        ]);
     }
 }

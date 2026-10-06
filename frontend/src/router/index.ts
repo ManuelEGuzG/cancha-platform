@@ -1,18 +1,11 @@
 import { createRouter, createWebHistory } from '@ionic/vue-router';
-import { RouteRecordRaw } from 'vue-router';
-import HomePage from '../views/HomePage.vue';
-import ComplejoDetallePage from '../views/ComplejoDetallePage.vue';
-import LoginPage from '../views/LoginPage.vue';
-import PanelPage from '../views/PanelPage.vue';
-import CanchasPage from '../views/CanchasPage.vue';
-import HorariosPage from '../views/HorariosPage.vue';
-import AdminPage from '../views/AdminPage.vue';
+import type { RouteRecordRaw } from 'vue-router';
 
 const routes: Array<RouteRecordRaw> = [
   {
   path: '/admin',
   name: 'Admin',
-  component: AdminPage,
+  component: () => import('../views/AdminPage.vue'),
   meta: { requiresAuth: true },
 },
   {
@@ -22,34 +15,34 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/home',
     name: 'Home',
-    component: HomePage,
+    component: () => import('../views/HomePage.vue'),
   },
   {
     path: '/complejo/:slug',
     name: 'ComplejoDetalle',
-    component: ComplejoDetallePage,
+    component: () => import('../views/ComplejoDetallePage.vue'),
   },
   {
     path: '/login',
     name: 'Login',
-    component: LoginPage,
+    component: () => import('../views/LoginPage.vue'),
   },
   {
     path: '/panel',
     name: 'Panel',
-    component: PanelPage,
+    component: () => import('../views/PanelPage.vue'),
     meta: { requiresAuth: true },
   },
   {
     path: '/panel/canchas',
     name: 'PanelCanchas',
-    component: CanchasPage,
+    component: () => import('../views/CanchasPage.vue'),
     meta: { requiresAuth: true },
   },
   {
     path: '/panel/canchas/:canchaId/horarios',
     name: 'PanelHorarios',
-    component: HorariosPage,
+    component: () => import('../views/HorariosPage.vue'),
     meta: { requiresAuth: true },
   },
 ];

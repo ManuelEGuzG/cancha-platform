@@ -9,6 +9,7 @@ use App\Models\Reserva;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class FacturacionController extends Controller
 {
@@ -18,22 +19,36 @@ class FacturacionController extends Controller
         $finMes = Carbon::now()->endOfMonth()->toDateString();
         $hoy = Carbon::today();
 
-        $complejos = Complejo::withCount(['canchas' => fn ($q) => $q->where('activa', true)])->get();
+        $complejos = Complejo::withCount(['canchas' => fn ($query) => $query->where('activa', true)])
+            ->orderBy('nombre')
+            ->get();
+        $totales = DB::table('reservas')
+            ->join('canchas', 'reservas.cancha_id', '=', 'canchas.id')
+            ->whereDate('reservas.fecha', '>=', $inicioMes)
+            ->whereDate('reservas.fecha', '<=', $finMes)
+            ->groupBy('canchas.complejo_id')
+            ->select('canchas.complejo_id')
+            ->selectRaw('COUNT(*) as reservas_mes')
+            ->get()
+            ->keyBy('complejo_id');
+        $ingresos = [];
 
-        $resumen = $complejos->map(function ($complejo) use ($inicioMes, $finMes, $hoy) {
-            $canchaIds = $complejo->canchas()->pluck('id');
-
-            $reservasMes = Reserva::whereIn('cancha_id', $canchaIds)
-                ->whereBetween('fecha', [$inicioMes, $finMes])
-                ->whereIn('estado', ['confirmada', 'completada'])
-                ->get();
-
-            $ingresoEstimado = $reservasMes->sum(function ($reserva) {
-                $cancha = $reserva->cancha;
-                $horas = Carbon::parse($reserva->hora_inicio)->diffInHours(Carbon::parse($reserva->hora_fin));
-                return $cancha->precio_hora * $horas;
+        Reserva::query()
+            ->with('cancha:id,complejo_id,precio_hora')
+            ->whereDate('fecha', '>=', $inicioMes)
+            ->whereDate('fecha', '<=', $finMes)
+            ->whereIn('estado', ['confirmada', 'completada'])
+            ->chunkById(500, function ($reservas) use (&$ingresos) {
+                foreach ($reservas as $reserva) {
+                    $cancha = $reserva->cancha;
+                    $precioHora = $reserva->precio_hora_reservado ?? $cancha->precio_hora;
+                    $minutos = Carbon::parse($reserva->hora_inicio)->diffInMinutes(Carbon::parse($reserva->hora_fin));
+                    $ingresos[$cancha->complejo_id] = ($ingresos[$cancha->complejo_id] ?? 0)
+                        + (int) round($precioHora * $minutos / 60);
+                }
             });
 
+        $resumen = $complejos->map(function ($complejo) use ($hoy, $totales, $ingresos) {
             $vencimiento = $complejo->suscripcion_vence_en;
             $estadoSuscripcion = 'sin_registro';
 
@@ -56,8 +71,8 @@ class FacturacionController extends Controller
                 'suscripcion_vence_en' => $vencimiento?->toDateString(),
                 'estado_suscripcion' => $estadoSuscripcion,
                 'total_canchas' => $complejo->canchas_count,
-                'reservas_mes' => $reservasMes->count(),
-                'ingreso_estimado_mes' => $ingresoEstimado,
+                'reservas_mes' => (int) ($totales->get($complejo->id)->reservas_mes ?? 0),
+                'ingreso_estimado_mes' => $ingresos[$complejo->id] ?? 0,
             ];
         });
 
@@ -68,14 +83,18 @@ class FacturacionController extends Controller
     {
         $request->validate([
             'complejo_id' => ['nullable', 'integer', 'exists:complejos,id'],
+            'cancha_id' => ['nullable', 'integer', 'exists:canchas,id'],
             'fecha_desde' => ['nullable', 'date'],
             'fecha_hasta' => ['nullable', 'date'],
         ]);
 
-        $reservas = Reserva::with(['cancha.complejo'])
+        $reservas = Reserva::query()
+            ->select(['id', 'cancha_id', 'nombre_cliente', 'fecha', 'hora_inicio', 'hora_fin', 'estado', 'origen', 'created_at'])
+            ->with(['cancha.complejo'])
             ->when($request->filled('complejo_id'), function ($q) use ($request) {
                 $q->whereHas('cancha', fn ($q2) => $q2->where('complejo_id', $request->integer('complejo_id')));
             })
+            ->when($request->filled('cancha_id'), fn ($q) => $q->where('cancha_id', $request->integer('cancha_id')))
             ->when($request->filled('fecha_desde'), fn ($q) => $q->whereDate('fecha', '>=', $request->string('fecha_desde')->toString()))
             ->when($request->filled('fecha_hasta'), fn ($q) => $q->whereDate('fecha', '<=', $request->string('fecha_hasta')->toString()))
             ->orderByDesc('fecha')

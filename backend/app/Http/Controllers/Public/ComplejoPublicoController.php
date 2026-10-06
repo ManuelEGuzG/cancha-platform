@@ -16,12 +16,12 @@ class ComplejoPublicoController extends Controller
 {
     public function __construct(
         private readonly CalculadorDisponibilidadService $calculadorDisponibilidad,
-    ) {
-    }
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
         $request->validate([
+            'provincia_id' => ['nullable', 'integer', 'exists:provincias,id'],
             'distrito_id' => ['nullable', 'integer', 'exists:distritos,id'],
             'canton_id' => ['nullable', 'integer', 'exists:cantones,id'],
             'deporte_id' => ['nullable', 'integer', 'exists:deportes,id'],
@@ -29,12 +29,18 @@ class ComplejoPublicoController extends Controller
 
         $complejos = Complejo::query()
             ->where('activo', true)
-            ->with(['distrito.canton', 'canchas' => function ($query) use ($request) {
+            ->with(['distrito.canton.provincia', 'canchas' => function ($query) use ($request) {
+                $query->where('activa', true)->where('estado_verificacion', 'aprobada');
                 if ($request->filled('deporte_id')) {
                     $query->where('deporte_id', $request->integer('deporte_id'));
                 }
             }])
-            ->withCount('canchas')
+            ->withCount(['canchas' => fn ($query) => $query->where('activa', true)->where('estado_verificacion', 'aprobada')])
+            ->when($request->filled('provincia_id'), function ($query) use ($request) {
+                $query->whereHas('distrito.canton', function ($query) use ($request) {
+                    $query->where('provincia_id', $request->integer('provincia_id'));
+                });
+            })
             ->when($request->filled('distrito_id'), function ($query) use ($request) {
                 $query->where('distrito_id', $request->integer('distrito_id'));
             })
@@ -57,9 +63,12 @@ class ComplejoPublicoController extends Controller
 
     public function show(Complejo $complejo): JsonResponse
     {
-        abort_if(!$complejo->activo, 404);
+        abort_if(! $complejo->activo, 404);
 
-        $complejo->load(['distrito.canton.provincia', 'canchas.deporte']);
+        $complejo->load([
+            'distrito.canton.provincia',
+            'canchas' => fn ($query) => $query->where('activa', true)->where('estado_verificacion', 'aprobada')->with('deporte'),
+        ]);
 
         return response()->json([
             'data' => new ComplejoDetalleResource($complejo),
@@ -68,7 +77,7 @@ class ComplejoPublicoController extends Controller
 
     public function disponibilidad(Request $request, Complejo $complejo): JsonResponse
     {
-        abort_if(!$complejo->activo, 404);
+        abort_if(! $complejo->activo, 404);
 
         $request->validate([
             'fecha' => ['nullable', 'date', 'after_or_equal:today'],
@@ -78,7 +87,18 @@ class ComplejoPublicoController extends Controller
             ? Carbon::parse($request->string('fecha')->toString())
             : Carbon::today();
 
-        $canchas = $complejo->canchas()->where('activa', true)->get();
+        $canchas = $complejo->canchas()
+            ->where('activa', true)
+            ->where('estado_verificacion', 'aprobada')
+            ->with([
+                'horariosRegulares',
+                'horariosExcepcion' => fn ($query) => $query->whereDate('fecha', $fecha->toDateString()),
+                'bloqueos' => fn ($query) => $query->whereDate('fecha', $fecha->toDateString()),
+                'reservas' => fn ($query) => $query
+                    ->whereDate('fecha', $fecha->toDateString())
+                    ->whereIn('estado', ['pendiente', 'confirmada']),
+            ])
+            ->get();
 
         $disponibilidad = $canchas->map(function ($cancha) use ($fecha) {
             return [
@@ -99,7 +119,7 @@ class ComplejoPublicoController extends Controller
 
     public function enlaceWhatsApp(Request $request, Complejo $complejo, WhatsAppLinkService $whatsAppLinkService): JsonResponse
     {
-        abort_if(!$complejo->activo, 404);
+        abort_if(! $complejo->activo, 404);
 
         $request->validate([
             'cancha_id' => ['nullable', 'integer', 'exists:canchas,id'],
@@ -108,7 +128,7 @@ class ComplejoPublicoController extends Controller
         ]);
 
         $cancha = $request->filled('cancha_id')
-            ? $complejo->canchas()->findOrFail($request->integer('cancha_id'))
+            ? $complejo->canchas()->where('estado_verificacion', 'aprobada')->findOrFail($request->integer('cancha_id'))
             : null;
 
         $fecha = $request->filled('fecha') ? Carbon::parse($request->string('fecha')->toString()) : null;
@@ -120,7 +140,7 @@ class ComplejoPublicoController extends Controller
             $request->string('hora_inicio')->toString() ?: null,
         );
 
-        if (!$enlace) {
+        if (! $enlace) {
             return response()->json(['message' => 'Este complejo no ha configurado WhatsApp todavía.'], 404);
         }
 

@@ -90,7 +90,26 @@
             </div>
             <strong>{{ estadisticas.reservas_mes.total }}</strong>
           </div>
+          <div class="stat-card-glass">
+            <div class="stat-header"><span class="stat-label">Solicitudes aceptadas</span></div>
+            <strong>{{ estadisticas.solicitudes_mes.aceptadas }}</strong>
+          </div>
+          <div class="stat-card-glass">
+            <div class="stat-header"><span class="stat-label">Solicitudes rechazadas</span></div>
+            <strong>{{ estadisticas.solicitudes_mes.rechazadas }}</strong>
+          </div>
+          <div class="stat-card-glass">
+            <div class="stat-header"><span class="stat-label">Ingreso estimado</span></div>
+            <strong>₡{{ Number(estadisticas.ingreso_estimado_mes).toLocaleString('es-CR') }}</strong>
+          </div>
         </section>
+
+        <div v-if="estadisticas?.demanda_por_hora?.length" class="demand-strip">
+          <span>Horas con más demanda:</span>
+          <strong v-for="hora in estadisticas.demanda_por_hora" :key="hora.hora">
+            {{ hora.hora }} · {{ hora.reservas }}
+          </strong>
+        </div>
 
         <!-- Content Grid -->
         <section class="content-grid">
@@ -120,7 +139,14 @@
                       <strong>{{ r.nombre_cliente }}</strong>
                       <small class="status-tag">{{ r.estado }}</small>
                     </div>
-                    <button class="mini-button-danger" @click="cancelar(r.id)">Cancelar</button>
+                    <div class="reservation-actions">
+                      <template v-if="r.estado === 'pendiente' && r.solicitud_id">
+                        <small v-if="r.expira_en">Vence {{ new Date(r.expira_en).toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' }) }}</small>
+                        <button class="mini-button-success" @click="responderSolicitud(r.id, 'aceptar')">Aceptar</button>
+                        <button class="mini-button-danger" @click="responderSolicitud(r.id, 'rechazar')">Rechazar</button>
+                      </template>
+                      <button v-else class="mini-button-danger" @click="cancelar(r.id)">Cancelar</button>
+                    </div>
                   </div>
 
                   <div v-for="b in cancha.bloqueos" :key="'b' + b.id" class="timeline-row blocked">
@@ -223,6 +249,43 @@
           </div>
 
         </section>
+
+        <section class="panel-card-glass history-card">
+          <div class="card-header">
+            <div>
+              <span class="card-kicker">Registro</span>
+              <h2 class="card-title">Historial de reservas</h2>
+            </div>
+            <div class="history-filters">
+              <input v-model="fechaHistorial" type="date" class="custom-input-dark" @change="cargarHistorial(1)" />
+              <button class="nav-chip-btn" @click="limpiarFiltroHistorial">Todas</button>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="neon-table">
+              <thead>
+                <tr><th>Fecha</th><th>Cancha</th><th>Cliente</th><th>Horario</th><th>Estado</th></tr>
+              </thead>
+              <tbody>
+                <tr v-for="reserva in historialReservas" :key="reserva.id">
+                  <td>{{ reserva.fecha }}</td>
+                  <td>{{ reserva.cancha?.nombre }}</td>
+                  <td>{{ reserva.nombre_cliente }}</td>
+                  <td>{{ reserva.hora_inicio }} - {{ reserva.hora_fin }}</td>
+                  <td>{{ reserva.decision_propietario || reserva.estado }}</td>
+                </tr>
+                <tr v-if="historialReservas.length === 0">
+                  <td colspan="5" class="text-center py-4">No hay reservas para este filtro.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="history-pagination">
+            <button class="nav-chip-btn" :disabled="paginaHistorial <= 1" @click="cargarHistorial(paginaHistorial - 1)">Anterior</button>
+            <span>{{ paginaHistorial }} / {{ ultimaPaginaHistorial }}</span>
+            <button class="nav-chip-btn" :disabled="paginaHistorial >= ultimaPaginaHistorial" @click="cargarHistorial(paginaHistorial + 1)">Siguiente</button>
+          </div>
+        </section>
       </div>
     </ion-content>
   </ion-page>
@@ -284,6 +347,10 @@ const nuevaReserva = ref({
 
 const mensajeReserva = ref('');
 const errorReserva = ref(false);
+const historialReservas = ref<any[]>([]);
+const fechaHistorial = ref('');
+const paginaHistorial = ref(1);
+const ultimaPaginaHistorial = ref(1);
 
 async function cargarAgenda() {
   if (!complejoIdSeleccionado.value) return;
@@ -297,6 +364,21 @@ async function cargarAgenda() {
 
   agenda.value = agendaRes.data.data;
   estadisticas.value = statsRes.data.data;
+}
+
+async function cargarHistorial(pagina = 1) {
+  const { data } = await panelService.listarReservas({
+    fecha: fechaHistorial.value || undefined,
+    page: pagina,
+  });
+  historialReservas.value = data.data.data;
+  paginaHistorial.value = data.data.current_page;
+  ultimaPaginaHistorial.value = data.data.last_page;
+}
+
+async function limpiarFiltroHistorial() {
+  fechaHistorial.value = '';
+  await cargarHistorial(1);
 }
 
 async function crearReserva() {
@@ -313,6 +395,7 @@ async function crearReserva() {
     });
     mensajeReserva.value = 'Reserva creada correctamente.';
     await cargarAgenda();
+    await cargarHistorial(1);
   } catch (e: any) {
     errorReserva.value = true;
     mensajeReserva.value = e.response?.data?.message || 'Error al crear la reserva.';
@@ -322,6 +405,18 @@ async function crearReserva() {
 async function cancelar(reservaId: number) {
   await panelService.cancelarReserva(reservaId);
   await cargarAgenda();
+  await cargarHistorial(paginaHistorial.value);
+}
+
+async function responderSolicitud(reservaId: number, decision: 'aceptar' | 'rechazar') {
+  try {
+    await panelService.responderSolicitud(reservaId, decision);
+    await cargarAgenda();
+    await cargarHistorial(paginaHistorial.value);
+  } catch (error: any) {
+    mensajeReserva.value = error.response?.data?.message || 'No se pudo responder la solicitud.';
+    errorReserva.value = true;
+  }
 }
 
 async function cerrarSesion() {
@@ -342,6 +437,7 @@ onMounted(async () => {
       complejoIdSeleccionado.value = misComplejos.value[0].id;
       await cargarAgenda();
     }
+    await cargarHistorial();
   } catch (err) {
     console.error('Error cargando los complejos:', err);
   } finally {
@@ -783,6 +879,18 @@ onMounted(async () => {
   letter-spacing: 0.05em;
   font-weight: 700;
 }
+
+.reservation-actions { display: flex; align-items: center; justify-content: flex-end; gap: 0.4rem; flex-wrap: wrap; }
+.reservation-actions small { width: 100%; color: #fbbf24; text-align: right; }
+.mini-button-success {
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #86efac;
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  cursor: pointer;
+}
+.mini-button-success:hover { background: rgba(34, 197, 94, 0.22); }
 
 .mini-button-danger {
   background: rgba(239, 68, 68, 0.12);

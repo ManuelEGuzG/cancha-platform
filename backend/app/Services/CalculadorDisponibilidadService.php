@@ -11,32 +11,39 @@ class CalculadorDisponibilidadService
 {
     public function calcularParaCancha(Cancha $cancha, Carbon $fecha): Collection
     {
-        [$horaApertura, $horaCierre] = $this->resolverHorarioDelDia($cancha, $fecha);
+        [$horaApertura, $horaCierre, $cerradaTodoElDia] = $this->resolverHorarioDelDia($cancha, $fecha);
 
         if (!$horaApertura || !$horaCierre) {
             return collect();
         }
 
-        $bloqueos = $cancha->bloqueos()
-            ->whereDate('fecha', $fecha->toDateString())
-            ->get();
+        $bloqueos = $cancha->relationLoaded('bloqueos')
+            ? $cancha->getRelation('bloqueos')
+            : $cancha->bloqueos()->whereDate('fecha', $fecha->toDateString())->get();
 
-        $reservas = $cancha->reservas()
-            ->whereDate('fecha', $fecha->toDateString())
-            ->whereIn('estado', ['pendiente', 'confirmada'])
-            ->get();
+        $reservas = $cancha->relationLoaded('reservas')
+            ? $cancha->getRelation('reservas')
+            : $cancha->reservas()
+                ->whereDate('fecha', $fecha->toDateString())
+                ->whereIn('estado', ['pendiente', 'confirmada'])
+                ->get();
 
         $bloques = collect();
         $inicio = $fecha->copy()->setTimeFromTimeString($horaApertura);
         $fin = $fecha->copy()->setTimeFromTimeString($horaCierre);
 
-        while ($inicio->lt($fin)) {
+        while ($inicio->copy()->addHour()->lte($fin)) {
             $finBloque = $inicio->copy()->addHour();
+            $estado = $cerradaTodoElDia
+                ? EstadoDisponibilidad::CERRADA
+                : ($fecha->isToday() && $inicio->lte(now())
+                ? EstadoDisponibilidad::CERRADA
+                : $this->determinarEstado($inicio, $finBloque, $bloqueos, $reservas));
 
             $bloques->push([
                 'hora_inicio' => $inicio->format('H:i'),
                 'hora_fin' => $finBloque->format('H:i'),
-                'estado' => $this->determinarEstado($inicio, $finBloque, $bloqueos, $reservas)->value,
+                'estado' => $estado->value,
             ]);
 
             $inicio = $finBloque;
@@ -46,27 +53,35 @@ class CalculadorDisponibilidadService
     }
 
     /**
-     * @return array{0: ?string, 1: ?string}
+    * @return array{0: ?string, 1: ?string, 2: bool}
      */
     private function resolverHorarioDelDia(Cancha $cancha, Carbon $fecha): array
     {
-        $excepcion = $cancha->horariosExcepcion()
-            ->whereDate('fecha', $fecha->toDateString())
-            ->first();
+        $excepcion = $cancha->relationLoaded('horariosExcepcion')
+            ? $cancha->getRelation('horariosExcepcion')->first()
+            : $cancha->horariosExcepcion()->whereDate('fecha', $fecha->toDateString())->first();
 
         if ($excepcion) {
-            return [$excepcion->hora_apertura, $excepcion->hora_cierre];
+            if (!$excepcion->hora_apertura || !$excepcion->hora_cierre) {
+                $regular = $cancha->relationLoaded('horariosRegulares')
+                    ? $cancha->getRelation('horariosRegulares')->firstWhere('dia_semana', $fecha->dayOfWeek)
+                    : $cancha->horariosRegulares()->where('dia_semana', $fecha->dayOfWeek)->first();
+
+                return [$regular?->hora_apertura, $regular?->hora_cierre, true];
+            }
+
+            return [$excepcion->hora_apertura, $excepcion->hora_cierre, false];
         }
 
-        $regular = $cancha->horariosRegulares()
-            ->where('dia_semana', $fecha->dayOfWeek)
-            ->first();
+        $regular = $cancha->relationLoaded('horariosRegulares')
+            ? $cancha->getRelation('horariosRegulares')->firstWhere('dia_semana', $fecha->dayOfWeek)
+            : $cancha->horariosRegulares()->where('dia_semana', $fecha->dayOfWeek)->first();
 
         if (!$regular) {
-            return [null, null];
+            return [null, null, false];
         }
 
-        return [$regular->hora_apertura, $regular->hora_cierre];
+        return [$regular->hora_apertura, $regular->hora_cierre, false];
     }
 
     private function determinarEstado(
@@ -77,15 +92,17 @@ class CalculadorDisponibilidadService
     ): EstadoDisponibilidad {
         foreach ($bloqueos as $bloqueo) {
             if ($this->seSolapan($inicioBloque, $finBloque, $bloqueo->hora_inicio, $bloqueo->hora_fin)) {
-                return EstadoDisponibilidad::BLOQUEADA;
+                return in_array($bloqueo->motivo, ['mantenimiento', 'reparacion'], true)
+                    ? EstadoDisponibilidad::EN_MANTENIMIENTO
+                    : EstadoDisponibilidad::CERRADA;
             }
         }
 
         foreach ($reservas as $reserva) {
             if ($this->seSolapan($inicioBloque, $finBloque, $reserva->hora_inicio, $reserva->hora_fin)) {
                 return $reserva->estado === 'pendiente'
-                    ? EstadoDisponibilidad::PENDIENTE
-                    : EstadoDisponibilidad::OCUPADA;
+                    ? EstadoDisponibilidad::EN_TRAMITE
+                    : EstadoDisponibilidad::RESERVADO;
             }
         }
 

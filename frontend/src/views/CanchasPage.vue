@@ -55,7 +55,12 @@
                     <span class="beacon-dot"></span>
                     {{ cancha.activa ? 'Activa' : 'Inactiva' }}
                   </span>
+                  <span :class="['status-pill', `review-${cancha.estado_verificacion}`]">
+                    {{ etiquetaVerificacion(cancha.estado_verificacion) }}
+                  </span>
                 </div>
+
+                <p v-if="cancha.observaciones_admin" class="review-observation">{{ cancha.observaciones_admin }}</p>
 
                 <div class="cancha-meta">
                   <span class="price-val">₡{{ formatearPrecio(cancha.precio_hora) }}</span>
@@ -234,6 +239,14 @@ function irAlPanel() {
 
 function formatearPrecio(precio: number): string {
   return precio ? precio.toLocaleString('es-CR') : '0';
+}
+
+function etiquetaVerificacion(estado: string): string {
+  return {
+    pendiente: 'Pendiente de revisión',
+    aprobada: 'Aprobada',
+    rechazada: 'Rechazada',
+  }[estado] || estado;
 }
 
 function mostrarMensaje(text: string) {

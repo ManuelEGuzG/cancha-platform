@@ -15,6 +15,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+    $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
+
     $middleware->api(prepend: [
         \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
     ]);
@@ -25,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
     $middleware->alias([
         'platform.admin' => \App\Http\Middleware\EnsurePlatformAdmin::class,
+        'account.active' => \App\Http\Middleware\EnsureActiveAccount::class,
     ]);
 })
     ->withExceptions(function (Exceptions $exceptions): void {

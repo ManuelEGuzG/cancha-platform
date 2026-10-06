@@ -68,6 +68,20 @@
             <ion-icon :icon="receiptOutline"></ion-icon>
             <span>Movimientos Globales</span>
           </button>
+          <button
+            :class="['tab-btn', { active: vista === 'verificacion' }]"
+            @click="vista = 'verificacion'"
+          >
+            <ion-icon :icon="checkmarkCircleOutline"></ion-icon>
+            <span>Verificación de Canchas</span>
+          </button>
+          <button
+            :class="['tab-btn', { active: vista === 'reporte' }]"
+            @click="vista = 'reporte'"
+          >
+            <ion-icon :icon="receiptOutline"></ion-icon>
+            <span>Reporte Mensual</span>
+          </button>
         </div>
 
         <!-- Banner de Notificación -->
@@ -279,6 +293,92 @@
           </div>
         </section>
 
+        <section v-if="vista === 'verificacion'" class="tab-content animate-fade-in">
+          <div class="section-card">
+            <div class="card-header">
+              <h3>Canchas pendientes de verificación</h3>
+              <span class="counter-pill">{{ canchasRevision.length }}</span>
+            </div>
+            <div class="table-responsive">
+              <table class="neon-table">
+                <thead>
+                  <tr><th>Cancha</th><th>Complejo</th><th>Deporte</th><th>Observaciones</th><th>Revisión</th></tr>
+                </thead>
+                <tbody>
+                  <tr v-for="cancha in canchasRevision" :key="cancha.id">
+                    <td class="font-bold">{{ cancha.nombre }}</td>
+                    <td>{{ cancha.complejo?.nombre }}</td>
+                    <td>{{ cancha.deporte?.nombre }}</td>
+                    <td>
+                      <input
+                        v-model="observacionesRechazo[cancha.id]"
+                        class="neon-input"
+                        type="text"
+                        maxlength="1000"
+                        placeholder="Motivo si se rechaza"
+                      />
+                    </td>
+                    <td>
+                      <div class="action-buttons-cell">
+                        <button class="btn-action-sm btn-success" @click="resolverVerificacion(cancha, 'aprobada')">Aprobar</button>
+                        <button
+                          class="btn-action-sm btn-danger"
+                          :disabled="!observacionesRechazo[cancha.id]?.trim()"
+                          @click="resolverVerificacion(cancha, 'rechazada')"
+                        >Rechazar</button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr v-if="canchasRevision.length === 0">
+                    <td colspan="5" class="text-center py-4">No hay canchas pendientes de revisión.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section v-if="vista === 'reporte'" class="tab-content animate-fade-in">
+          <div class="section-card">
+            <div class="card-header header-with-filter">
+              <div>
+                <h3>Actividad mensual por cancha</h3>
+                <p>El ingreso bruto es referencial; la regla de cobro todavía no está definida.</p>
+              </div>
+              <div class="action-buttons-cell">
+                <input v-model="mesReporte" type="month" class="neon-input" />
+                <button class="btn-action-sm btn-info" @click="cargarReporteMensual">Consultar</button>
+                <button class="btn-action-sm btn-success" @click="descargarReporteMensual">Exportar CSV</button>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="neon-table">
+                <thead>
+                  <tr>
+                    <th>Complejo</th><th>Cancha</th><th>Solicitudes</th><th>Aceptadas</th><th>Rechazadas</th>
+                    <th>Vencidas</th><th>Horas confirmadas</th><th>Ingreso bruto ref.</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="fila in reporteMensual" :key="fila.cancha_id">
+                    <td class="font-bold">{{ fila.complejo }}</td>
+                    <td>{{ fila.cancha }}</td>
+                    <td>{{ fila.solicitudes_recibidas }}</td>
+                    <td>{{ fila.aceptadas }}</td>
+                    <td>{{ fila.rechazadas }}</td>
+                    <td>{{ fila.vencidas }}</td>
+                    <td>{{ fila.horas_confirmadas }}</td>
+                    <td class="text-lime font-bold">₡{{ Number(fila.ingreso_bruto_reservas).toLocaleString('es-CR') }}</td>
+                  </tr>
+                  <tr v-if="reporteMensual.length === 0">
+                    <td colspan="8" class="text-center py-4">No hay datos para este mes.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
         <!-- PESTAÑA 3: MOVIMIENTOS / RESERVAS GLOBALES -->
         <section v-if="vista === 'movimientos'" class="tab-content animate-fade-in">
           <div class="section-card">
@@ -298,6 +398,18 @@
                 >
                   <ion-select-option :value="null">Todos los Complejos</ion-select-option>
                   <ion-select-option v-for="c in facturacion" :key="c.complejo_id" :value="c.complejo_id">{{ c.nombre }}</ion-select-option>
+                </ion-select>
+                <ion-select
+                  v-model="filtroCancha"
+                  interface="popover"
+                  placeholder="Filtrar por cancha"
+                  class="neon-select filter-select"
+                  @ionChange="cargarMovimientos"
+                >
+                  <ion-select-option :value="null">Todas las canchas</ion-select-option>
+                  <ion-select-option v-for="cancha in canchasTodas" :key="cancha.id" :value="cancha.id">
+                    {{ cancha.complejo?.nombre }} — {{ cancha.nombre }}
+                  </ion-select-option>
                 </ion-select>
               </div>
             </div>
@@ -445,14 +557,21 @@ addIcons({
 const router = useRouter();
 const authStore = useAuthStore();
 
-const vista = ref<'complejos' | 'usuarios' | 'movimientos'>('complejos');
+const vista = ref<'complejos' | 'usuarios' | 'movimientos' | 'verificacion' | 'reporte'>('complejos');
 
 const facturacion = ref<any[]>([]);
 const usuarios = ref<any[]>([]);
 const movimientos = ref<any[]>([]);
+const canchasTodas = ref<any[]>([]);
+const canchasRevision = ref<any[]>([]);
+const observacionesRechazo = ref<Record<number, string>>({});
+const reporteMensual = ref<any[]>([]);
 const mensaje = ref('');
+const fechaActual = new Date();
+const mesReporte = ref(`${fechaActual.getFullYear()}-${String(fechaActual.getMonth() + 1).padStart(2, '0')}`);
 
 const filtroComplejo = ref<number | null>(null);
+const filtroCancha = ref<number | null>(null);
 
 // Geografía
 const provincias = ref<any[]>([]);
@@ -530,10 +649,67 @@ async function onCantonChange() {
 
 async function cargarMovimientos() {
   try {
-    const { data } = await adminService.movimientos({ complejo_id: filtroComplejo.value ?? undefined });
+    const { data } = await adminService.movimientos({
+      complejo_id: filtroComplejo.value ?? undefined,
+      cancha_id: filtroCancha.value ?? undefined,
+    });
     movimientos.value = data.data.data;
   } catch (error) {
     console.error('Error cargando movimientos:', error);
+  }
+}
+
+async function cargarCanchasTodas() {
+  try {
+    const { data } = await adminService.canchas();
+    canchasTodas.value = data.data.data;
+  } catch (error) {
+    console.error('Error cargando canchas para el historial:', error);
+  }
+}
+
+async function cargarVerificaciones() {
+  try {
+    const { data } = await adminService.canchasPorVerificar();
+    canchasRevision.value = data.data.data;
+  } catch (error) {
+    console.error('Error cargando canchas pendientes:', error);
+  }
+}
+
+async function resolverVerificacion(cancha: any, estado_verificacion: 'aprobada' | 'rechazada') {
+  try {
+    await adminService.verificarCancha(cancha.id, {
+      estado_verificacion,
+      observaciones_admin: observacionesRechazo.value[cancha.id],
+    });
+    mensaje.value = estado_verificacion === 'aprobada' ? 'Cancha aprobada.' : 'Cancha rechazada con observaciones.';
+    await cargarVerificaciones();
+  } catch (error: any) {
+    mensaje.value = error.response?.data?.message || 'No se pudo guardar la revisión.';
+  }
+}
+
+async function cargarReporteMensual() {
+  try {
+    const { data } = await adminService.reporteMensual(mesReporte.value);
+    reporteMensual.value = data.data;
+  } catch (error) {
+    console.error('Error cargando reporte mensual:', error);
+  }
+}
+
+async function descargarReporteMensual() {
+  try {
+    const { data } = await adminService.exportarReporteMensual(mesReporte.value);
+    const url = URL.createObjectURL(new Blob([data], { type: 'text/csv;charset=utf-8' }));
+    const enlace = document.createElement('a');
+    enlace.href = url;
+    enlace.download = `sportra-reporte-${mesReporte.value}.csv`;
+    enlace.click();
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Error exportando reporte mensual:', error);
   }
 }
 
@@ -628,7 +804,12 @@ function getBadgeText(c: any) {
 }
 
 watch(vista, (nuevaVista) => {
-  if (nuevaVista === 'movimientos') cargarMovimientos();
+  if (nuevaVista === 'movimientos') {
+    cargarMovimientos();
+    cargarCanchasTodas();
+  }
+  if (nuevaVista === 'verificacion') cargarVerificaciones();
+  if (nuevaVista === 'reporte') cargarReporteMensual();
 });
 
 onMounted(async () => {

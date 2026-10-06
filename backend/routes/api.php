@@ -8,13 +8,21 @@ use App\Http\Controllers\Panel\HorarioController;
 use App\Http\Controllers\Panel\ReservaController;
 use App\Http\Controllers\Public\ComplejoPublicoController;
 use App\Http\Controllers\Public\GeografiaPublicaController;
+use App\Http\Controllers\Public\SolicitudReservaPublicaController;
 use App\Http\Controllers\Panel\EstadisticaController;
 use App\Http\Controllers\Panel\AuditoriaController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\FacturacionController;
 use App\Http\Controllers\Admin\UsuarioAdminController;
+use App\Http\Controllers\Admin\VerificacionCanchaController;
+use App\Http\Controllers\Admin\ReporteMensualController;
 
-Route::prefix('panel/admin')->middleware(['auth:sanctum', 'platform.admin'])->group(function () {
+Route::prefix('panel/admin')->middleware(['auth:sanctum', 'account.active', 'platform.admin'])->group(function () {
+    Route::get('/canchas/verificacion', [VerificacionCanchaController::class, 'index']);
+    Route::patch('/canchas/{cancha}/verificacion', [VerificacionCanchaController::class, 'update']);
+    Route::get('/reportes/mensual', [ReporteMensualController::class, 'index']);
+    Route::get('/reportes/mensual/exportar', [ReporteMensualController::class, 'exportar']);
+
     Route::get('/usuarios', [UsuarioAdminController::class, 'index']);
     Route::post('/usuarios', [UsuarioAdminController::class, 'store']);
     Route::patch('/usuarios/{user}/estado', [UsuarioAdminController::class, 'toggleEstado']);
@@ -31,7 +39,7 @@ Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login'])
         ->middleware('throttle:5,1');
 
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum', 'account.active'])->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
     });
@@ -42,6 +50,8 @@ Route::prefix('complejos')->group(function () {
     Route::get('/{complejo}', [ComplejoPublicoController::class, 'show']);
     Route::get('/{complejo}/disponibilidad', [ComplejoPublicoController::class, 'disponibilidad']);
     Route::get('/{complejo}/whatsapp', [ComplejoPublicoController::class, 'enlaceWhatsApp']);
+    Route::post('/{complejo}/solicitudes', [SolicitudReservaPublicaController::class, 'store'])
+        ->middleware('throttle:reserva-publica');
 });
 
 Route::prefix('geografia')->group(function () {
@@ -50,7 +60,7 @@ Route::prefix('geografia')->group(function () {
     Route::get('/distritos', [GeografiaPublicaController::class, 'distritos']);
 });
 
-Route::prefix('panel')->middleware('auth:sanctum')->group(function () {
+Route::prefix('panel')->middleware(['auth:sanctum', 'account.active'])->group(function () {
     Route::get('/mis-complejos', [ComplejoController::class, 'misComplejos']);
     Route::get('/complejos/{complejo:id}', [ComplejoController::class, 'show']);
     Route::put('/complejos/{complejo:id}', [ComplejoController::class, 'update']);
@@ -68,6 +78,8 @@ Route::prefix('panel')->middleware('auth:sanctum')->group(function () {
 
     Route::get('/reservas', [ReservaController::class, 'index']);
     Route::post('/reservas', [ReservaController::class, 'store']);
+    Route::post('/reservas/{reserva}/aceptar', [ReservaController::class, 'aceptar']);
+    Route::post('/reservas/{reserva}/rechazar', [ReservaController::class, 'rechazar']);
     Route::delete('/reservas/{reserva}', [ReservaController::class, 'destroy']);
 
     Route::post('/bloqueos', [BloqueoController::class, 'store']);

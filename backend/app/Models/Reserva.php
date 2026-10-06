@@ -16,6 +16,7 @@ class Reserva extends Model
         'cancha_id',
         'creado_por',
         'nombre_cliente',
+        'cedula_cliente',
         'telefono_cliente',
         'fecha',
         'hora_inicio',
@@ -23,10 +24,16 @@ class Reserva extends Model
         'estado',
         'origen',
         'observaciones',
+        'solicitud_id',
+        'expira_en',
+        'precio_hora_reservado',
+        'decision_propietario',
     ];
 
     protected $casts = [
         'fecha' => 'date',
+        'cedula_cliente' => 'encrypted',
+        'expira_en' => 'datetime',
     ];
 
     protected static function booted(): void

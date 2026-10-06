@@ -33,21 +33,32 @@
     "vue-router": "^5.0.0"
   },
   "devDependencies": {
-    "@capacitor/cli": "8.5.1",
+    "@eslint/js": "^9.39.2",
+    "@capacitor/cli": "8.5.2",
     "@types/leaflet": "^1.9.22",
     "@vitejs/plugin-legacy": "^8.0.0",
     "@vitejs/plugin-vue": "^6.0.0",
-    "@vue/eslint-config-typescript": "^12.0.0",
+    "@vue/eslint-config-typescript": "^14.9.0",
     "@vue/test-utils": "^2.3.0",
-    "cypress": "^13.5.0",
-    "eslint": "^8.35.0",
+    "cypress": "^13.17.0",
+    "eslint": "^9.39.2",
     "eslint-plugin-vue": "^9.9.0",
+    "globals": "^17.13.0",
     "jsdom": "^22.1.0",
     "terser": "^5.16.0",
     "typescript": "~5.9.0",
     "vite": "^8.0.0",
     "vitest": "^4.0.0",
     "vue-tsc": "^2.1.10"
+  },
+  "overrides": {
+    "@cypress/request": {
+      "qs": "^6.16.0",
+      "uuid": "^11.1.1"
+    },
+    "xcode": {
+      "uuid": "^11.1.1"
+    }
   },
   "description": "An Ionic project"
 }

@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'turnstile' => [
+        'secret' => env('TURNSTILE_SECRET'),
+        'hostname' => env('TURNSTILE_HOSTNAME'),
+    ],
+
 ];

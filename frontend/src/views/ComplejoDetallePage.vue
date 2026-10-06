@@ -68,6 +68,10 @@
                   <ion-icon name="navigate-outline"></ion-icon>
                   {{ complejo.direccion_texto || 'Sin dirección exacta registrada' }}
                 </p>
+                <a v-if="enlaceGoogleMaps" :href="enlaceGoogleMaps" target="_blank" rel="noopener noreferrer" class="google-maps-link">
+                  <ion-icon name="location-sharp"></ion-icon>
+                  Ver ubicación en Google Maps
+                </a>
               </div>
             </div>
 
@@ -167,9 +171,10 @@
             <!-- Leyenda de Estados -->
             <div class="glass-card legend-bar">
               <div class="legend-item"><span class="dot disponible"></span>Disponible</div>
-              <div class="legend-item"><span class="dot ocupada"></span>Ocupado</div>
-              <div class="legend-item"><span class="dot pendiente"></span>Pendiente</div>
-              <div class="legend-item"><span class="dot bloqueada"></span>Bloqueado</div>
+              <div class="legend-item"><span class="dot reservado"></span>Reservado</div>
+              <div class="legend-item"><span class="dot en-tramite"></span>En trámite</div>
+              <div class="legend-item"><span class="dot cerrada"></span>Cerrada</div>
+              <div class="legend-item"><span class="dot en-mantenimiento"></span>En mantenimiento</div>
             </div>
 
             <!-- Loading de Horarios -->
@@ -209,10 +214,13 @@
                     class="slot-btn"
                     :class="[
                       `slot-${bloque.estado}`, 
-                      { 'is-interactive': bloque.estado === 'disponible' }
+                      {
+                        'is-interactive': bloque.estado === 'disponible',
+                        'is-selected': estaSeleccionado(cancha.cancha_id, bloque.hora_inicio)
+                      }
                     ]"
                     :disabled="bloque.estado !== 'disponible'"
-                    @click="seleccionarBloque(cancha, bloque)"
+                    @click="alternarBloque(cancha, bloque)"
                   >
                     <span class="time-text">{{ bloque.hora_inicio }}</span>
                     <span class="status-indicator">
@@ -220,6 +228,14 @@
                     </span>
                   </button>
                 </div>
+
+                <button
+                  v-if="canchaSeleccionadaId === cancha.cancha_id && bloquesSeleccionados.length"
+                  class="btn-modal-submit"
+                  @click="modalSolicitudAbierto = true"
+                >
+                  Solicitar {{ bloquesSeleccionados.length }} {{ bloquesSeleccionados.length === 1 ? 'hora' : 'horas' }}
+                </button>
               </div>
 
             </div>
@@ -275,13 +291,13 @@
     </ion-content>
 
     <!-- Modal de Reserva Neón Glass -->
-    <ion-modal :is-open="Boolean(bloqueSeleccionado)" @didDismiss="cerrarReserva" class="glass-modal-container">
+    <ion-modal :is-open="modalSolicitudAbierto" @didDismiss="cerrarReserva" class="glass-modal-container">
       <div class="reservation-modal-glass">
         <div class="reservation-modal-header">
           <div>
             <span class="eyebrow">Solicitud instantánea</span>
             <h2>Reservar Cancha</h2>
-            <p>{{ fechaFormateadaCorta }} · {{ bloqueSeleccionado?.hora_inicio }} - {{ bloqueSeleccionado?.hora_fin }}</p>
+            <p>{{ fechaFormateadaCorta }} · {{ resumenHorasSeleccionadas }}</p>
           </div>
           <button class="modal-close-btn" aria-label="Cerrar" @click="cerrarReserva">
             <ion-icon name="close-outline"></ion-icon>
@@ -289,10 +305,22 @@
         </div>
 
         <div class="reservation-form">
+          <div aria-hidden="true" style="position: absolute; left: -10000px;">
+            <label for="website-check">Dejar vacío</label>
+            <input id="website-check" v-model="solicitud.website" type="text" tabindex="-1" autocomplete="off" />
+          </div>
+
           <div class="field-block">
             <label>Nombre completo <span>*</span></label>
             <div class="input-glow-box">
               <input v-model="solicitud.nombre" type="text" placeholder="Ej: Juan Pérez" />
+            </div>
+          </div>
+
+          <div class="field-block">
+            <label>Cédula <span>*</span></label>
+            <div class="input-glow-box">
+              <input v-model="solicitud.cedula" type="text" autocomplete="off" placeholder="Número de identificación" />
             </div>
           </div>
 
@@ -312,18 +340,22 @@
 
           <div class="reservation-note">
             <ion-icon name="information-circle-outline"></ion-icon>
-            <p>Se abrirá WhatsApp para enviar la confirmación del bloque reservado al complejo.</p>
+            <p>Las horas quedarán en trámite por 15 minutos. Se abrirá WhatsApp con los datos; debes tocar Enviar para avisar al dueño.</p>
           </div>
+
+          <div v-if="turnstileSiteKey" ref="turnstileContainer" class="turnstile-container"></div>
+
+          <p v-if="errorSolicitud" class="reservation-note error-note" role="alert">{{ errorSolicitud }}</p>
 
           <div class="modal-actions">
             <button class="btn-modal-cancel" @click="cerrarReserva">Cancelar</button>
             <button 
               class="btn-modal-submit" 
-              :disabled="!solicitud.nombre || !solicitud.telefono" 
+              :disabled="enviandoSolicitud || !solicitud.nombre || !solicitud.cedula || !solicitud.telefono || Boolean(turnstileSiteKey && !captchaToken)"
               @click="enviarSolicitud"
             >
               <ion-icon name="logo-whatsapp"></ion-icon>
-              Solicitar Reserva
+              {{ enviandoSolicitud ? 'Enviando solicitud...' : 'Solicitar horas' }}
             </button>
           </div>
         </div>
@@ -381,12 +413,34 @@ const complejo = ref<ComplejoDetalle | null>(null);
 const disponibilidad = ref<Disponibilidad | null>(null);
 const cargando = ref(true);
 const cargandoDisponibilidad = ref(false);
-const bloqueSeleccionado = ref<{ hora_inicio: string; hora_fin: string } | null>(null);
-const canchaSeleccionada = ref<{ nombre: string } | null>(null);
-const solicitud = ref({ nombre: '', telefono: '', comentario: '' });
+const canchaSeleccionadaId = ref<number | null>(null);
+const bloquesSeleccionados = ref<{ cancha_id: number; nombre: string; hora_inicio: string; hora_fin: string }[]>([]);
+const modalSolicitudAbierto = ref(false);
+const enviandoSolicitud = ref(false);
+const errorSolicitud = ref('');
+const captchaToken = ref('');
+const turnstileContainer = ref<HTMLElement | null>(null);
+const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || '';
+const solicitud = ref({ nombre: '', cedula: '', telefono: '', comentario: '', website: '' });
+let turnstileWidgetId: string | undefined;
+
+type TurnstileApi = {
+  render: (container: HTMLElement, options: {
+    sitekey: string;
+    action: string;
+    callback: (token: string) => void;
+    'expired-callback': () => void;
+  }) => string;
+  reset: (widgetId?: string) => void;
+  remove: (widgetId: string) => void;
+};
 
 const fechaSeleccionada = ref<string>(obtenerFechaHoyISO());
 const fechaMinima = obtenerFechaHoyISO();
+const enlaceGoogleMaps = computed(() => {
+  if (!complejo.value?.latitud || !complejo.value?.longitud) return '';
+  return `https://www.google.com/maps/search/?api=1&query=${complejo.value.latitud},${complejo.value.longitud}`;
+});
 
 function obtenerFechaHoyISO(): string {
   const hoy = new Date();
@@ -478,6 +532,7 @@ const fechaFormateadaCorta = computed(() => {
 
 function seleccionarFecha(iso: string) {
   if (fechaSeleccionada.value !== iso) {
+    limpiarSeleccion();
     fechaSeleccionada.value = iso;
     cargarDisponibilidad();
   }
@@ -487,6 +542,7 @@ function onFechaModalChange(event: CustomEvent) {
   const val = event.detail.value;
   if (val) {
     const iso = Array.isArray(val) ? val[0].split('T')[0] : val.split('T')[0];
+    limpiarSeleccion();
     fechaSeleccionada.value = iso;
     cargarDisponibilidad();
   }
@@ -518,40 +574,127 @@ async function cargarDisponibilidad() {
 
 function statusLabel(estado: string): string {
   const labels: Record<string, string> = {
-    disponible: 'Libre',
-    ocupada: 'Ocupado',
-    pendiente: 'Pendiente',
-    bloqueada: 'No disp.'
+    disponible: 'Disponible',
+    reservado: 'Reservado',
+    en_tramite: 'En trámite',
+    cerrada: 'Cerrada',
+    en_mantenimiento: 'En mantenimiento',
   };
   return labels[estado] || estado;
 }
 
-function seleccionarBloque(cancha: { nombre: string }, bloque: { hora_inicio: string; hora_fin: string; estado: string }) {
+const resumenHorasSeleccionadas = computed(() => bloquesSeleccionados.value
+  .map((bloque) => `${bloque.hora_inicio} - ${bloque.hora_fin}`)
+  .join(', '));
+
+function estaSeleccionado(canchaId: number, horaInicio: string): boolean {
+  return bloquesSeleccionados.value.some((bloque) => bloque.cancha_id === canchaId && bloque.hora_inicio === horaInicio);
+}
+
+function alternarBloque(cancha: { cancha_id: number; nombre: string }, bloque: { hora_inicio: string; hora_fin: string; estado: string }) {
   if (bloque.estado !== 'disponible') return;
-  canchaSeleccionada.value = cancha;
-  bloqueSeleccionado.value = bloque;
+  if (canchaSeleccionadaId.value !== null && canchaSeleccionadaId.value !== cancha.cancha_id) {
+    bloquesSeleccionados.value = [];
+  }
+  canchaSeleccionadaId.value = cancha.cancha_id;
+
+  if (estaSeleccionado(cancha.cancha_id, bloque.hora_inicio)) {
+    bloquesSeleccionados.value = bloquesSeleccionados.value.filter((item) => item.hora_inicio !== bloque.hora_inicio);
+  } else {
+    bloquesSeleccionados.value.push({ cancha_id: cancha.cancha_id, nombre: cancha.nombre, ...bloque });
+  }
+
+  if (bloquesSeleccionados.value.length === 0) canchaSeleccionadaId.value = null;
 }
 
 function cerrarReserva() {
-  bloqueSeleccionado.value = null;
-  canchaSeleccionada.value = null;
+  modalSolicitudAbierto.value = false;
+  errorSolicitud.value = '';
 }
 
-function enviarSolicitud() {
-  if (!complejo.value || !bloqueSeleccionado.value || !solicitud.value.nombre || !solicitud.value.telefono) return;
+function limpiarSeleccion() {
+  bloquesSeleccionados.value = [];
+  canchaSeleccionadaId.value = null;
+  modalSolicitudAbierto.value = false;
+}
 
-  const mensaje = [
-    `Hola, quisiera reservar ${canchaSeleccionada.value?.nombre || 'la cancha'} en ${complejo.value.nombre}.`,
-    `Fecha: ${fechaFormateadaCorta.value}.`,
-    `Horario: ${bloqueSeleccionado.value.hora_inicio} - ${bloqueSeleccionado.value.hora_fin}.`,
-    `Nombre: ${solicitud.value.nombre}.`,
-    `Teléfono: ${solicitud.value.telefono}.`,
-    solicitud.value.comentario ? `Comentario: ${solicitud.value.comentario}.` : '',
-  ].filter(Boolean).join('\n');
+async function enviarSolicitud() {
+  if (!complejo.value || canchaSeleccionadaId.value === null || bloquesSeleccionados.value.length === 0) return;
 
-  const numero = complejo.value.whatsapp_numero?.replace(/\D/g, '');
-  if (numero) window.open(`https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`, '_blank');
-  cerrarReserva();
+  errorSolicitud.value = '';
+  enviandoSolicitud.value = true;
+  const ventanaWhatsApp = window.open('about:blank', '_blank');
+
+  try {
+    const { data } = await complejosService.crearSolicitud(slug, {
+      cancha_id: canchaSeleccionadaId.value,
+      nombre_cliente: solicitud.value.nombre,
+      cedula_cliente: solicitud.value.cedula,
+      telefono_cliente: solicitud.value.telefono,
+      fecha: fechaSeleccionada.value,
+      horas: bloquesSeleccionados.value.map((bloque) => bloque.hora_inicio),
+      observaciones: solicitud.value.comentario || undefined,
+      website: solicitud.value.website,
+      captcha_token: captchaToken.value || undefined,
+    });
+
+    if (ventanaWhatsApp) {
+      ventanaWhatsApp.location.href = data.data.whatsapp_url;
+      ventanaWhatsApp.opener = null;
+    } else {
+      window.location.assign(data.data.whatsapp_url);
+    }
+
+    modalSolicitudAbierto.value = false;
+    bloquesSeleccionados.value = [];
+    canchaSeleccionadaId.value = null;
+    solicitud.value = { nombre: '', cedula: '', telefono: '', comentario: '', website: '' };
+    restablecerCaptcha();
+    await cargarDisponibilidad();
+  } catch (error: any) {
+    ventanaWhatsApp?.close();
+    errorSolicitud.value = error.response?.data?.message || 'No se pudo registrar la solicitud. Revisa las horas e inténtalo de nuevo.';
+    restablecerCaptcha();
+  } finally {
+    enviandoSolicitud.value = false;
+  }
+}
+
+function restablecerCaptcha() {
+  captchaToken.value = '';
+  if (turnstileWidgetId) (window as Window & { turnstile?: TurnstileApi }).turnstile?.reset(turnstileWidgetId);
+}
+
+function cargarTurnstile() {
+  if (!turnstileSiteKey || !turnstileContainer.value) return;
+
+  const render = () => {
+    const turnstile = (window as Window & { turnstile?: TurnstileApi }).turnstile;
+    if (!turnstile || !turnstileContainer.value) return;
+
+    turnstileWidgetId = turnstile.render(turnstileContainer.value, {
+      sitekey: turnstileSiteKey,
+      action: 'reserva',
+      callback: (token) => { captchaToken.value = token; },
+      'expired-callback': () => { captchaToken.value = ''; },
+    });
+  };
+
+  const existente = document.getElementById('sportra-turnstile-script') as HTMLScriptElement | null;
+  if ((window as Window & { turnstile?: TurnstileApi }).turnstile) {
+    render();
+  } else if (!existente) {
+    const script = document.createElement('script');
+    script.id = 'sportra-turnstile-script';
+    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+    script.async = true;
+    script.defer = true;
+    script.onload = render;
+    script.onerror = () => { errorSolicitud.value = 'No se pudo cargar la verificación anti-spam.'; };
+    document.head.append(script);
+  } else {
+    existente.addEventListener('load', render, { once: true });
+  }
 }
 
 function formatearPrecio(precio: number): string {
@@ -602,6 +745,7 @@ let canalSuscrito: any = null;
 onMounted(async () => {
   await cargarComplejo();
   await cargarDisponibilidad();
+  cargarTurnstile();
 
   if (complejo.value) {
     canalSuscrito = echo.channel(`complejo.${complejo.value.id}.disponibilidad`);
@@ -612,6 +756,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  if (turnstileWidgetId) (window as Window & { turnstile?: TurnstileApi }).turnstile?.remove(turnstileWidgetId);
   if (complejo.value) {
     echo.leaveChannel(`complejo.${complejo.value.id}.disponibilidad`);
   }
@@ -1140,9 +1285,10 @@ ion-content.sportra-main-viewport {
 .legend-item { display: flex; align-items: center; gap: 0.4rem; }
 .dot { width: 8px; height: 8px; border-radius: 50%; }
 .dot.disponible { background-color: #84cc16; box-shadow: 0 0 8px #84cc16; }
-.dot.ocupada { background-color: #ef4444; }
-.dot.pendiente { background-color: #f59e0b; }
-.dot.bloqueada { background-color: #64748b; }
+.dot.reservado { background-color: #ef4444; }
+.dot.en-tramite { background-color: #f59e0b; }
+.dot.cerrada { background-color: #64748b; }
+.dot.en-mantenimiento { background-color: #f97316; }
 
 .dispo-loading-box {
   display: flex;
@@ -1243,9 +1389,11 @@ ion-content.sportra-main-viewport {
   box-shadow: 0 0 20px rgba(132, 204, 22, 0.4);
 }
 
-.slot-ocupada { background: rgba(239, 68, 68, 0.08); border-color: rgba(239, 68, 68, 0.2); color: #f87171; opacity: 0.6; text-decoration: line-through; }
-.slot-pendiente { background: rgba(245, 158, 11, 0.08); border-color: rgba(245, 158, 11, 0.2); color: #fbbf24; }
-.slot-bloqueada { background: rgba(255, 255, 255, 0.03); border-color: rgba(255, 255, 255, 0.08); color: #64748b; opacity: 0.5; }
+.slot-reservado { background: rgba(239, 68, 68, 0.08); border-color: rgba(239, 68, 68, 0.2); color: #f87171; opacity: 0.6; text-decoration: line-through; }
+.slot-en_tramite { background: rgba(245, 158, 11, 0.08); border-color: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+.slot-cerrada { background: rgba(255, 255, 255, 0.03); border-color: rgba(255, 255, 255, 0.08); color: #64748b; opacity: 0.5; }
+.slot-en_mantenimiento { background: rgba(249, 115, 22, 0.08); border-color: rgba(249, 115, 22, 0.25); color: #fb923c; }
+.slot-btn.is-selected { background: rgba(132, 204, 22, 0.18); border-color: #84cc16; color: #d9f99d; box-shadow: 0 0 16px rgba(132, 204, 22, 0.24); }
 
 /* EMPTY STATES */
 .empty-dispo-box, .empty-state-full {
@@ -1427,6 +1575,7 @@ ion-content.sportra-main-viewport {
 
 .reservation-note ion-icon { flex: 0 0 auto; font-size: 1.2rem; color: #84cc16; }
 .reservation-note p { margin: 0; line-height: 1.45; }
+.error-note { color: #fecaca; border-color: rgba(248, 113, 113, 0.35); }
 
 .modal-actions { 
   display: grid; 

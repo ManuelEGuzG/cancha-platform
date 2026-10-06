@@ -46,6 +46,10 @@ class UsuarioAdminController extends Controller
 
         $user->update(['activo' => !$user->activo]);
 
+        if (!$user->activo) {
+            $user->tokens()->delete();
+        }
+
         return response()->json(['data' => $user]);
     }
 

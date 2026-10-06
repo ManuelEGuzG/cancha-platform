@@ -18,5 +18,14 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('api', function ($request) {
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
+
+        RateLimiter::for('reserva-publica', function ($request) {
+            $telefono = preg_replace('/\D+/', '', (string) $request->input('telefono_cliente'));
+
+            return [
+                Limit::perMinute(5)->by($request->ip()),
+                Limit::perHour(10)->by('telefono:'.hash('sha256', $telefono)),
+            ];
+        });
     }
 }

@@ -23,12 +23,23 @@ class EstadisticaController extends Controller
 
         $reservasDelMes = Reserva::whereIn('cancha_id', $canchaIds)
             ->whereBetween('fecha', [$inicioMes->toDateString(), $finMes->toDateString()])
+            ->with('cancha:id,precio_hora')
             ->get();
 
         $reservasHoy = Reserva::whereIn('cancha_id', $canchaIds)
             ->whereDate('fecha', Carbon::today()->toDateString())
             ->whereIn('estado', ['pendiente', 'confirmada'])
             ->count();
+
+        $solicitudes = $reservasDelMes
+            ->whereNotNull('solicitud_id')
+            ->groupBy('solicitud_id');
+        $demandaPorHora = $reservasDelMes
+            ->groupBy(fn (Reserva $reserva) => substr($reserva->hora_inicio, 0, 5))
+            ->map(fn ($reservas, $hora) => ['hora' => $hora, 'reservas' => $reservas->count()])
+            ->sortByDesc('reservas')
+            ->take(5)
+            ->values();
 
         return response()->json([
             'data' => [
@@ -41,6 +52,13 @@ class EstadisticaController extends Controller
                     'completadas' => $reservasDelMes->where('estado', 'completada')->count(),
                     'no_presentadas' => $reservasDelMes->where('estado', 'no_presentada')->count(),
                 ],
+                'solicitudes_mes' => [
+                    'recibidas' => $solicitudes->count(),
+                    'aceptadas' => $solicitudes->filter(fn ($horas) => $horas->first()->decision_propietario === 'aceptada')->count(),
+                    'rechazadas' => $solicitudes->filter(fn ($horas) => $horas->first()->decision_propietario === 'rechazada')->count(),
+                    'vencidas' => $solicitudes->filter(fn ($horas) => $horas->first()->decision_propietario === 'expirada')->count(),
+                ],
+                'demanda_por_hora' => $demandaPorHora,
                 'ingreso_estimado_mes' => $this->calcularIngresoEstimado($reservasDelMes),
             ],
         ]);
@@ -54,7 +72,9 @@ class EstadisticaController extends Controller
                 $cancha = $reserva->cancha;
                 $horas = Carbon::parse($reserva->hora_inicio)->diffInHours(Carbon::parse($reserva->hora_fin));
 
-                return $cancha->precio_hora * $horas;
+                $precioHora = $reserva->precio_hora_reservado ?? $cancha->precio_hora;
+
+                return $precioHora * $horas;
             });
     }
 }

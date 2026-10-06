@@ -27,7 +27,10 @@ class CanchaController extends Controller
 
         Gate::authorize('gestionar', $complejo);
 
-        $cancha = Cancha::create($request->validated());
+        $cancha = Cancha::create([
+            ...$request->validated(),
+            'estado_verificacion' => 'pendiente',
+        ]);
 
         return response()->json(['data' => $cancha], 201);
     }

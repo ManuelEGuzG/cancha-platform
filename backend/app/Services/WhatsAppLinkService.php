@@ -24,6 +24,33 @@ class WhatsAppLinkService
         return sprintf('https://wa.me/%s?text=%s', $numero, rawurlencode($mensaje));
     }
 
+    public function generarEnlaceSolicitud(Complejo $complejo, Cancha $cancha, array $datos): ?string
+    {
+        if (!$complejo->whatsapp_numero) {
+            return null;
+        }
+
+        $numero = $this->normalizarNumero($complejo->whatsapp_numero);
+        $horas = collect($datos['horas'])->map(function (string $hora) {
+            $fin = Carbon::createFromFormat('H:i', $hora)->addHour()->format('H:i');
+
+            return "{$hora} - {$fin}";
+        })->implode(', ');
+        $mensaje = implode("\n", [
+            'Solicitud de reserva en Sportra',
+            "Complejo: {$complejo->nombre}",
+            "Cancha: {$cancha->nombre}",
+            'Fecha: '.Carbon::parse($datos['fecha'])->translatedFormat('d/m/Y'),
+            "Horas: {$horas}",
+            "Nombre: {$datos['nombre_cliente']}",
+            "Cédula: {$datos['cedula_cliente']}",
+            "Teléfono: {$datos['telefono_cliente']}",
+            'Solicitud en trámite por '.config('reservas.hold_minutes', 15).' minutos; confirme o rechace desde el panel.',
+        ]);
+
+        return sprintf('https://wa.me/%s?text=%s', $numero, rawurlencode($mensaje));
+    }
+
     private function construirMensaje(Complejo $complejo, ?Cancha $cancha, ?Carbon $fecha, ?string $horaInicio): string
     {
         if ($cancha && $fecha && $horaInicio) {
