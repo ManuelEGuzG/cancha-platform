@@ -1,17 +1,39 @@
+Tienes toda la razón. Viendo la captura, se aprecian graves problemas de legibilidad:
+
+1. **Texto invisible en el Hero**: El título «Panel Administrativo» y la descripción están en verde oscuro/gris sobre azul marino.
+
+
+2. **Cards de métricas rotas**: Las cajas de "COMPLEJOS" y "USUARIOS" salieron blancas sin adaptar el texto, y "AL DÍA" quedó en un tono oscuro illegible.
+
+
+3. **Contraste de las tablas y formularios**: Las tarjetas blancas (`.section-card`) tienen textos y placeholders en gris extremadamente claro (`#cbd5e1` o `#8e9cc0`), provocando que casi no se puedan leer.
+
+
+4. **Desconexión con la vista de detalle**: La vista de detalle usaba un fondo claro suave (`#f4f6fc`) en la parte inferior con tarjetas blancas puras, textos en azul oscuro (`#091133`), encabezados oscuros y bordes `#e2e8f0`.
+
+
+
+Aquí tienes el código completo y corregido de **`AdminPage.vue`**. Se separó la interfaz exactamente como en la vista de detalle: **Hero oscuro arriba con texto blanco puro** y **Sección inferior clara con excelente contraste y tarjetas bien estructuradas**.
+
+---
+
+### `AdminPage.vue`
+
+```vue
 <template>
-  <ion-page class="sportra-admin-page">
-    <!-- Navbar Flotante -->
-    <header class="navbar-container">
-      <div class="navbar-bar">
-        <div class="brand-box">
-          <div class="brand-badge glow-pulse">
-            <ion-icon :icon="shieldCheckmarkOutline" class="brand-icon"></ion-icon>
-          </div>
-          <span class="brand-name">SPORTRA<span class="neon-dot">.</span> <small class="role-badge">ADMIN</small></span>
+  <ion-page class="sportra-app">
+    <!-- Navbar Flotante con Marca Limpia -->
+    <header class="site-header">
+      <div class="nav-shell">
+        <div class="brand">
+          <span class="brand-copy">
+            <strong>SPORTRA<span>.</span></strong>
+            <small>ADMINISTRACIÓN GLOBAL</small>
+          </span>
         </div>
 
         <div class="header-right">
-          <button class="btn-logout" @click="cerrarSesion">
+          <button class="btn-logout" type="button" @click="cerrarSesion">
             <ion-icon :icon="logOutOutline"></ion-icon>
             <span>Cerrar Sesión</span>
           </button>
@@ -19,577 +41,632 @@
       </div>
     </header>
 
-    <ion-content class="sportra-main-viewport">
-      <div class="admin-wrapper">
-        <!-- Banner de Encabezado -->
-        <section class="admin-hero">
-          <div class="hero-text">
-            <span class="eyebrow">
-              <span class="pulse-indicator"></span>
-              Administración de la plataforma
-            </span>
-            <h1 class="page-title">Panel Administrativo Global</h1>
-            <p class="page-subtitle">Control de suscripciones, gestión de sedes, accesos e historial de reservas.</p>
-          </div>
+    <ion-content class="sportra-main-viewport" :fullscreen="true">
+      <div class="detail-page-wrapper">
+        
+        <!-- HERO SECTION OSCURA (Encabezado y Métricas) -->
+        <section class="complejo-hero-wrapper">
+          <div class="hero-inner-container">
+            <div class="admin-hero-card">
+              <div class="hero-left-content">
+                <div class="location-chip">
+                  <span class="pulse-dot"></span>
+                  <span>Plataforma Central</span>
+                </div>
+                <h1 class="page-title">Panel Administrativo</h1>
+                <p class="page-subtitle">
+                  Control de suscripciones, gestión de sedes, accesos e historial de reservas.
+                </p>
+              </div>
 
-          <!-- Métricas Rápidas -->
-          <div class="metrics-row">
-            <div class="metric-card">
-              <span class="metric-label">Complejos</span>
-              <span class="metric-value">{{ facturacion.length }}</span>
+              <!-- Métricas Rápidas con Contraste Correcto -->
+              <div class="metrics-row">
+                <div class="metric-card">
+                  <span class="metric-label">COMPLEJOS</span>
+                  <strong class="metric-value">{{ facturacion.length }}</strong>
+                </div>
+                <div class="metric-card highlight">
+                  <span class="metric-label">AL DÍA</span>
+                  <strong class="metric-value">{{ complejosAlDia }}</strong>
+                </div>
+                <div class="metric-card">
+                  <span class="metric-label">USUARIOS</span>
+                  <strong class="metric-value">{{ usuarios.length }}</strong>
+                </div>
+              </div>
             </div>
-            <div class="metric-card">
-              <span class="metric-label">Al Día</span>
-              <span class="metric-value text-lime">{{ complejosAlDia }}</span>
-            </div>
-            <div class="metric-card">
-              <span class="metric-label">Usuarios</span>
-              <span class="metric-value">{{ usuarios.length }}</span>
+
+            <!-- Navegación por Pestañas / Segmentos -->
+            <div class="tab-menu-bar">
+              <button 
+                :class="['tab-btn', { active: vista === 'complejos' }]" 
+                type="button"
+                @click="vista = 'complejos'"
+              >
+                <ion-icon :icon="businessOutline"></ion-icon>
+                <span>Complejos & Pagos</span>
+              </button>
+              <button 
+                :class="['tab-btn', { active: vista === 'usuarios' }]" 
+                type="button"
+                @click="vista = 'usuarios'"
+              >
+                <ion-icon :icon="peopleOutline"></ion-icon>
+                <span>Usuarios & Permisos</span>
+              </button>
+              <button 
+                :class="['tab-btn', { active: vista === 'movimientos' }]" 
+                type="button"
+                @click="vista = 'movimientos'"
+              >
+                <ion-icon :icon="receiptOutline"></ion-icon>
+                <span>Movimientos Globales</span>
+              </button>
+              <button
+                :class="['tab-btn', { active: vista === 'verificacion' }]"
+                type="button"
+                @click="vista = 'verificacion'"
+              >
+                <ion-icon :icon="checkmarkCircleOutline"></ion-icon>
+                <span>Verificación</span>
+              </button>
+              <button
+                :class="['tab-btn', { active: vista === 'reporte' }]"
+                type="button"
+                @click="vista = 'reporte'"
+              >
+                <ion-icon :icon="receiptOutline"></ion-icon>
+                <span>Reporte Mensual</span>
+              </button>
+              <button :class="['tab-btn', { active: vista === 'fotos' }]" type="button" @click="vista = 'fotos'">
+                <ion-icon :icon="imagesOutline"></ion-icon>
+                <span>Fotos</span>
+              </button>
+              <button :class="['tab-btn', { active: vista === 'seguridad' }]" type="button" @click="vista = 'seguridad'">
+                <ion-icon :icon="keyOutline"></ion-icon>
+                <span>Seguridad</span>
+              </button>
             </div>
           </div>
         </section>
 
-        <!-- Navegación por Segmentos -->
-        <div class="tab-menu">
-          <button 
-            :class="['tab-btn', { active: vista === 'complejos' }]" 
-            @click="vista = 'complejos'"
-          >
-            <ion-icon :icon="businessOutline"></ion-icon>
-            <span>Complejos & Pagos</span>
-          </button>
-          <button 
-            :class="['tab-btn', { active: vista === 'usuarios' }]" 
-            @click="vista = 'usuarios'"
-          >
-            <ion-icon :icon="peopleOutline"></ion-icon>
-            <span>Usuarios & Permisos</span>
-          </button>
-          <button 
-            :class="['tab-btn', { active: vista === 'movimientos' }]" 
-            @click="vista = 'movimientos'"
-          >
-            <ion-icon :icon="receiptOutline"></ion-icon>
-            <span>Movimientos Globales</span>
-          </button>
-          <button
-            :class="['tab-btn', { active: vista === 'verificacion' }]"
-            @click="vista = 'verificacion'"
-          >
-            <ion-icon :icon="checkmarkCircleOutline"></ion-icon>
-            <span>Verificación de Canchas</span>
-          </button>
-          <button
-            :class="['tab-btn', { active: vista === 'reporte' }]"
-            @click="vista = 'reporte'"
-          >
-            <ion-icon :icon="receiptOutline"></ion-icon>
-            <span>Reporte Mensual</span>
-          </button>
-          <button :class="['tab-btn', { active: vista === 'fotos' }]" @click="vista = 'fotos'">
-            <ion-icon :icon="imagesOutline"></ion-icon>
-            <span>Fotos</span>
-          </button>
-          <button :class="['tab-btn', { active: vista === 'seguridad' }]" @click="vista = 'seguridad'">
-            <ion-icon :icon="keyOutline"></ion-icon>
-            <span>Seguridad</span>
-          </button>
-        </div>
+        <!-- SECCIÓN INFERIOR CLARA (Contenido de Tablas y Formulario) -->
+        <section class="main-details-section">
+          <div class="section-container">
 
-        <!-- Banner de Notificación -->
-        <transition name="fade">
-          <div v-if="mensaje" class="notification-toast">
-            <ion-icon :icon="checkmarkCircleOutline"></ion-icon>
-            <span>{{ mensaje }}</span>
-            <ion-icon :icon="closeCircleOutline" class="btn-close-toast" @click="mensaje = ''"></ion-icon>
-          </div>
-        </transition>
-
-        <!-- PESTAÑA 1: COMPLEJOS Y SUSCRIPCIONES -->
-        <section v-if="vista === 'complejos'" class="tab-content animate-fade-in">
-          <div class="admin-grid-layout">
-            <!-- Tabla de Complejos -->
-            <div class="section-card main-col">
-              <div class="card-header">
-                <h3>Estado de Complejos y Suscripciones</h3>
-              </div>
-
-              <div class="table-responsive">
-                <table class="neon-table">
-                  <thead>
-                    <tr>
-                      <th>Complejo</th>
-                      <th>Suscripción</th>
-                      <th>Canchas</th>
-                      <th>Reservas/Mes</th>
-                      <th>Ingreso Est.</th>
-                      <th class="text-right">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="c in facturacion" :key="c.complejo_id">
-                      <td class="font-bold">
-                        {{ c.nombre }}
-                        <span v-if="!c.activo" class="tag-blocked">BLOQUEADO</span>
-                      </td>
-                      <td>
-                        <span :class="['status-pill', getBadgeClass(c)]">
-                          {{ getBadgeText(c) }}
-                        </span>
-                      </td>
-                      <td>{{ c.total_canchas }}</td>
-                      <td>{{ c.reservas_mes }}</td>
-                      <td class="text-lime font-bold">₡{{ c.ingreso_estimado_mes ? c.ingreso_estimado_mes.toLocaleString('es-CR') : 0 }}</td>
-                      <td>
-                        <div class="action-buttons-cell">
-                          <button class="btn-action-sm btn-pay" @click="abrirPago(c)" title="Registrar Pago">
-                            <ion-icon :icon="cardOutline"></ion-icon> Pago
-                          </button>
-                          <button 
-                            :class="['btn-action-sm', c.activo ? 'btn-danger' : 'btn-success']" 
-                            @click="toggleComplejo(c)"
-                          >
-                            <ion-icon :icon="c.activo ? lockClosedOutline : lockOpenOutline"></ion-icon>
-                            {{ c.activo ? 'Bloquear' : 'Activar' }}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                    <tr v-if="facturacion.length === 0">
-                      <td colspan="6" class="text-center py-4">No hay complejos registrados.</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <!-- Formulario Crear Complejo -->
-            <div class="section-card side-col">
-              <div class="card-header">
-                <h3>Crear Complejo</h3>
-              </div>
-
-              <form @submit.prevent="crearComplejo" class="neon-form">
-                <div class="field-block">
-                  <label>Provincia</label>
-                  <ion-select v-model="provinciaId" interface="popover" placeholder="Seleccione..." class="neon-select" @ionChange="onProvinciaChange">
-                    <ion-select-option v-for="p in provincias" :key="p.id" :value="p.id">{{ p.nombre }}</ion-select-option>
-                  </ion-select>
-                </div>
-
-                <div class="field-block">
-                  <label>Cantón</label>
-                  <ion-select v-model="cantonId" interface="popover" placeholder="Seleccione..." class="neon-select" :disabled="!provinciaId" @ionChange="onCantonChange">
-                    <ion-select-option v-for="c in cantones" :key="c.id" :value="c.id">{{ c.nombre }}</ion-select-option>
-                  </ion-select>
-                </div>
-
-                <div class="field-block">
-                  <label>Distrito</label>
-                  <ion-select v-model="nuevoComplejo.distrito_id" interface="popover" placeholder="Seleccione..." class="neon-select" :disabled="!cantonId">
-                    <ion-select-option v-for="d in distritos" :key="d.id" :value="d.id">{{ d.nombre }}</ion-select-option>
-                  </ion-select>
-                </div>
-
-                <div class="field-block">
-                  <label>Nombre del Complejo</label>
-                  <input v-model="nuevoComplejo.nombre" type="text" placeholder="Ej: Complejo Camp Nou" required class="neon-input" />
-                </div>
-
-                <div class="field-block">
-                  <label>WhatsApp</label>
-                  <input v-model="nuevoComplejo.whatsapp_numero" type="text" placeholder="Ej: 88888888" required class="neon-input" />
-                </div>
-
-                <button type="submit" class="btn-submit-neon" :disabled="!nuevoComplejo.distrito_id || !nuevoComplejo.nombre">
-                  <ion-icon :icon="addCircleOutline"></ion-icon> Crear Complejo
+            <!-- Notificación Toast -->
+            <transition name="fade">
+              <div v-if="mensaje" class="notification-toast">
+                <ion-icon :icon="checkmarkCircleOutline" class="toast-icon"></ion-icon>
+                <span>{{ mensaje }}</span>
+                <button type="button" class="btn-close-toast" @click="mensaje = ''">
+                  <ion-icon :icon="closeCircleOutline"></ion-icon>
                 </button>
-              </form>
-            </div>
-          </div>
-        </section>
-
-        <!-- PESTAÑA 2: USUARIOS Y ACTIVIDAD -->
-        <section v-if="vista === 'usuarios'" class="tab-content animate-fade-in">
-          <div class="admin-grid-layout">
-            <!-- Tabla Usuarios -->
-            <div class="section-card main-col">
-              <div class="card-header">
-                <h3>Usuarios Existentes</h3>
               </div>
+            </transition>
 
-              <div class="table-responsive">
-                <table class="neon-table">
-                  <thead>
-                    <tr>
-                      <th>Usuario</th>
-                      <th>Email</th>
-                      <th>Complejos Asignados</th>
-                      <th class="text-right">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="u in usuarios" :key="u.id">
-                      <td class="font-bold">
-                        {{ u.name }}
-                        <span v-if="!u.activo" class="tag-blocked">BLOQUEADO</span>
-                      </td>
-                      <td>{{ u.email }}</td>
-                      <td>
-                        <span class="complexes-tag">
-                          {{ u.complejos?.map((c: any) => c.nombre).join(', ') || 'Sin asignación' }}
-                        </span>
-                      </td>
-                      <td>
-                        <div class="action-buttons-cell">
-                          <button class="btn-action-sm btn-info" @click="verActividad(u)" title="Ver Historial">
-                            <ion-icon :icon="eyeOutline"></ion-icon> Actividad
-                          </button>
-                          <button 
-                            :class="['btn-action-sm', u.activo ? 'btn-danger' : 'btn-success']" 
-                            @click="toggleUsuario(u)"
-                          >
-                            <ion-icon :icon="u.activo ? lockClosedOutline : lockOpenOutline"></ion-icon>
-                            {{ u.activo ? 'Bloquear' : 'Activar' }}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <!-- Formulario Crear Usuario -->
-            <div class="section-card side-col">
-              <div class="card-header">
-                <h3>Crear Propietario / Encargado</h3>
-              </div>
-
-              <form @submit.prevent="crearUsuario" class="neon-form">
-                <div class="field-block">
-                  <label>Nombre Completo</label>
-                  <input v-model="nuevoUsuario.name" type="text" placeholder="Ej: Carlos Ruiz" required class="neon-input" />
-                </div>
-
-                <div class="field-block">
-                  <label>Correo Electrónico</label>
-                  <input v-model="nuevoUsuario.email" type="email" placeholder="carlos@ejemplo.com" required class="neon-input" />
-                </div>
-
-                <div class="field-block">
-                  <label>Contraseña</label>
-                  <input v-model="nuevoUsuario.password" type="password" placeholder="••••••••" required class="neon-input" />
-                </div>
-
-                <div class="field-block">
-                  <label>Asignar Complejo</label>
-                  <ion-select v-model="nuevoUsuario.complejo_id" interface="popover" placeholder="Seleccione..." class="neon-select">
-                    <ion-select-option v-for="c in facturacion" :key="c.complejo_id" :value="c.complejo_id">{{ c.nombre }}</ion-select-option>
-                  </ion-select>
-                </div>
-
-                <div class="field-block">
-                  <label>Rol asignado</label>
-                  <ion-select v-model="nuevoUsuario.rol" interface="popover" class="neon-select">
-                    <ion-select-option value="propietario">Propietario</ion-select-option>
-                    <ion-select-option value="encargado">Encargado</ion-select-option>
-                  </ion-select>
-                </div>
-
-                <button type="submit" class="btn-submit-neon" :disabled="!nuevoUsuario.email || !nuevoUsuario.password">
-                  <ion-icon :icon="personAddOutline"></ion-icon> Crear Usuario
-                </button>
-              </form>
-            </div>
-          </div>
-        </section>
-
-        <section v-if="vista === 'verificacion'" class="tab-content animate-fade-in">
-          <div class="section-card">
-            <div class="card-header">
-              <h3>Canchas pendientes de verificación</h3>
-              <span class="counter-pill">{{ canchasRevision.length }}</span>
-            </div>
-            <div class="table-responsive">
-              <table class="neon-table">
-                <thead>
-                  <tr><th>Cancha</th><th>Complejo</th><th>Deporte</th><th>Observaciones</th><th>Revisión</th></tr>
-                </thead>
-                <tbody>
-                  <tr v-for="cancha in canchasRevision" :key="cancha.id">
-                    <td class="font-bold">{{ cancha.nombre }}</td>
-                    <td>{{ cancha.complejo?.nombre }}</td>
-                    <td>{{ cancha.deporte?.nombre }}</td>
-                    <td>
-                      <input
-                        v-model="observacionesRechazo[cancha.id]"
-                        class="neon-input"
-                        type="text"
-                        maxlength="1000"
-                        placeholder="Motivo si se rechaza"
-                      />
-                    </td>
-                    <td>
-                      <div class="action-buttons-cell">
-                        <button class="btn-action-sm btn-success" @click="resolverVerificacion(cancha, 'aprobada')">Aprobar</button>
-                        <button
-                          class="btn-action-sm btn-danger"
-                          :disabled="!observacionesRechazo[cancha.id]?.trim()"
-                          @click="resolverVerificacion(cancha, 'rechazada')"
-                        >Rechazar</button>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr v-if="canchasRevision.length === 0">
-                    <td colspan="5" class="text-center py-4">No hay canchas pendientes de revisión.</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-
-        <section v-if="vista === 'reporte'" class="tab-content animate-fade-in">
-          <div class="section-card">
-            <div class="card-header header-with-filter">
-              <div>
-                <h3>Actividad mensual por cancha</h3>
-                <p>El ingreso bruto es referencial; la regla de cobro todavía no está definida.</p>
-              </div>
-              <div class="action-buttons-cell">
-                <input v-model="mesReporte" type="month" class="neon-input" />
-                <button class="btn-action-sm btn-info" @click="cargarReporteMensual">Consultar</button>
-                <button class="btn-action-sm btn-success" @click="descargarReporteMensual">Exportar CSV</button>
-              </div>
-            </div>
-            <div class="table-responsive">
-              <table class="neon-table">
-                <thead>
-                  <tr>
-                    <th>Complejo</th><th>Cancha</th><th>Solicitudes</th><th>Aceptadas</th><th>Rechazadas</th>
-                    <th>Vencidas</th><th>Horas confirmadas</th><th>Ingreso bruto ref.</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="fila in reporteMensual" :key="fila.cancha_id">
-                    <td class="font-bold">{{ fila.complejo }}</td>
-                    <td>{{ fila.cancha }}</td>
-                    <td>{{ fila.solicitudes_recibidas }}</td>
-                    <td>{{ fila.aceptadas }}</td>
-                    <td>{{ fila.rechazadas }}</td>
-                    <td>{{ fila.vencidas }}</td>
-                    <td>{{ fila.horas_confirmadas }}</td>
-                    <td class="text-lime font-bold">₡{{ Number(fila.ingreso_bruto_reservas).toLocaleString('es-CR') }}</td>
-                  </tr>
-                  <tr v-if="reporteMensual.length === 0">
-                    <td colspan="8" class="text-center py-4">No hay datos para este mes.</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-
-        <section v-if="vista === 'fotos'" class="tab-content animate-fade-in">
-          <div class="section-card">
-            <div class="card-header">
-              <h3>Fotos pendientes de revisión</h3>
-              <span class="counter-pill">{{ fotosRevision.length }}</span>
-            </div>
-            <div class="table-responsive">
-              <table class="neon-table">
-                <thead><tr><th>Foto</th><th>Cancha</th><th>Complejo</th><th>Descripción</th><th>Observaciones</th><th>Moderación</th></tr></thead>
-                <tbody>
-                  <tr v-for="foto in fotosRevision" :key="foto.id">
-                    <td><img :src="foto.url" :alt="foto.caption || 'Foto de cancha pendiente'" class="admin-photo-preview" loading="lazy" /></td>
-                    <td>{{ foto.cancha?.nombre }}</td>
-                    <td>{{ foto.cancha?.complejo?.nombre }}</td>
-                    <td>{{ foto.caption || 'Sin descripción' }}</td>
-                    <td><input v-model="observacionesFoto[foto.id]" class="neon-input" maxlength="1000" placeholder="Motivo si se rechaza" /></td>
-                    <td>
-                      <div class="action-buttons-cell">
-                        <button class="btn-action-sm btn-success" @click="resolverFoto(foto, 'aprobada')">Aprobar</button>
-                        <button class="btn-action-sm btn-danger" :disabled="!observacionesFoto[foto.id]?.trim()" @click="resolverFoto(foto, 'rechazada')">Rechazar</button>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr v-if="fotosRevision.length === 0"><td colspan="6" class="text-center py-4">No hay fotos pendientes.</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-
-        <section v-if="vista === 'seguridad'" class="tab-content animate-fade-in">
-          <div class="section-card security-section">
-            <div class="card-header">
-              <div><h3>Verificación en dos pasos</h3><p>Usa una aplicación TOTP para proteger la cuenta administradora.</p></div>
-              <span :class="['status-pill', twoFactorActivo ? 'status-active' : 'status-warning']">
-                {{ twoFactorActivo ? 'Activa' : 'Inactiva' }}
-              </span>
-            </div>
-
-            <div v-if="!twoFactorActivo" class="security-form">
-              <form class="neon-form" @submit.prevent="iniciarDosFactores">
-                <div class="field-block">
-                  <label>Contraseña actual</label>
-                  <input v-model="passwordDosFactores" type="password" autocomplete="current-password" class="neon-input" required />
-                </div>
-                <button type="submit" class="btn-submit-neon" :disabled="cargandoDosFactores">
-                  {{ cargandoDosFactores ? 'Preparando...' : 'Configurar aplicación' }}
-                </button>
-              </form>
-
-              <div v-if="configuracionDosFactores" class="totp-enrollment">
-                <img v-if="codigoQr" :src="codigoQr" alt="Código QR de configuración TOTP" class="totp-qr" />
-                <div class="field-block">
-                  <label>Clave manual</label>
-                  <code class="totp-secret">{{ configuracionDosFactores.secret }}</code>
-                </div>
-                <form class="neon-form" @submit.prevent="confirmarDosFactores">
-                  <div class="field-block">
-                    <label>Código de 6 dígitos</label>
-                    <input v-model="codigoDosFactores" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" class="neon-input" required />
+            <!-- PESTAÑA 1: COMPLEJOS Y SUSCRIPCIONES -->
+            <div v-if="vista === 'complejos'" class="tab-content animate-fade-in">
+              <div class="admin-grid-layout">
+                <!-- Tabla de Complejos -->
+                <div class="detail-white-card main-col">
+                  <div class="card-header-flex">
+                    <h2>Estado de Complejos y Suscripciones</h2>
                   </div>
-                  <button type="submit" class="btn-submit-neon" :disabled="cargandoDosFactores">Confirmar y activar</button>
-                </form>
+
+                  <div class="table-responsive">
+                    <table class="sportra-table">
+                      <thead>
+                        <tr>
+                          <th>Complejo</th>
+                          <th>Suscripción</th>
+                          <th>Canchas</th>
+                          <th>Reservas/Mes</th>
+                          <th>Ingreso Est.</th>
+                          <th class="text-right">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="c in facturacion" :key="c.complejo_id">
+                          <td class="font-bold cell-title">
+                            {{ c.nombre }}
+                            <span v-if="!c.activo" class="tag-blocked">BLOQUEADO</span>
+                          </td>
+                          <td>
+                            <span :class="['status-pill', getBadgeClass(c)]">
+                              {{ getBadgeText(c) }}
+                            </span>
+                          </td>
+                          <td>{{ c.total_canchas }}</td>
+                          <td>{{ c.reservas_mes }}</td>
+                          <td class="price-highlight font-bold">₡{{ c.ingreso_estimado_mes ? c.ingreso_estimado_mes.toLocaleString('es-CR') : 0 }}</td>
+                          <td>
+                            <div class="action-buttons-cell">
+                              <button class="btn-action-sm btn-pay" type="button" @click="abrirPago(c)" title="Registrar Pago">
+                                <ion-icon :icon="cardOutline"></ion-icon>
+                                <span>Pago</span>
+                              </button>
+                              <button 
+                                type="button"
+                                :class="['btn-action-sm', c.activo ? 'btn-danger' : 'btn-success']" 
+                                @click="toggleComplejo(c)"
+                              >
+                                <ion-icon :icon="c.activo ? lockClosedOutline : lockOpenOutline"></ion-icon>
+                                <span>{{ c.activo ? 'Bloquear' : 'Activar' }}</span>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                        <tr v-if="facturacion.length === 0">
+                          <td colspan="6" class="text-center py-4 text-muted">No hay complejos registrados.</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <!-- Formulario Crear Complejo -->
+                <div class="detail-white-card side-col">
+                  <div class="card-header-flex">
+                    <h2>Crear Complejo</h2>
+                  </div>
+
+                  <form @submit.prevent="crearComplejo" class="sportra-form">
+                    <div class="field-block">
+                      <label>Provincia</label>
+                      <ion-select v-model="provinciaId" interface="popover" placeholder="Seleccione..." class="sportra-select" @ionChange="onProvinciaChange">
+                        <ion-select-option v-for="p in provincias" :key="p.id" :value="p.id">{{ p.nombre }}</ion-select-option>
+                      </ion-select>
+                    </div>
+
+                    <div class="field-block">
+                      <label>Cantón</label>
+                      <ion-select v-model="cantonId" interface="popover" placeholder="Seleccione..." class="sportra-select" :disabled="!provinciaId" @ionChange="onCantonChange">
+                        <ion-select-option v-for="c in cantones" :key="c.id" :value="c.id">{{ c.nombre }}</ion-select-option>
+                      </ion-select>
+                    </div>
+
+                    <div class="field-block">
+                      <label>Distrito</label>
+                      <ion-select v-model="nuevoComplejo.distrito_id" interface="popover" placeholder="Seleccione..." class="sportra-select" :disabled="!cantonId">
+                        <ion-select-option v-for="d in distritos" :key="d.id" :value="d.id">{{ d.nombre }}</ion-select-option>
+                      </ion-select>
+                    </div>
+
+                    <div class="field-block">
+                      <label>Nombre del Complejo</label>
+                      <input v-model="nuevoComplejo.nombre" type="text" placeholder="Ej: Complejo Camp Nou" required class="sportra-input" />
+                    </div>
+
+                    <div class="field-block">
+                      <label>WhatsApp</label>
+                      <input v-model="nuevoComplejo.whatsapp_numero" type="text" placeholder="Ej: 88888888" required class="sportra-input" />
+                    </div>
+
+                    <button type="submit" class="btn-primary-sportra" :disabled="!nuevoComplejo.distrito_id || !nuevoComplejo.nombre">
+                      <ion-icon :icon="addCircleOutline"></ion-icon>
+                      <span>Crear Complejo</span>
+                    </button>
+                  </form>
+                </div>
               </div>
             </div>
 
-            <div v-else class="security-form">
-              <div v-if="codigosRecuperacion.length" class="recovery-codes-panel" role="status">
-                <h4>Códigos de recuperación</h4>
-                <p>Guárdalos ahora. Cada código se puede usar una sola vez y no volverán a mostrarse.</p>
-                <code v-for="codigo in codigosRecuperacion" :key="codigo" class="recovery-code">{{ codigo }}</code>
-                <label class="recovery-confirmation">
-                  <input v-model="recoveryCodesSaved" type="checkbox" />
-                  Guardé los códigos en un lugar seguro
-                </label>
-              </div>
+            <!-- PESTAÑA 2: USUARIOS Y ACTIVIDAD -->
+            <div v-if="vista === 'usuarios'" class="tab-content animate-fade-in">
+              <div class="admin-grid-layout">
+                <!-- Tabla Usuarios -->
+                <div class="detail-white-card main-col">
+                  <div class="card-header-flex">
+                    <h2>Usuarios Existentes</h2>
+                  </div>
 
-              <form class="neon-form" @submit.prevent="desactivarDosFactores">
-                <div class="field-block">
-                  <label>Contraseña actual</label>
-                  <input v-model="passwordDesactivar2FA" type="password" autocomplete="current-password" class="neon-input" required />
+                  <div class="table-responsive">
+                    <table class="sportra-table">
+                      <thead>
+                        <tr>
+                          <th>Usuario</th>
+                          <th>Email</th>
+                          <th>Complejos Asignados</th>
+                          <th class="text-right">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="u in usuarios" :key="u.id">
+                          <td class="font-bold cell-title">
+                            {{ u.name }}
+                            <span v-if="!u.activo" class="tag-blocked">BLOQUEADO</span>
+                          </td>
+                          <td>{{ u.email }}</td>
+                          <td>
+                            <span class="complexes-tag">
+                              {{ u.complejos?.map((c: any) => c.nombre).join(', ') || 'Sin asignación' }}
+                            </span>
+                          </td>
+                          <td>
+                            <div class="action-buttons-cell">
+                              <button class="btn-action-sm btn-info" type="button" @click="verActividad(u)" title="Ver Historial">
+                                <ion-icon :icon="eyeOutline"></ion-icon>
+                                <span>Actividad</span>
+                              </button>
+                              <button 
+                                type="button"
+                                :class="['btn-action-sm', u.activo ? 'btn-danger' : 'btn-success']" 
+                                @click="toggleUsuario(u)"
+                              >
+                                <ion-icon :icon="u.activo ? lockClosedOutline : lockOpenOutline"></ion-icon>
+                                <span>{{ u.activo ? 'Bloquear' : 'Activar' }}</span>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-                <div class="field-block">
-                  <label>Código TOTP o de recuperación</label>
-                  <input v-model="codigoDesactivar2FA" type="text" autocomplete="one-time-code" class="neon-input" required />
+
+                <!-- Formulario Crear Usuario -->
+                <div class="detail-white-card side-col">
+                  <div class="card-header-flex">
+                    <h2>Crear Encargado</h2>
+                  </div>
+
+                  <form @submit.prevent="crearUsuario" class="sportra-form">
+                    <div class="field-block">
+                      <label>Nombre Completo</label>
+                      <input v-model="nuevoUsuario.name" type="text" placeholder="Ej: Carlos Ruiz" required class="sportra-input" />
+                    </div>
+
+                    <div class="field-block">
+                      <label>Correo Electrónico</label>
+                      <input v-model="nuevoUsuario.email" type="email" placeholder="carlos@ejemplo.com" required class="sportra-input" />
+                    </div>
+
+                    <div class="field-block">
+                      <label>Contraseña</label>
+                      <input v-model="nuevoUsuario.password" type="password" placeholder="••••••••" required class="sportra-input" />
+                    </div>
+
+                    <div class="field-block">
+                      <label>Asignar Complejo</label>
+                      <ion-select v-model="nuevoUsuario.complejo_id" interface="popover" placeholder="Seleccione..." class="sportra-select">
+                        <ion-select-option v-for="c in facturacion" :key="c.complejo_id" :value="c.complejo_id">{{ c.nombre }}</ion-select-option>
+                      </ion-select>
+                    </div>
+
+                    <div class="field-block">
+                      <label>Rol asignado</label>
+                      <ion-select v-model="nuevoUsuario.rol" interface="popover" class="sportra-select">
+                        <ion-select-option value="propietario">Propietario</ion-select-option>
+                        <ion-select-option value="encargado">Encargado</ion-select-option>
+                      </ion-select>
+                    </div>
+
+                    <button type="submit" class="btn-primary-sportra" :disabled="!nuevoUsuario.email || !nuevoUsuario.password">
+                      <ion-icon :icon="personAddOutline"></ion-icon>
+                      <span>Crear Usuario</span>
+                    </button>
+                  </form>
                 </div>
-                <button type="submit" class="btn-action-sm btn-danger" :disabled="cargandoDosFactores">Desactivar 2FA</button>
-              </form>
+              </div>
             </div>
 
-            <p v-if="mensajeDosFactores" class="message-banner" role="status">{{ mensajeDosFactores }}</p>
-            <p v-if="errorDosFactores" class="message-banner error" role="alert">{{ errorDosFactores }}</p>
-            <button v-if="codigosRecuperacion.length" class="btn-submit-neon" :disabled="!recoveryCodesSaved" @click="cerrarSesionTras2FA">Volver a iniciar sesión</button>
+            <!-- VERIFICACIÓN DE CANCHAS -->
+            <div v-if="vista === 'verificacion'" class="tab-content animate-fade-in">
+              <div class="detail-white-card">
+                <div class="card-header-flex">
+                  <h2>Canchas pendientes de verificación</h2>
+                  <span class="count-badge">{{ canchasRevision.length }} pendientes</span>
+                </div>
+                <div class="table-responsive">
+                  <table class="sportra-table">
+                    <thead>
+                      <tr><th>Cancha</th><th>Complejo</th><th>Deporte</th><th>Observaciones</th><th>Revisión</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="cancha in canchasRevision" :key="cancha.id">
+                        <td class="font-bold cell-title">{{ cancha.nombre }}</td>
+                        <td>{{ cancha.complejo?.nombre }}</td>
+                        <td>{{ cancha.deporte?.nombre }}</td>
+                        <td>
+                          <input
+                            v-model="observacionesRechazo[cancha.id]"
+                            class="sportra-input"
+                            type="text"
+                            maxlength="1000"
+                            placeholder="Motivo si se rechaza"
+                          />
+                        </td>
+                        <td>
+                          <div class="action-buttons-cell">
+                            <button class="btn-action-sm btn-success" type="button" @click="resolverVerificacion(cancha, 'aprobada')">Aprobar</button>
+                            <button
+                              type="button"
+                              class="btn-action-sm btn-danger"
+                              :disabled="!observacionesRechazo[cancha.id]?.trim()"
+                              @click="resolverVerificacion(cancha, 'rechazada')"
+                            >Rechazar</button>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr v-if="canchasRevision.length === 0">
+                        <td colspan="5" class="text-center py-4 text-muted">No hay canchas pendientes de revisión.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- REPORTE MENSUAL -->
+            <div v-if="vista === 'reporte'" class="tab-content animate-fade-in">
+              <div class="detail-white-card">
+                <div class="card-header-flex header-with-filter">
+                  <div>
+                    <h2>Actividad mensual por cancha</h2>
+                    <p class="subtitle-text">El ingreso bruto es referencial según reservas registradas.</p>
+                  </div>
+                  <div class="action-buttons-cell filter-row">
+                    <input v-model="mesReporte" type="month" class="sportra-input input-month" />
+                    <button class="btn-action-sm btn-info" type="button" @click="cargarReporteMensual">Consultar</button>
+                    <button class="btn-action-sm btn-success" type="button" @click="descargarReporteMensual">Exportar CSV</button>
+                  </div>
+                </div>
+                <div class="table-responsive">
+                  <table class="sportra-table">
+                    <thead>
+                      <tr>
+                        <th>Complejo</th><th>Cancha</th><th>Solicitudes</th><th>Aceptadas</th><th>Rechazadas</th>
+                        <th>Vencidas</th><th>Horas confirmadas</th><th>Ingreso bruto ref.</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="fila in reporteMensual" :key="fila.cancha_id">
+                        <td class="font-bold cell-title">{{ fila.complejo }}</td>
+                        <td>{{ fila.cancha }}</td>
+                        <td>{{ fila.solicitudes_recibidas }}</td>
+                        <td>{{ fila.aceptadas }}</td>
+                        <td>{{ fila.rechazadas }}</td>
+                        <td>{{ fila.vencidas }}</td>
+                        <td>{{ fila.horas_confirmadas }}</td>
+                        <td class="price-highlight font-bold">₡{{ Number(fila.ingreso_bruto_reservas).toLocaleString('es-CR') }}</td>
+                      </tr>
+                      <tr v-if="reporteMensual.length === 0">
+                        <td colspan="8" class="text-center py-4 text-muted">No hay datos para este mes.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- FOTOS -->
+            <div v-if="vista === 'fotos'" class="tab-content animate-fade-in">
+              <div class="detail-white-card">
+                <div class="card-header-flex">
+                  <h2>Fotos pendientes de revisión</h2>
+                  <span class="count-badge">{{ fotosRevision.length }} pendientes</span>
+                </div>
+                <div class="table-responsive">
+                  <table class="sportra-table">
+                    <thead><tr><th>Foto</th><th>Cancha</th><th>Complejo</th><th>Descripción</th><th>Observaciones</th><th>Moderación</th></tr></thead>
+                    <tbody>
+                      <tr v-for="foto in fotosRevision" :key="foto.id">
+                        <td><img :src="foto.url" :alt="foto.caption || 'Foto de cancha'" class="admin-photo-preview" loading="lazy" /></td>
+                        <td>{{ foto.cancha?.nombre }}</td>
+                        <td>{{ foto.cancha?.complejo?.nombre }}</td>
+                        <td>{{ foto.caption || 'Sin descripción' }}</td>
+                        <td><input v-model="observacionesFoto[foto.id]" class="sportra-input" maxlength="1000" placeholder="Motivo rechazo..." /></td>
+                        <td>
+                          <div class="action-buttons-cell">
+                            <button class="btn-action-sm btn-success" type="button" @click="resolverFoto(foto, 'aprobada')">Aprobar</button>
+                            <button class="btn-action-sm btn-danger" type="button" :disabled="!observacionesFoto[foto.id]?.trim()" @click="resolverFoto(foto, 'rechazada')">Rechazar</button>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr v-if="fotosRevision.length === 0"><td colspan="6" class="text-center py-4 text-muted">No hay fotos pendientes.</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- SEGURIDAD (2FA) -->
+            <div v-if="vista === 'seguridad'" class="tab-content animate-fade-in">
+              <div class="detail-white-card security-card">
+                <div class="card-header-flex">
+                  <div>
+                    <h2>Verificación en dos pasos</h2>
+                    <p class="subtitle-text">Protege la cuenta administradora mediante aplicaciones TOTP.</p>
+                  </div>
+                  <span :class="['status-pill', twoFactorActivo ? 'status-active' : 'status-warning']">
+                    {{ twoFactorActivo ? 'Activa' : 'Inactiva' }}
+                  </span>
+                </div>
+
+                <div v-if="!twoFactorActivo" class="security-form">
+                  <form class="sportra-form" @submit.prevent="iniciarDosFactores">
+                    <div class="field-block">
+                      <label>Contraseña actual</label>
+                      <input v-model="passwordDosFactores" type="password" autocomplete="current-password" class="sportra-input" required />
+                    </div>
+                    <button type="submit" class="btn-primary-sportra" :disabled="cargandoDosFactores">
+                      <span>{{ cargandoDosFactores ? 'Preparando...' : 'Configurar aplicación' }}</span>
+                    </button>
+                  </form>
+
+                  <div v-if="configuracionDosFactores" class="totp-enrollment">
+                    <img v-if="codigoQr" :src="codigoQr" alt="Código QR de configuración TOTP" class="totp-qr" />
+                    <div class="field-block">
+                      <label>Clave manual</label>
+                      <code class="totp-secret">{{ configuracionDosFactores.secret }}</code>
+                    </div>
+                    <form class="sportra-form" @submit.prevent="confirmarDosFactores">
+                      <div class="field-block">
+                        <label>Código de 6 dígitos</label>
+                        <input v-model="codigoDosFactores" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" class="sportra-input" required />
+                      </div>
+                      <button type="submit" class="btn-primary-sportra" :disabled="cargandoDosFactores">
+                        <span>Confirmar y activar</span>
+                      </button>
+                    </form>
+                  </div>
+                </div>
+
+                <div v-else class="security-form">
+                  <div v-if="codigosRecuperacion.length" class="recovery-codes-panel" role="status">
+                    <h4>Códigos de recuperación</h4>
+                    <p>Guárdalos ahora. Cada código se puede usar una sola vez y no volverán a mostrarse.</p>
+                    <div class="codes-grid">
+                      <code v-for="codigo in codigosRecuperacion" :key="codigo" class="recovery-code">{{ codigo }}</code>
+                    </div>
+                    <label class="recovery-confirmation">
+                      <input v-model="recoveryCodesSaved" type="checkbox" />
+                      <span>Guardé los códigos en un lugar seguro</span>
+                    </label>
+                  </div>
+
+                  <form class="sportra-form" @submit.prevent="desactivarDosFactores">
+                    <div class="field-block">
+                      <label>Contraseña actual</label>
+                      <input v-model="passwordDesactivar2FA" type="password" autocomplete="current-password" class="sportra-input" required />
+                    </div>
+                    <div class="field-block">
+                      <label>Código TOTP o de recuperación</label>
+                      <input v-model="codigoDesactivar2FA" type="text" autocomplete="one-time-code" class="sportra-input" required />
+                    </div>
+                    <button type="submit" class="btn-action-sm btn-danger btn-block" :disabled="cargandoDosFactores">Desactivar 2FA</button>
+                  </form>
+                </div>
+
+                <p v-if="mensajeDosFactores" class="message-banner" role="status">{{ mensajeDosFactores }}</p>
+                <p v-if="errorDosFactores" class="message-banner error" role="alert">{{ errorDosFactores }}</p>
+                <button v-if="codigosRecuperacion.length" class="btn-primary-sportra" :disabled="!recoveryCodesSaved" @click="cerrarSesionTras2FA">
+                  <span>Volver a iniciar sesión</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- MOVIMIENTOS / RESERVAS GLOBALES -->
+            <div v-if="vista === 'movimientos'" class="tab-content animate-fade-in">
+              <div class="detail-white-card">
+                <div class="card-header-flex header-with-filter">
+                  <div>
+                    <h2>Historial Global de Reservas</h2>
+                    <p class="subtitle-text">Auditoría de reservas en todos los complejos registrados.</p>
+                  </div>
+
+                  <div class="filter-box">
+                    <ion-select 
+                      v-model="filtroComplejo" 
+                      interface="popover" 
+                      placeholder="Filtrar por complejo" 
+                      class="sportra-select filter-select"
+                      @ionChange="cargarMovimientos"
+                    >
+                      <ion-select-option :value="null">Todos los Complejos</ion-select-option>
+                      <ion-select-option v-for="c in facturacion" :key="c.complejo_id" :value="c.complejo_id">{{ c.nombre }}</ion-select-option>
+                    </ion-select>
+
+                    <ion-select
+                      v-model="filtroCancha"
+                      interface="popover"
+                      placeholder="Filtrar por cancha"
+                      class="sportra-select filter-select"
+                      @ionChange="cargarMovimientos"
+                    >
+                      <ion-select-option :value="null">Todas las canchas</ion-select-option>
+                      <ion-select-option v-for="cancha in canchasTodas" :key="cancha.id" :value="cancha.id">
+                        {{ cancha.complejo?.nombre }} — {{ cancha.nombre }}
+                      </ion-select-option>
+                    </ion-select>
+                  </div>
+                </div>
+
+                <div class="table-responsive">
+                  <table class="sportra-table">
+                    <thead>
+                      <tr>
+                        <th>Fecha & Hora</th>
+                        <th>Complejo / Cancha</th>
+                        <th>Cliente</th>
+                        <th>Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="m in movimientos" :key="m.id">
+                        <td class="font-bold price-highlight">{{ m.fecha }} <small class="text-muted">({{ m.hora_inicio }} - {{ m.hora_fin }})</small></td>
+                        <td>{{ m.cancha?.complejo?.nombre }} — <span class="cell-title font-bold">{{ m.cancha?.nombre }}</span></td>
+                        <td>{{ m.nombre_cliente }}</td>
+                        <td>
+                          <span :class="['status-pill', m.estado === 'confirmada' ? 'status-active' : 'status-tramite']">
+                            {{ m.estado }}
+                          </span>
+                        </td>
+                      </tr>
+                      <tr v-if="movimientos.length === 0">
+                        <td colspan="4" class="text-center py-4 text-muted">No se encontraron movimientos registrados.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
           </div>
         </section>
 
-        <!-- PESTAÑA 3: MOVIMIENTOS / RESERVAS GLOBALES -->
-        <section v-if="vista === 'movimientos'" class="tab-content animate-fade-in">
-          <div class="section-card">
-            <div class="card-header header-with-filter">
-              <div>
-                <h3>Historial Global de Reservas</h3>
-                <p>Auditoría de reservas realizadas en todos los complejos de la plataforma.</p>
-              </div>
-
-              <div class="filter-box">
-                <ion-select 
-                  v-model="filtroComplejo" 
-                  interface="popover" 
-                  placeholder="Filtrar por complejo" 
-                  class="neon-select filter-select"
-                  @ionChange="cargarMovimientos"
-                >
-                  <ion-select-option :value="null">Todos los Complejos</ion-select-option>
-                  <ion-select-option v-for="c in facturacion" :key="c.complejo_id" :value="c.complejo_id">{{ c.nombre }}</ion-select-option>
-                </ion-select>
-                <ion-select
-                  v-model="filtroCancha"
-                  interface="popover"
-                  placeholder="Filtrar por cancha"
-                  class="neon-select filter-select"
-                  @ionChange="cargarMovimientos"
-                >
-                  <ion-select-option :value="null">Todas las canchas</ion-select-option>
-                  <ion-select-option v-for="cancha in canchasTodas" :key="cancha.id" :value="cancha.id">
-                    {{ cancha.complejo?.nombre }} — {{ cancha.nombre }}
-                  </ion-select-option>
-                </ion-select>
-              </div>
-            </div>
-
-            <div class="table-responsive">
-              <table class="neon-table">
-                <thead>
-                  <tr>
-                    <th>Fecha & Hora</th>
-                    <th>Complejo / Cancha</th>
-                    <th>Cliente</th>
-                    <th>Estado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="m in movimientos" :key="m.id">
-                    <td class="font-bold text-lime">{{ m.fecha }} <small class="text-muted">({{ m.hora_inicio }} - {{ m.hora_fin }})</small></td>
-                    <td>{{ m.cancha?.complejo?.nombre }} — <span class="text-white">{{ m.cancha?.nombre }}</span></td>
-                    <td>{{ m.nombre_cliente }}</td>
-                    <td>
-                      <span :class="['status-pill', m.estado === 'confirmada' ? 'status-active' : 'status-pending']">
-                        {{ m.estado }}
-                      </span>
-                    </td>
-                  </tr>
-                  <tr v-if="movimientos.length === 0">
-                    <td colspan="4" class="text-center py-4 text-muted">No se encontraron movimientos registrados.</td>
-                  </tr>
-                </tbody>
-              </table>
+        <!-- FOOTER -->
+        <footer class="site-footer">
+          <div class="section-container">
+            <div class="footer-bottom">
+              <p>Módulo de administración central SPORTRA.</p>
+              <p class="footer-sub">© 2026 SPORTRA. Todos los derechos reservados.</p>
             </div>
           </div>
-        </section>
+        </footer>
 
       </div>
     </ion-content>
 
     <!-- MODAL REGISTRAR PAGO -->
     <div v-if="complejoPago" class="modal-backdrop">
-      <div class="modal-box animate-pop">
+      <div class="modal-card-wrapper animate-pop">
         <div class="modal-header">
-          <h3>Registrar Pago — <span class="text-lime">{{ complejoPago.nombre }}</span></h3>
-          <button class="btn-close-modal" @click="complejoPago = null">
-            <ion-icon :icon="closeCircleOutline"></ion-icon>
+          <div>
+            <span class="eyebrow">PAGO DE SUSCRIPCIÓN</span>
+            <h2>{{ complejoPago.nombre }}</h2>
+          </div>
+          <button class="close-btn" type="button" @click="complejoPago = null" aria-label="Cerrar">
+            <ion-icon :icon="closeOutline"></ion-icon>
           </button>
         </div>
 
-        <form @submit.prevent="guardarPago" class="neon-form modal-body">
-          <div class="field-block">
+        <form @submit.prevent="guardarPago" class="modal-body-form">
+          <div class="form-field">
             <label>Monto Pago (₡)</label>
-            <input v-model.number="nuevoPago.monto" type="number" required class="neon-input" />
+            <input v-model.number="nuevoPago.monto" type="number" required />
           </div>
 
           <div class="form-grid-2">
-            <div class="field-block">
+            <div class="form-field">
               <label>Vigencia Desde</label>
-              <input v-model="nuevoPago.periodo_desde" type="date" required class="neon-input" />
+              <input v-model="nuevoPago.periodo_desde" type="date" required />
             </div>
-            <div class="field-block">
+            <div class="form-field">
               <label>Vigencia Hasta</label>
-              <input v-model="nuevoPago.periodo_hasta" type="date" required class="neon-input" />
+              <input v-model="nuevoPago.periodo_hasta" type="date" required />
             </div>
           </div>
 
           <div class="form-grid-2">
-            <div class="field-block">
+            <div class="form-field">
               <label>Fecha del Pago</label>
-              <input v-model="nuevoPago.fecha_pago" type="date" required class="neon-input" />
+              <input v-model="nuevoPago.fecha_pago" type="date" required />
             </div>
-            <div class="field-block">
+            <div class="form-field">
               <label>Método de Pago</label>
-              <ion-select v-model="nuevoPago.metodo" interface="popover" class="neon-select">
+              <ion-select v-model="nuevoPago.metodo" interface="popover" class="sportra-modal-select">
                 <ion-select-option value="sinpe">SINPE Móvil</ion-select-option>
                 <ion-select-option value="transferencia">Transferencia Bancaria</ion-select-option>
                 <ion-select-option value="efectivo">Efectivo</ion-select-option>
@@ -597,9 +674,11 @@
             </div>
           </div>
 
-          <div class="modal-actions">
-            <button type="button" class="btn-cancel" @click="complejoPago = null">Cancelar</button>
-            <button type="submit" class="btn-submit-neon">Guardar y Extender Suscripción</button>
+          <div class="modal-actions-footer">
+            <button type="button" class="cancel-btn" @click="complejoPago = null">Cancelar</button>
+            <button type="submit" class="submit-btn">
+              <span>Guardar Pago</span>
+            </button>
           </div>
         </form>
       </div>
@@ -607,15 +686,18 @@
 
     <!-- MODAL ACTIVIDAD DE USUARIO -->
     <div v-if="usuarioActividad" class="modal-backdrop">
-      <div class="modal-box animate-pop">
+      <div class="modal-card-wrapper animate-pop">
         <div class="modal-header">
-          <h3>Bitácora de Actividad — <span class="text-lime">{{ usuarioActividad.name }}</span></h3>
-          <button class="btn-close-modal" @click="usuarioActividad = null">
-            <ion-icon :icon="closeCircleOutline"></ion-icon>
+          <div>
+            <span class="eyebrow">BITÁCORA DE ACTIVIDAD</span>
+            <h2>{{ usuarioActividad.name }}</h2>
+          </div>
+          <button class="close-btn" type="button" @click="usuarioActividad = null" aria-label="Cerrar">
+            <ion-icon :icon="closeOutline"></ion-icon>
           </button>
         </div>
 
-        <div class="modal-body user-logs-container">
+        <div class="modal-body-form user-logs-container">
           <div v-for="log in actividad" :key="log.id" class="log-row">
             <div class="log-time">{{ log.created_at }}</div>
             <div class="log-details">
@@ -641,7 +723,7 @@ import {
   shieldCheckmarkOutline, logOutOutline, businessOutline, peopleOutline,
   receiptOutline, checkmarkCircleOutline, closeCircleOutline, cardOutline,
   lockClosedOutline, lockOpenOutline, addCircleOutline, eyeOutline, personAddOutline,
-  imagesOutline, keyOutline
+  imagesOutline, keyOutline, closeOutline
 } from 'ionicons/icons';
 
 import { useAuthStore } from '@/stores/auth';
@@ -661,9 +743,10 @@ addIcons({
   'lock-open-outline': lockOpenOutline,
   'add-circle-outline': addCircleOutline,
   'eye-outline': eyeOutline,
-  'person-add-outline': personAddOutline
-  ,'images-outline': imagesOutline
-  ,'key-outline': keyOutline
+  'person-add-outline': personAddOutline,
+  'images-outline': imagesOutline,
+  'key-outline': keyOutline,
+  'close-outline': closeOutline
 });
 
 const router = useRouter();
@@ -718,7 +801,6 @@ const nuevoPago = ref({
 const usuarioActividad = ref<any>(null);
 const actividad = ref<any[]>([]);
 
-// Tipado explícito para evitar errores con TypeScript al pasar objeto a adminService.crearComplejo
 const nuevoComplejo = ref<{ distrito_id: number | null; nombre: string; whatsapp_numero: string }>({ 
   distrito_id: null, 
   nombre: '', 
@@ -851,7 +933,7 @@ async function confirmarDosFactores() {
     configuracionDosFactores.value = null;
     codigoQr.value = '';
     if (authStore.usuario) authStore.usuario.two_factor_enabled = true;
-    mensajeDosFactores.value = '2FA activado. Los códigos se muestran una sola vez; tus sesiones anteriores se cerraron.';
+    mensajeDosFactores.value = '2FA activado con éxito.';
   } catch (error: any) {
     errorDosFactores.value = error.response?.data?.message || 'El código no es válido o ya fue utilizado.';
   } finally {
@@ -970,7 +1052,6 @@ async function crearComplejo() {
   if (!nuevoComplejo.value.distrito_id) return;
 
   try {
-    // Se usa el 'as any' para el argumento del servicio si la firma requiere tipos más restringidos
     await adminService.crearComplejo(nuevoComplejo.value as any);
     mensaje.value = 'Nuevo complejo registrado con éxito.';
     nuevoComplejo.value = { distrito_id: null, nombre: '', whatsapp_numero: '' };
@@ -1006,10 +1087,10 @@ function getBadgeClass(c: any) {
 }
 
 function getBadgeText(c: any) {
-  if (c.estado_suscripcion === 'vencida') return '🔴 Vencida';
-  if (c.estado_suscripcion === 'por_vencer') return `🟡 Vence pronto (${c.suscripcion_vence_en})`;
-  if (c.estado_suscripcion === 'al_dia') return `🟢 Al día (${c.suscripcion_vence_en})`;
-  return '⚪ Sin registro';
+  if (c.estado_suscripcion === 'vencida') return 'Vencida';
+  if (c.estado_suscripcion === 'por_vencer') return `Vence pronto (${c.suscripcion_vence_en})`;
+  if (c.estado_suscripcion === 'al_dia') return `Al día (${c.suscripcion_vence_en})`;
+  return 'Sin registro';
 }
 
 watch(vista, (nuevaVista) => {
@@ -1042,756 +1123,857 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* ==========================================================
-   PALETA SPORTRA
-   #050A30  Azul noche      #0B2D9A  Azul profundo
-   #2B59C3  Azul medio      #7BAAF7  Azul cielo
-   #F5F7FF  Blanco azulado
-   ========================================================== */
-.sportra-admin-page {
-  --c-night: #050A30;
-  --c-deep: #0B2D9A;
-  --c-mid: #2B59C3;
-  --c-sky: #7BAAF7;
-  --c-ice: #F5F7FF;
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-  /* Tonos derivados de la paleta */
-  --c-surface: #FFFFFF;
-  --c-hover: #EDF2FF;
-  --c-line: #DCE5FA;
-  --c-line-strong: #C2D2F5;
-  --c-text: #050A30;
-  --c-text-soft: #4A5688;
-  --c-muted: #8089B0;
+/* =========================================================
+   VARIABLES Y ESTILO BASE
+   ========================================================= */
 
-  /* Colores semánticos (estados) */
-  --ok-bg: #E4F6EE;     --ok-fg: #0E6B4B;     --ok-bd: #B7E3CF;
-  --warn-bg: #FFF4DA;   --warn-fg: #8A5A00;   --warn-bd: #F3DDA4;
-  --bad-bg: #FFECEE;    --bad-fg: #B42335;    --bad-bd: #F5C2C8;
+.sportra-app {
+  --bg-dark: #060e2d;
+  --bg-card: #0c1743;
+  --blue-accent: #7b96ff;
+  --blue-hover: #6281f7;
+  --text-white: #ffffff;
+  --text-muted: #8e9cc0;
+  --text-dark: #091133;
+  --border-dark: rgba(255, 255, 255, 0.08);
+  --bg-light: #f4f6fc;
 
-  --shadow-sm: 0 4px 14px rgba(11, 45, 154, 0.07);
-  --shadow-md: 0 12px 32px rgba(11, 45, 154, 0.10);
-  --shadow-lg: 0 28px 70px rgba(5, 10, 48, 0.35);
-  --radius: 14px;
-  --radius-sm: 10px;
+  background: var(--bg-dark);
+  color: var(--text-white);
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
 ion-content.sportra-main-viewport {
-  --background: radial-gradient(1100px 520px at 85% -8%, rgba(123, 170, 247, 0.22), transparent 60%),
-                radial-gradient(900px 480px at -5% 110%, rgba(43, 89, 195, 0.10), transparent 60%),
-                #F5F7FF;
-  font-family: 'DM Sans', -apple-system, sans-serif;
-  color: var(--c-text);
+  --background: var(--bg-dark);
+  --color: var(--text-white);
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
-/* ===================== NAVBAR ===================== */
-.navbar-container {
+button, input, select, textarea {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.section-container {
+  max-width: 1240px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* =========================================================
+   HEADER & NAVBAR
+   ========================================================= */
+
+.site-header {
   position: fixed;
-  top: 1rem;
+  top: 0;
   left: 0;
   right: 0;
   z-index: 1000;
-  padding: 0 1.5rem;
+  padding: 16px 48px;
+  background: rgba(6, 14, 45, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border-dark);
 }
 
-.navbar-bar {
-  max-width: 1280px;
+.nav-shell {
+  max-width: 1240px;
   margin: 0 auto;
-  background: rgba(5, 10, 48, 0.92);
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
-  border: 1px solid rgba(123, 170, 247, 0.25);
-  border-radius: var(--radius);
-  padding: 0.6rem 1.25rem;
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 14px 40px rgba(5, 10, 48, 0.28);
 }
 
-.brand-box { display: flex; align-items: center; gap: 0.7rem; }
-
-.brand-badge {
-  width: 38px;
-  height: 38px;
-  background: linear-gradient(135deg, var(--c-deep), var(--c-mid));
-  border: 1px solid rgba(123, 170, 247, 0.45);
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.brand-copy strong {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #fff;
 }
 
-.brand-icon { font-size: 1.2rem; color: var(--c-ice); }
+.brand-copy strong span {
+  color: var(--blue-accent);
+}
 
-.brand-name {
-  font-family: 'Barlow Condensed', sans-serif;
+.brand-copy small {
+  display: block;
+  font-size: 8px;
+  color: var(--text-muted);
+  letter-spacing: 0.12em;
+  margin-top: 1px;
   font-weight: 700;
-  font-size: 1.4rem;
-  letter-spacing: 0.04em;
-  color: var(--c-ice);
-}
-
-.neon-dot { color: var(--c-sky); }
-
-.role-badge {
-  font-size: 0.62rem;
-  background: rgba(123, 170, 247, 0.15);
-  border: 1px solid rgba(123, 170, 247, 0.4);
-  color: var(--c-sky);
-  padding: 0.15rem 0.55rem;
-  border-radius: 999px;
-  margin-left: 0.5rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  vertical-align: middle;
 }
 
 .btn-logout {
-  background: rgba(245, 247, 255, 0.06);
-  border: 1px solid rgba(245, 247, 255, 0.22);
-  color: var(--c-ice);
-  padding: 0.5rem 1rem;
-  border-radius: var(--radius-sm);
-  font-weight: 600;
-  font-size: 0.8rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-dark);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
   display: flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 6px;
   cursor: pointer;
-  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  transition: 0.2s ease;
 }
 
 .btn-logout:hover {
-  background: rgba(123, 170, 247, 0.18);
-  border-color: var(--c-sky);
-  color: #ffffff;
+  background: rgba(123, 150, 255, 0.15);
+  border-color: var(--blue-accent);
 }
 
-/* ===================== LAYOUT ===================== */
-.admin-wrapper {
-  max-width: 1280px;
+/* =========================================================
+   HERO BANNER OSCURO
+   ========================================================= */
+
+.complejo-hero-wrapper {
+  padding-top: 85px;
+  padding-bottom: 30px;
+  background: var(--bg-dark);
+}
+
+.hero-inner-container {
+  max-width: 1240px;
   margin: 0 auto;
-  padding: 6.5rem 1.5rem 4rem;
+  padding: 0 24px;
 }
 
-/* ===================== HERO ===================== */
-.admin-hero {
-  position: relative;
-  overflow: hidden;
+.admin-hero-card {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 1.5rem;
-  margin-bottom: 1.75rem;
-  padding: 1.9rem 2.1rem;
-  background: linear-gradient(125deg, var(--c-night) 0%, #071463 45%, var(--c-deep) 100%);
-  border: 1px solid rgba(123, 170, 247, 0.25);
+  gap: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-dark);
   border-radius: 20px;
-  box-shadow: var(--shadow-md);
-  color: var(--c-ice);
+  padding: 28px 32px;
+  margin-bottom: 20px;
 }
 
-.admin-hero::after {
-  content: '';
-  position: absolute;
-  width: 380px;
-  height: 380px;
-  right: -90px;
-  top: -170px;
-  background: radial-gradient(circle, rgba(123, 170, 247, 0.35), transparent 68%);
-  pointer-events: none;
-}
-
-.hero-text, .metrics-row { position: relative; z-index: 1; }
-
-.eyebrow {
+.location-chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  color: var(--c-sky);
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  font-size: 0.72rem;
+  gap: 8px;
+  padding: 4px 12px;
+  background: rgba(123, 150, 255, 0.15);
+  border-radius: 99px;
+  font-size: 11px;
   font-weight: 700;
+  color: var(--blue-accent);
+  margin-bottom: 12px;
 }
 
-.pulse-indicator {
-  width: 8px;
-  height: 8px;
+.pulse-dot {
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background-color: var(--c-sky);
-  box-shadow: 0 0 0 0 rgba(123, 170, 247, 0.7);
-  animation: sportraPulse 2s infinite;
+  background-color: var(--blue-accent);
+  box-shadow: 0 0 0 0 rgba(123, 150, 255, 0.7);
+  animation: pulse 2s infinite;
 }
 
 .page-title {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: clamp(2rem, 3.5vw, 2.8rem);
-  font-weight: 700;
-  margin: 0.35rem 0 0.4rem;
-  color: var(--c-ice);
-  line-height: 1.05;
-  letter-spacing: 0.01em;
+  font-size: 34px;
+  font-weight: 800;
+  margin: 0 0 6px;
+  color: #ffffff !important;
+  letter-spacing: -0.02em;
 }
 
-.page-subtitle { color: rgba(245, 247, 255, 0.72); font-size: 0.95rem; margin: 0; max-width: 520px; }
+.page-subtitle {
+  font-size: 13px;
+  color: var(--text-muted) !important;
+  margin: 0;
+}
 
-.metrics-row { display: flex; gap: 0.9rem; flex-wrap: wrap; }
+.metrics-row {
+  display: flex;
+  gap: 12px;
+}
 
 .metric-card {
-  background: rgba(245, 247, 255, 0.07);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(123, 170, 247, 0.3);
-  border-radius: var(--radius);
-  padding: 0.85rem 1.25rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-dark);
+  border-radius: 14px;
+  padding: 14px 20px;
+  min-width: 110px;
   display: flex;
   flex-direction: column;
-  min-width: 124px;
-  transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
 }
 
-.metric-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--c-sky);
-  background: rgba(245, 247, 255, 0.12);
+.metric-card.highlight {
+  background: rgba(123, 150, 255, 0.1);
+  border-color: rgba(123, 150, 255, 0.3);
 }
 
 .metric-label {
-  font-size: 0.68rem;
-  color: var(--c-sky);
-  font-weight: 700;
-  text-transform: uppercase;
+  font-size: 10px;
+  font-weight: 800;
   letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 4px;
 }
 
 .metric-value {
-  font-size: 1.9rem;
-  font-weight: 700;
-  color: var(--c-ice);
-  font-family: 'Barlow Condensed', sans-serif;
-  line-height: 1.15;
+  font-size: 26px;
+  font-weight: 800;
+  color: #ffffff;
 }
 
-.text-lime { color: var(--c-deep); }
-.metric-card .text-lime { color: var(--c-sky); }
-.modal-header .text-lime { color: var(--c-mid); }
+/* MENU TAB EN HERO */
 
-/* ===================== TABS ===================== */
-.tab-menu {
+.tab-menu-bar {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.55rem;
-  margin-bottom: 1.5rem;
-  padding: 0.5rem;
-  background: var(--c-surface);
-  border: 1px solid var(--c-line);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-sm);
+  gap: 8px;
 }
 
 .tab-btn {
-  background: transparent;
-  border: 1px solid transparent;
-  color: var(--c-text-soft);
-  padding: 0.55rem 1rem;
-  border-radius: var(--radius-sm);
-  font-weight: 600;
-  font-size: 0.85rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-dark);
+  color: var(--text-muted);
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 8px;
   cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  transition: 0.2s ease;
 }
 
-.tab-btn:hover { background: var(--c-hover); color: var(--c-deep); }
+.tab-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
 
 .tab-btn.active {
-  background: linear-gradient(135deg, var(--c-deep), var(--c-mid));
-  color: var(--c-ice);
-  box-shadow: 0 6px 16px rgba(11, 45, 154, 0.32);
+  background: var(--blue-accent);
+  color: #060e2d;
+  border-color: var(--blue-accent);
 }
 
-/* ===================== CARDS ===================== */
+/* =========================================================
+   SECCIÓN INFERIOR CLARA
+   ========================================================= */
+
+.main-details-section {
+  background: var(--bg-light);
+  color: var(--text-dark);
+  padding: 40px 24px 80px;
+  min-height: 60vh;
+}
+
 .admin-grid-layout {
   display: grid;
-  grid-template-columns: 2.2fr 1fr;
-  gap: 1.5rem;
+  grid-template-columns: 1.4fr 0.85fr;
+  gap: 28px;
   align-items: start;
 }
 
-.section-card {
-  background: var(--c-surface);
-  border: 1px solid var(--c-line);
-  border-radius: 18px;
-  padding: 1.6rem;
-  box-shadow: var(--shadow-md);
+/* CARDS BLANCAS DE ALTO CONTRAS TE */
+
+.detail-white-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 28px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
 }
 
-.card-header {
+.card-header-flex {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
+  margin-bottom: 20px;
 }
 
-.card-header h3 {
-  margin: 0 0 0.2rem;
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: var(--c-night);
-  font-family: 'Barlow Condensed', sans-serif;
-  letter-spacing: 0.01em;
+.card-header-flex h2 {
+  font-size: 20px;
+  font-weight: 800;
+  margin: 0;
+  color: var(--text-dark);
 }
 
-.card-header p { margin: 0; font-size: 0.85rem; color: var(--c-text-soft); }
+.subtitle-text {
+  font-size: 12px;
+  color: #64748b;
+  margin: 4px 0 0;
+}
 
-.header-with-filter { flex-wrap: wrap; margin-bottom: 1rem; }
-
-.counter-pill {
-  min-width: 34px;
-  text-align: center;
-  background: var(--c-deep);
-  color: var(--c-ice);
-  padding: 0.25rem 0.75rem;
-  border-radius: 999px;
-  font-size: 0.8rem;
+.count-badge {
+  font-size: 12px;
+  color: #64748b;
   font-weight: 700;
 }
 
-.filter-select { min-width: 200px; }
+/* =========================================================
+   TABLAS (TEXTO OSCURO LEGIBLE)
+   ========================================================= */
 
-/* ===================== TABLAS ===================== */
 .table-responsive {
+  width: 100%;
   overflow-x: auto;
-  margin-top: 1rem;
-  border: 1px solid var(--c-line);
-  border-radius: 12px;
 }
 
-.neon-table {
+.sportra-table {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
-  font-size: 0.85rem;
-  background: var(--c-surface);
+  font-size: 13px;
 }
 
-.neon-table th {
-  padding: 0.85rem 1rem;
-  background: var(--c-hover);
-  color: var(--c-deep);
-  font-size: 0.68rem;
-  text-transform: uppercase;
+.sportra-table th {
+  padding: 12px 14px;
+  font-size: 10px;
+  font-weight: 800;
   letter-spacing: 0.08em;
-  font-weight: 700;
-  border-bottom: 1px solid var(--c-line-strong);
-  white-space: nowrap;
+  text-transform: uppercase;
+  color: #64748b;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
 }
 
-.neon-table td {
-  padding: 0.9rem 1rem;
-  border-bottom: 1px solid var(--c-line);
-  color: var(--c-text);
+.sportra-table td {
+  padding: 14px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
   vertical-align: middle;
 }
 
-.neon-table tr:last-child td { border-bottom: none; }
-.neon-table tbody tr { transition: background-color 0.15s ease; }
-.neon-table tbody tr:hover td { background: #F5F8FF; }
+.sportra-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.cell-title {
+  color: var(--text-dark) !important;
+  font-weight: 700;
+}
+
+.price-highlight {
+  color: #0c1743 !important;
+  font-weight: 800;
+}
 
 .complexes-tag {
   display: inline-block;
-  background: var(--c-hover);
-  color: var(--c-mid);
-  border: 1px solid var(--c-line-strong);
-  padding: 0.2rem 0.6rem;
-  border-radius: 8px;
-  font-size: 0.75rem;
+  padding: 4px 10px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 11px;
+  color: #475569;
   font-weight: 600;
 }
 
-/* ===================== ESTADOS ===================== */
+/* ESTADOS (BADGES) EN CLARO */
+
 .status-pill {
   display: inline-block;
-  padding: 0.25rem 0.7rem;
-  border-radius: 999px;
-  font-size: 0.7rem;
-  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 10px;
+  font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  white-space: nowrap;
 }
 
-.status-active  { background: var(--ok-bg);   color: var(--ok-fg);   border: 1px solid var(--ok-bd); }
-.status-warning { background: var(--warn-bg); color: var(--warn-fg); border: 1px solid var(--warn-bd); }
-.status-danger  { background: var(--bad-bg);  color: var(--bad-fg);  border: 1px solid var(--bad-bd); }
-.status-neutral { background: #EEF1FA;        color: var(--c-text-soft); border: 1px solid var(--c-line); }
-.status-pending { background: rgba(123, 170, 247, 0.2); color: var(--c-deep); border: 1px solid var(--c-sky); }
+.status-active {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.status-warning {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.status-danger {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+}
+
+.status-neutral {
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+.status-tramite {
+  background: #eef2ff;
+  color: #4338ca;
+  border: 1px solid #c7d2fe;
+}
 
 .tag-blocked {
-  background: var(--bad-bg);
-  color: var(--bad-fg);
-  border: 1px solid var(--bad-bd);
-  font-size: 0.6rem;
-  font-weight: 700;
-  padding: 0.12rem 0.5rem;
-  border-radius: 999px;
-  margin-left: 0.4rem;
-  letter-spacing: 0.06em;
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 6px;
+  background: #ef4444;
+  color: #fff;
+  border-radius: 4px;
+  font-size: 8px;
+  font-weight: 800;
 }
 
-/* ===================== BOTONES DE ACCIÓN ===================== */
-.action-buttons-cell { display: flex; gap: 0.4rem; justify-content: flex-end; flex-wrap: wrap; align-items: center; }
+/* =========================================================
+   BOTONES EN TABLAS
+   ========================================================= */
+
+.action-buttons-cell {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
 
 .btn-action-sm {
-  border: 1px solid transparent;
-  padding: 0.4rem 0.75rem;
+  padding: 6px 12px;
   border-radius: 8px;
-  font-size: 0.75rem;
+  font-size: 11px;
   font-weight: 700;
+  border: 1px solid transparent;
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  cursor: pointer;
-  transition: background-color 0.18s ease, color 0.18s ease, transform 0.18s ease, border-color 0.18s ease;
+  gap: 4px;
+  transition: 0.2s ease;
 }
 
-.btn-action-sm:hover:not(:disabled) { transform: translateY(-1px); }
-.btn-action-sm:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-pay {
+  background: #eef2ff;
+  color: #3730a3;
+  border-color: #c7d2fe;
+}
 
-.btn-pay { background: var(--c-hover); color: var(--c-deep); border-color: var(--c-line-strong); }
-.btn-pay:hover { background: var(--c-deep); color: var(--c-ice); border-color: var(--c-deep); }
+.btn-pay:hover {
+  background: #4338ca;
+  color: #ffffff;
+}
 
-.btn-info { background: rgba(123, 170, 247, 0.18); color: var(--c-deep); border-color: rgba(123, 170, 247, 0.55); }
-.btn-info:hover { background: var(--c-mid); color: var(--c-ice); border-color: var(--c-mid); }
+.btn-info {
+  background: #f1f5f9;
+  color: #334155;
+  border-color: #cbd5e1;
+}
 
-.btn-danger { background: var(--bad-bg); color: var(--bad-fg); border-color: var(--bad-bd); }
-.btn-danger:hover:not(:disabled) { background: var(--bad-fg); color: #ffffff; border-color: var(--bad-fg); }
+.btn-info:hover {
+  background: #334155;
+  color: #ffffff;
+}
 
-.btn-success { background: var(--ok-bg); color: var(--ok-fg); border-color: var(--ok-bd); }
-.btn-success:hover { background: var(--ok-fg); color: #ffffff; border-color: var(--ok-fg); }
+.btn-danger {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fca5a5;
+}
 
-/* ===================== FORMULARIOS ===================== */
-.neon-form { display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem; }
+.btn-danger:hover:not(:disabled) {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.btn-success {
+  background: #f0fdf4;
+  color: #16a34a;
+  border-color: #bbf7d0;
+}
+
+.btn-success:hover {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.btn-action-sm:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* =========================================================
+   FORMULARIOS
+   ========================================================= */
+
+.sportra-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
 
 .field-block label {
-  display: block;
-  font-size: 0.68rem;
+  font-size: 11px;
   font-weight: 700;
-  color: var(--c-deep);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-bottom: 0.4rem;
+  color: #475569;
 }
 
-.neon-input {
-  width: 100%;
-  height: 44px;
-  background: var(--c-ice);
-  border: 1px solid var(--c-line-strong);
-  border-radius: var(--radius-sm);
-  padding: 0 0.9rem;
-  color: var(--c-text);
+.sportra-input {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: var(--text-dark);
+  font-size: 13px;
   outline: none;
-  font-size: 0.875rem;
-  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
 }
 
-.neon-input::placeholder { color: var(--c-muted); }
-.neon-input:hover { border-color: var(--c-sky); }
+.sportra-input::placeholder {
+  color: #94a3b8;
+}
 
-.neon-input:focus {
+.sportra-input:focus {
+  border-color: var(--blue-accent);
   background: #ffffff;
-  border-color: var(--c-mid);
-  box-shadow: 0 0 0 4px rgba(43, 89, 195, 0.16);
 }
 
-.neon-select {
-  --background: #F5F7FF;
-  --color: #050A30;
-  --placeholder-color: #8089B0;
+.sportra-select {
+  --background: #f8fafc;
+  --color: #091133;
+  --placeholder-color: #94a3b8;
   --placeholder-opacity: 1;
-  --padding-start: 0.9rem;
-  --padding-end: 0.9rem;
-  background: var(--c-ice);
-  border: 1px solid var(--c-line-strong);
-  border-radius: var(--radius-sm);
-  min-height: 44px;
-  font-size: 0.875rem;
-  color: var(--c-text);
-  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+  --padding-start: 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  min-height: 42px;
+  font-size: 13px;
+  background: #f8fafc;
 }
 
-.neon-select:hover { border-color: var(--c-sky); }
-.neon-select:focus-within { border-color: var(--c-mid); box-shadow: 0 0 0 4px rgba(43, 89, 195, 0.16); }
-
-input[type='checkbox'] { accent-color: var(--c-deep); width: 16px; height: 16px; }
-
-.btn-submit-neon {
-  background: linear-gradient(135deg, var(--c-deep), var(--c-mid));
-  color: var(--c-ice);
-  border: 1px solid transparent;
-  padding: 0.8rem 1.3rem;
-  border-radius: var(--radius-sm);
-  font-weight: 700;
-  font-size: 0.875rem;
+.btn-primary-sportra {
+  width: 100%;
+  padding: 12px;
+  background: var(--blue-accent);
+  border: 0;
+  border-radius: 12px;
+  color: #060e2d;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  margin-top: 0.5rem;
-  box-shadow: 0 8px 20px rgba(11, 45, 154, 0.28);
-  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+  gap: 8px;
+  transition: 0.2s ease;
+  margin-top: 8px;
 }
 
-.btn-submit-neon:hover:not(:disabled) {
-  transform: translateY(-1px);
-  filter: brightness(1.08);
-  box-shadow: 0 12px 26px rgba(11, 45, 154, 0.38);
+.btn-primary-sportra:hover:not(:disabled) {
+  background: var(--blue-hover);
 }
 
-.btn-submit-neon:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+.btn-primary-sportra:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
-/* ===================== MODALES ===================== */
+/* =========================================================
+   MODALES Y TOAST
+   ========================================================= */
+
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(5, 10, 48, 0.62);
-  -webkit-backdrop-filter: blur(5px);
-  backdrop-filter: blur(5px);
+  background: rgba(6, 14, 45, 0.8);
+  backdrop-filter: blur(10px);
   z-index: 2000;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1.5rem;
+  padding: 20px;
 }
 
-.modal-box {
-  background: var(--c-surface);
-  border: 1px solid var(--c-line-strong);
-  border-top: 4px solid var(--c-mid);
-  border-radius: 18px;
+.modal-card-wrapper {
+  max-width: 500px;
   width: 100%;
-  max-width: 540px;
-  padding: 1.6rem;
-  box-shadow: var(--shadow-lg);
-  max-height: 92vh;
-  overflow-y: auto;
+  background: #0c1743;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 24px;
+  padding: 28px;
+  color: #fff;
 }
 
-.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; gap: 1rem; }
-
-.modal-header h3 {
-  margin: 0;
-  font-size: 1.35rem;
-  font-weight: 700;
-  color: var(--c-night);
-  font-family: 'Barlow Condensed', sans-serif;
-}
-
-.btn-close-modal {
-  background: transparent;
-  border: none;
-  font-size: 1.5rem;
-  color: var(--c-muted);
-  cursor: pointer;
+.modal-header {
   display: flex;
-  transition: color 0.18s ease, transform 0.18s ease;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
 }
 
-.btn-close-modal:hover { color: var(--c-deep); transform: rotate(90deg); }
+.modal-header h2 {
+  font-size: 20px;
+  font-weight: 800;
+  margin: 4px 0 0;
+  color: #fff;
+}
 
-.form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; }
+.eyebrow {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--blue-accent);
+}
 
-.modal-actions { display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 1rem; flex-wrap: wrap; }
-.modal-actions .btn-submit-neon { margin-top: 0; }
-
-.btn-cancel {
-  background: var(--c-surface);
-  border: 1px solid var(--c-line-strong);
-  color: var(--c-text-soft);
-  padding: 0.65rem 1.1rem;
-  border-radius: var(--radius-sm);
-  font-weight: 600;
+.close-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 0;
+  color: #fff;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
   cursor: pointer;
-  transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
 }
 
-.btn-cancel:hover { background: var(--c-hover); border-color: var(--c-mid); color: var(--c-deep); }
-
-.user-logs-container { display: flex; flex-direction: column; gap: 0.65rem; max-height: 350px; overflow-y: auto; padding-right: 0.25rem; }
-
-.log-row {
-  background: var(--c-ice);
-  border: 1px solid var(--c-line);
-  border-left: 3px solid var(--c-mid);
-  padding: 0.75rem 0.9rem;
-  border-radius: 8px;
-  font-size: 0.8rem;
+.modal-body-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.log-time { color: var(--c-mid); font-size: 0.7rem; font-weight: 700; margin-bottom: 0.2rem; }
-.log-details { color: var(--c-text); }
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
 
-/* ===================== NOTIFICACIÓN ===================== */
-.notification-toast {
-  background: linear-gradient(90deg, rgba(123, 170, 247, 0.22), rgba(123, 170, 247, 0.08));
-  border: 1px solid var(--c-sky);
-  border-left: 4px solid var(--c-mid);
-  color: var(--c-deep);
-  padding: 0.85rem 1.15rem;
-  border-radius: var(--radius-sm);
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-field label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.form-field input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-dark);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: #fff;
+  font-size: 13px;
+  outline: none;
+}
+
+.sportra-modal-select {
+  --background: rgba(255, 255, 255, 0.05);
+  --color: #ffffff;
+  --placeholder-color: #8e9cc0;
+  --padding-start: 14px;
+  border: 1px solid var(--border-dark);
+  border-radius: 10px;
+  min-height: 42px;
+  font-size: 13px;
+}
+
+.modal-actions-footer {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.cancel-btn {
+  background: transparent;
+  border: 1px solid var(--border-dark);
+  color: var(--text-muted);
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.submit-btn {
+  background: var(--blue-accent);
+  border: 0;
+  color: #060e2d;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 800;
   display: flex;
   align-items: center;
-  gap: 0.7rem;
-  margin-bottom: 1.5rem;
-  font-weight: 600;
-  font-size: 0.875rem;
-  box-shadow: var(--shadow-sm);
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
 }
 
-.btn-close-toast { margin-left: auto; cursor: pointer; color: var(--c-mid); font-size: 1.2rem; transition: color 0.18s ease; }
-.btn-close-toast:hover { color: var(--c-night); }
+/* NOTIFICACIÓN TOAST */
 
-/* ===================== FOTOS ===================== */
+.notification-toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  padding: 12px 18px;
+  border-radius: 12px;
+  color: #3730a3;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 24px;
+}
+
+.toast-icon {
+  color: #4338ca;
+  font-size: 18px;
+}
+
+.btn-close-toast {
+  margin-left: auto;
+  background: transparent;
+  border: 0;
+  color: #6366f1;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+/* FOTOS & SEGURIDAD */
+
 .admin-photo-preview {
-  width: 112px;
-  height: 72px;
+  width: 90px;
+  height: 60px;
   object-fit: cover;
   border-radius: 8px;
-  border: 1px solid var(--c-line-strong);
-  background: var(--c-hover);
+  border: 1px solid #e2e8f0;
 }
 
-/* ===================== SEGURIDAD ===================== */
-.security-form { display: grid; gap: 1rem; max-width: 620px; margin-top: 1rem; }
-.totp-enrollment { display: grid; gap: 1rem; padding-top: 1rem; }
+.security-card {
+  max-width: 600px;
+}
+
+.security-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.totp-enrollment {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+}
 
 .totp-qr {
-  width: 240px;
-  max-width: 100%;
-  aspect-ratio: 1;
-  padding: 10px;
+  border-radius: 12px;
+  padding: 8px;
   background: #fff;
-  border: 1px solid var(--c-line-strong);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-sm);
+  border: 1px solid #e2e8f0;
 }
 
 .totp-secret {
-  display: block;
-  overflow-wrap: anywhere;
-  padding: 0.85rem;
-  color: var(--c-ice);
-  background: var(--c-night);
-  border: 1px solid var(--c-deep);
-  border-radius: var(--radius-sm);
-  font-size: 0.85rem;
-  letter-spacing: 0.04em;
+  background: #f1f5f9;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #0f172a;
 }
 
 .recovery-codes-panel {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
-  gap: 0.7rem;
-  padding: 1.1rem;
-  background: var(--warn-bg);
-  border: 1px solid var(--warn-bd);
-  border-radius: var(--radius-sm);
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 12px;
+  padding: 16px;
+  color: #92400e;
 }
 
-.recovery-codes-panel h4, .recovery-codes-panel p { grid-column: 1 / -1; margin: 0; color: var(--c-night); }
-.recovery-codes-panel p { color: var(--warn-fg); font-size: 0.85rem; }
+.codes-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin: 12px 0;
+}
 
 .recovery-code {
-  overflow-wrap: anywhere;
-  padding: 0.55rem;
-  color: var(--c-night);
   background: #ffffff;
-  border: 1px solid var(--warn-bd);
-  border-radius: 8px;
+  padding: 6px;
   text-align: center;
-  font-size: 0.8rem;
+  border-radius: 6px;
+  font-size: 11px;
+  border: 1px solid #fef3c7;
 }
 
-.recovery-confirmation { display: flex; align-items: center; gap: 0.5rem; grid-column: 1 / -1; color: var(--c-night); font-size: 0.85rem; }
+.user-logs-container {
+  max-height: 300px;
+  overflow-y: auto;
+}
 
-.message-banner {
-  margin-top: 1rem;
-  padding: 0.85rem 1rem;
-  border-radius: var(--radius-sm);
-  background: rgba(123, 170, 247, 0.16);
-  border: 1px solid var(--c-sky);
-  color: var(--c-deep);
-  font-size: 0.85rem;
-  font-weight: 600;
+.log-row {
+  padding: 10px;
+  border-bottom: 1px solid var(--border-dark);
+  font-size: 12px;
+}
+
+.log-time {
+  font-size: 10px;
+  color: var(--blue-accent);
+}
+
+.filter-box {
   display: flex;
+  gap: 8px;
+}
+
+.filter-row {
+  display: flex;
+  gap: 8px;
   align-items: center;
-  gap: 0.5rem;
 }
 
-.security-section .message-banner.error { background: var(--bad-bg); border-color: var(--bad-bd); color: var(--bad-fg); }
-
-/* ===================== UTILIDADES ===================== */
-.text-white { color: var(--c-night); font-weight: 600; }
-.text-muted { color: var(--c-muted); }
-.text-center { text-align: center; }
-.text-right { text-align: right; }
-.font-bold { font-weight: 700; }
-.py-4 { padding-top: 1.25rem; padding-bottom: 1.25rem; }
-.filter-box { display: flex; gap: 0.6rem; flex-wrap: wrap; }
-
-/* ===================== ANIMACIONES ===================== */
-@keyframes sportraPulse {
-  0%   { box-shadow: 0 0 0 0 rgba(123, 170, 247, 0.65); }
-  70%  { box-shadow: 0 0 0 9px rgba(123, 170, 247, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(123, 170, 247, 0); }
+.input-month {
+  padding: 6px 12px;
+  font-size: 12px;
 }
 
-@keyframes sportraGlow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(123, 170, 247, 0.45); }
-  50%      { box-shadow: 0 0 16px 2px rgba(123, 170, 247, 0.55); }
+.btn-block {
+  width: 100%;
 }
 
-@keyframes sportraFadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+/* FOOTER */
+
+.site-footer {
+  background: var(--bg-dark);
+  padding: 40px 24px;
+  color: var(--text-muted);
+  font-size: 12px;
+  border-top: 1px solid var(--border-dark);
 }
 
-@keyframes sportraPop {
-  from { opacity: 0; transform: scale(0.95) translateY(10px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
+.footer-bottom {
+  display: flex;
+  justify-content: space-between;
 }
 
-.glow-pulse { animation: sportraGlow 3s ease-in-out infinite; }
-.animate-fade-in { animation: sportraFadeIn 0.35s ease both; }
-.animate-pop { animation: sportraPop 0.25s ease both; }
-
-.fade-enter-active, .fade-leave-active { transition: opacity 0.25s ease, transform 0.25s ease; }
-.fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(-6px); }
-
-@media (prefers-reduced-motion: reduce) {
-  .glow-pulse, .pulse-indicator, .animate-fade-in, .animate-pop { animation: none; }
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(123, 150, 255, 0.7); }
+  70% { box-shadow: 0 0 0 8px rgba(123, 150, 255, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(123, 150, 255, 0); }
 }
 
-/* ===================== RESPONSIVE ===================== */
-@media (max-width: 900px) {
+@media (max-width: 960px) {
+  .site-header { padding: 12px 20px; }
   .admin-grid-layout { grid-template-columns: 1fr; }
-  .admin-hero { flex-direction: column; align-items: flex-start; padding: 1.5rem; }
-}
-
-@media (max-width: 600px) {
-  .navbar-container { padding: 0 0.75rem; }
-  .admin-wrapper { padding: 6rem 0.9rem 3rem; }
-  .btn-logout span { display: none; }
-  .form-grid-2 { grid-template-columns: 1fr; }
-  .tab-btn { padding: 0.5rem 0.75rem; font-size: 0.8rem; }
-  .section-card { padding: 1.15rem; }
-  .metric-card { flex: 1; min-width: 100px; }
+  .admin-hero-card { flex-direction: column; align-items: flex-start; }
+  .metrics-row { width: 100%; justify-content: space-between; }
+  .footer-bottom { flex-direction: column; gap: 10px; text-align: center; }
 }
 </style>
+
+```

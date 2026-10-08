@@ -1,466 +1,413 @@
 <template>
-  <ion-page class="panel-page">
-    <!-- Navbar Flotante Glassmorphism -->
-    <header class="top-navbar-floating">
-      <div class="navbar-pill">
-        <!-- Logo Brand SPORTRA -->
-        <div class="brand-logo">
-          <div class="logo-circle-icon">
-            <ion-icon name="football-outline"></ion-icon>
-          </div>
-          <span class="brand-name">SPORTRA<span class="dot-neon">.</span></span>
-        </div>
-
-        <!-- Acciones del Menú -->
-        <div class="navbar-actions">
-          <button class="nav-chip-btn" type="button" @click="irACanchas">
-            <ion-icon name="tennisball-outline" class="chip-icon"></ion-icon>
-            <span class="btn-text">Canchas</span>
-          </button>
-
-          <button class="nav-chip-btn danger" type="button" @click="cerrarSesion">
-            <ion-icon name="log-out-outline" class="chip-icon"></ion-icon>
-            <span class="btn-text">Salir</span>
-          </button>
-        </div>
-      </div>
-    </header>
-
-    <ion-content class="panel-content" :scroll-y="true">
-      <!-- Glow Background Effects -->
-      <div class="page-background-glow glow-float-1"></div>
-      <div class="page-background-glow glow-float-2"></div>
-      <div class="bg-grid"></div>
-
-      <!-- Spinner Inicial -->
-      <div v-if="cargandoInicial" class="loading-shell">
-        <ion-spinner name="crescent" class="main-spinner"></ion-spinner>
-      </div>
-
-      <!-- Dashboard Shell -->
-      <div v-else class="dashboard-shell">
-        <!-- Topbar Cabecera -->
-        <section class="topbar">
-          <div class="title-block">
-            <span class="eyebrow">
-              <span class="pulse-indicator"></span>
-              Gestión Deportiva
-            </span>
-            <h1 class="page-title">{{ complejoActual?.nombre || 'Panel del Complejo' }}</h1>
-          </div>
-        </section>
-
-        <!-- Selector de Complejos (Si tiene más de 1) -->
-        <div v-if="misComplejos.length > 1" class="selector-card-glass">
-          <div class="selector-info">
-            <ion-icon name="business-outline" class="selector-icon"></ion-icon>
-            <label class="selector-label" for="select-complejo">Complejo activo</label>
-          </div>
-          <ion-select 
-            id="select-complejo"
-            v-model="complejoIdSeleccionado" 
-            class="complex-select-dark"
-            interface="popover"
-            @ionChange="cambiarComplejo" 
-          >
-            <ion-select-option v-for="c in misComplejos" :key="c.id" :value="c.id">
-              {{ c.nombre }}
-            </ion-select-option>
-          </ion-select>
-        </div>
-
-        <!-- Tarjetas de Estadísticas principales -->
-        <section v-if="estadisticas" class="stats-grid">
-          <div class="stat-card-glass">
-            <div class="stat-header">
-              <span class="stat-label">Canchas</span>
-              <div class="icon-wrapper">
-                <ion-icon name="shapes-outline" class="stat-icon"></ion-icon>
-              </div>
-            </div>
-            <strong class="stat-value">{{ estadisticas.total_canchas }}</strong>
+  <ion-page class="sportra-hybrid-app">
+    <ion-content class="sportra-main-viewport" :scroll-y="true">
+      <!-- HEADER Y HERO BANNER OSCURO SUPERIOR -->
+      <header class="dark-top-section">
+        <div class="header-container">
+          <!-- Logo Brand SPORTRA -->
+          <div class="brand-brand-text" @click="router.push('/home')">
+            <span class="brand-title">SPORTRA<span class="dot-blue">.</span></span>
+            <small class="brand-sub">GESTIÓN DE COMPLEJO</small>
           </div>
 
-          <div class="stat-card-glass highlight">
-            <div class="stat-header">
-              <span class="stat-label">Reservas Hoy</span>
-              <div class="icon-wrapper neon">
-                <ion-icon name="calendar-outline" class="stat-icon"></ion-icon>
-              </div>
-            </div>
-            <strong class="stat-value text-neon">{{ estadisticas.reservas_hoy }}</strong>
-          </div>
+          <!-- Acciones del Menú -->
+          <div class="navbar-actions">
+            <button class="nav-btn-light" type="button" @click="irACanchas">
+              <ion-icon name="tennisball-outline"></ion-icon>
+              <span>Canchas</span>
+            </button>
 
-          <div class="stat-card-glass">
-            <div class="stat-header">
-              <span class="stat-label">Reservas Mes</span>
-              <div class="icon-wrapper">
-                <ion-icon name="stats-chart-outline" class="stat-icon"></ion-icon>
-              </div>
-            </div>
-            <strong class="stat-value">{{ estadisticas.reservas_mes?.total ?? 0 }}</strong>
-          </div>
-
-          <div class="stat-card-glass">
-            <div class="stat-header">
-              <span class="stat-label">Aceptadas</span>
-              <div class="icon-wrapper success">
-                <ion-icon name="checkmark-circle-outline" class="stat-icon"></ion-icon>
-              </div>
-            </div>
-            <strong class="stat-value text-success">{{ estadisticas.solicitudes_mes?.aceptadas ?? 0 }}</strong>
-          </div>
-
-          <div class="stat-card-glass">
-            <div class="stat-header">
-              <span class="stat-label">Rechazadas</span>
-              <div class="icon-wrapper danger">
-                <ion-icon name="close-circle-outline" class="stat-icon"></ion-icon>
-              </div>
-            </div>
-            <strong class="stat-value text-danger">{{ estadisticas.solicitudes_mes?.rechazadas ?? 0 }}</strong>
-          </div>
-
-          <div class="stat-card-glass revenue-card">
-            <div class="stat-header">
-              <span class="stat-label">Ingreso estimado</span>
-              <div class="icon-wrapper gold">
-                <ion-icon name="cash-outline" class="stat-icon"></ion-icon>
-              </div>
-            </div>
-            <strong class="stat-value text-gold">₡{{ Number(estadisticas.ingreso_estimado_mes || 0).toLocaleString('es-CR') }}</strong>
-          </div>
-        </section>
-
-        <!-- Tira de demanda por hora -->
-        <div v-if="estadisticas?.demanda_por_hora?.length" class="demand-strip">
-          <div class="demand-title">
-            <ion-icon name="flame-outline" class="flame-icon"></ion-icon>
-            <span>Horas pico:</span>
-          </div>
-          <div class="demand-tags">
-            <span v-for="hora in estadisticas.demanda_por_hora" :key="hora.hora" class="demand-pill">
-              <span class="hour">{{ hora.hora }}</span>
-              <span class="count">{{ hora.reservas }} res.</span>
-            </span>
+            <button class="nav-btn-danger-pill" type="button" @click="cerrarSesion">
+              <ion-icon name="log-out-outline"></ion-icon>
+              <span>Cerrar Sesión</span>
+            </button>
           </div>
         </div>
 
-        <!-- Seccion Solicitudes Pendientes -->
-        <section class="requests-section">
-          <div class="panel-card-glass requests-panel">
-            <div class="card-header request-header">
-              <div>
-                <span class="card-kicker">Bandeja del complejo</span>
-                <h2 class="card-title">Solicitudes Pendientes</h2>
+        <!-- Banner Hero Contenido Oscuro -->
+        <div class="hero-card-banner">
+          <div class="hero-banner-content">
+            <div class="hero-left-info">
+              <span class="platform-badge">
+                <span class="badge-dot"></span>
+                COMPLEJO ACTIVO
+              </span>
+              <h1 class="hero-main-title">{{ complejoActual?.nombre || 'Panel del Complejo' }}</h1>
+              <p class="hero-description">
+                Gestión de reservas, control de agenda diaria y bandeja de solicitudes entrantes.
+              </p>
+            </div>
+
+            <!-- Tarjetas de Métricas Top -->
+            <div v-if="estadisticas" class="hero-metrics-row">
+              <div class="metric-top-card">
+                <small>CANCHAS</small>
+                <strong>{{ estadisticas.total_canchas }}</strong>
               </div>
-              <span class="request-count">{{ solicitudesPendientes.length }}</span>
-            </div>
-
-            <div v-if="cargandoSolicitudes" class="request-loading">
-              <ion-spinner name="crescent" class="main-spinner-sm"></ion-spinner>
-              <span>Actualizando bandeja...</span>
-            </div>
-            
-            <div v-else-if="errorSolicitudes" class="empty-state-card error" role="alert">
-              <ion-icon name="alert-circle-outline"></ion-icon>
-              <p>{{ errorSolicitudes }}</p>
-            </div>
-
-            <div v-else-if="solicitudesPendientes.length === 0" class="empty-state-card">
-              <div class="empty-icon-wrap">
-                <ion-icon name="checkmark-done-circle-outline"></ion-icon>
+              <div class="metric-top-card highlight">
+                <small>HOY</small>
+                <strong>{{ estadisticas.reservas_hoy }}</strong>
               </div>
-              <p class="empty-title">¡Todo al día!</p>
-              <span class="empty-sub">No hay solicitudes pendientes de respuesta por el momento.</span>
+              <div class="metric-top-card">
+                <small>MES</small>
+                <strong>{{ estadisticas.reservas_mes?.total ?? 0 }}</strong>
+              </div>
+              <div class="metric-top-card">
+                <small>INGRESOS</small>
+                <strong class="text-gold">₡{{ Number(estadisticas.ingreso_estimado_mes || 0).toLocaleString('es-CR') }}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- CUERPO CLARO CON TARJETAS BLANCAS Y BORDES LIMPIOS -->
+      <main class="light-body-section">
+        <div class="body-container">
+          
+          <!-- Loader Inicial -->
+          <div v-if="cargandoInicial" class="loading-state-box">
+            <ion-spinner name="crescent" class="main-spinner"></ion-spinner>
+            <span>Cargando datos del complejo...</span>
+          </div>
+
+          <div v-else class="dashboard-grid-content">
+
+            <!-- Tira de demanda por hora -->
+            <div v-if="estadisticas?.demanda_por_hora?.length" class="demand-strip-card">
+              <div class="demand-title">
+                <ion-icon name="flame-outline" class="flame-icon"></ion-icon>
+                <span>Horas pico de mayor demanda:</span>
+              </div>
+              <div class="demand-tags">
+                <span v-for="hora in estadisticas.demanda_por_hora" :key="hora.hora" class="demand-pill">
+                  <span class="hour">{{ hora.hora }}</span>
+                  <span class="count">{{ hora.reservas }} res.</span>
+                </span>
+              </div>
             </div>
 
-            <div v-else class="requests-list">
-              <article v-for="solicitud in solicitudesPendientes" :key="solicitud.solicitud_id" class="request-card">
-                <div class="request-main">
-                  <div class="request-title-row">
-                    <div class="request-info-head">
-                      <span class="request-kicker">{{ solicitud.cancha }} · {{ solicitud.complejo }}</span>
-                      <h3 class="client-name">{{ solicitud.nombre_cliente }}</h3>
-                    </div>
-                    <span v-if="solicitud.expira_en" class="request-expiry">
-                      <ion-icon name="time-outline"></ion-icon>
-                      Vence {{ formatearHora(solicitud.expira_en) }}
-                    </span>
+            <!-- Sección Solicitudes Pendientes -->
+            <section class="requests-section">
+              <div class="white-panel-card">
+                <div class="card-header-row">
+                  <div>
+                    <span class="section-kicker">BANDEJA DEL COMPLEJO</span>
+                    <h2 class="section-title">Solicitudes Pendientes</h2>
                   </div>
-
-                  <div class="request-meta">
-                    <span class="meta-item"><ion-icon name="calendar-outline"></ion-icon> {{ solicitud.fecha }}</span>
-                    <span class="meta-item"><ion-icon name="card-outline"></ion-icon> Cédula {{ solicitud.cedula_cliente }}</span>
-                    <a :href="`tel:${solicitud.telefono_cliente}`" class="meta-item phone">
-                      <ion-icon name="call-outline"></ion-icon> {{ solicitud.telefono_cliente }}
-                    </a>
-                  </div>
-
-                  <div class="request-hours">
-                    <span v-for="hora in solicitud.horas" :key="`${solicitud.solicitud_id}-${hora.inicio}`" class="time-badge">
-                      {{ hora.inicio }} – {{ hora.fin }}
-                    </span>
-                  </div>
-
-                  <p v-if="solicitud.observaciones" class="request-notes">
-                    <ion-icon name="chatbox-ellipses-outline"></ion-icon>
-                    "{{ solicitud.observaciones }}"
-                  </p>
+                  <span class="badge-count-blue">{{ solicitudesPendientes.length }}</span>
                 </div>
 
-                <div class="request-actions">
-                  <a 
-                    v-if="solicitud.whatsapp_url" 
-                    :href="solicitud.whatsapp_url" 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    class="request-btn whatsapp"
-                  >
-                    <ion-icon name="logo-whatsapp"></ion-icon>
-                    <span>WhatsApp</span>
-                  </a>
-                  
+                <div v-if="cargandoSolicitudes" class="card-loading-inline">
+                  <ion-spinner name="crescent"></ion-spinner>
+                  <span>Cargando solicitudes...</span>
+                </div>
+
+                <div v-else-if="errorSolicitudes" class="empty-state-card error" role="alert">
+                  <ion-icon name="alert-circle-outline"></ion-icon>
+                  <p>{{ errorSolicitudes }}</p>
+                </div>
+
+                <div v-else-if="solicitudesPendientes.length === 0" class="empty-state-card">
+                  <div class="empty-icon-wrap">
+                    <ion-icon name="checkmark-done-circle-outline"></ion-icon>
+                  </div>
+                  <p class="empty-title">¡Todo al día!</p>
+                  <span class="empty-sub">No hay solicitudes pendientes de respuesta por el momento.</span>
+                </div>
+
+                <div v-else class="requests-list">
+                  <article v-for="solicitud in solicitudesPendientes" :key="solicitud.solicitud_id" class="request-item-card">
+                    <div class="request-main">
+                      <div class="request-title-row">
+                        <div>
+                          <span class="request-kicker">{{ solicitud.cancha }} · {{ solicitud.complejo }}</span>
+                          <h3 class="client-name">{{ solicitud.nombre_cliente }}</h3>
+                        </div>
+                        <span v-if="solicitud.expira_en" class="request-expiry-tag">
+                          <ion-icon name="time-outline"></ion-icon>
+                          Vence {{ formatearHora(solicitud.expira_en) }}
+                        </span>
+                      </div>
+
+                      <div class="request-meta">
+                        <span class="meta-item"><ion-icon name="calendar-outline"></ion-icon> {{ solicitud.fecha }}</span>
+                        <span class="meta-item"><ion-icon name="card-outline"></ion-icon> Cédula {{ solicitud.cedula_cliente }}</span>
+                        <a :href="`tel:${solicitud.telefono_cliente}`" class="meta-item phone">
+                          <ion-icon name="call-outline"></ion-icon> {{ solicitud.telefono_cliente }}
+                        </a>
+                      </div>
+
+                      <div class="request-hours">
+                        <span v-for="hora in solicitud.horas" :key="`${solicitud.solicitud_id}-${hora.inicio}`" class="time-badge">
+                          {{ hora.inicio }} – {{ hora.fin }}
+                        </span>
+                      </div>
+
+                      <p v-if="solicitud.observaciones" class="request-notes">
+                        <ion-icon name="chatbox-ellipses-outline"></ion-icon>
+                        "{{ solicitud.observaciones }}"
+                      </p>
+                    </div>
+
+                    <div class="request-actions">
+                      <a 
+                        v-if="solicitud.whatsapp_url" 
+                        :href="solicitud.whatsapp_url" 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        class="btn-action-soft whatsapp"
+                      >
+                        <ion-icon name="logo-whatsapp"></ion-icon>
+                        <span>WhatsApp</span>
+                      </a>
+                      
+                      <button 
+                        v-if="solicitud.estado === 'pendiente'"
+                        class="btn-action-soft danger" 
+                        type="button" 
+                        :disabled="respondiendoSolicitud" 
+                        @click="responderSolicitud(solicitud.reserva_id, 'rechazar')"
+                      >
+                        <ion-icon name="close-outline"></ion-icon>
+                        <span>Rechazar</span>
+                      </button>
+
+                      <button 
+                        v-if="solicitud.estado === 'pendiente'"
+                        class="btn-action-primary" 
+                        type="button" 
+                        :disabled="respondiendoSolicitud" 
+                        @click="responderSolicitud(solicitud.reserva_id, 'aceptar')"
+                      >
+                        <ion-icon name="checkmark-outline"></ion-icon>
+                        <span>{{ respondiendoSolicitud ? 'Procesando…' : 'Aceptar' }}</span>
+                      </button>
+
+                      <button 
+                        v-else-if="solicitud.estado === 'aceptada'"
+                        class="btn-action-gold" 
+                        type="button" 
+                        :disabled="respondiendoSolicitud" 
+                        @click="confirmarPago(solicitud.reserva_id)"
+                      >
+                        <ion-icon name="cash-outline"></ion-icon>
+                        <span>{{ respondiendoSolicitud ? 'Procesando…' : 'Confirmar pago' }}</span>
+                      </button>
+                    </div>
+                  </article>
+                </div>
+              </div>
+            </section>
+
+            <!-- Grid 2 Columnas (Agenda Diaria & Guía) -->
+            <div class="two-columns-grid">
+              
+              <!-- Agenda Diaria (Reservas Aceptadas/Confirmadas/Bloqueadas) -->
+              <div class="white-panel-card">
+                <div class="card-header-row">
+                  <div>
+                    <span class="section-kicker">AGENDA DIARIA</span>
+                    <h2 class="section-title">Horarios del Día</h2>
+                  </div>
+                </div>
+
+                <div v-if="agenda?.canchas?.length" class="agenda-list">
+                  <div v-for="cancha in agenda.canchas" :key="cancha.cancha_id" class="agenda-item">
+                    <div class="agenda-head">
+                      <div class="cancha-title-wrap">
+                        <ion-icon name="football-outline" class="cancha-icon"></ion-icon>
+                        <h3>{{ cancha.nombre }}</h3>
+                      </div>
+                      <span class="badge-deporte">{{ cancha.deporte }}</span>
+                    </div>
+
+                    <div class="timeline-list">
+                      <!-- Reservas Procesadas -->
+                      <div 
+                        v-for="r in cancha.reservas.filter(res => res.estado !== 'pendiente')" 
+                        :key="r.id" 
+                        class="timeline-row reservation"
+                      >
+                        <div class="timeline-time">
+                          <ion-icon name="time-outline"></ion-icon>
+                          <span>{{ r.hora_inicio }} - {{ r.hora_fin }}</span>
+                        </div>
+                        
+                        <div class="timeline-content">
+                          <span class="client-name-sm">{{ r.nombre_cliente }}</span>
+                          <small :class="['status-chip', r.estado]">{{ r.estado }}</small>
+                        </div>
+
+                        <div class="reservation-actions">
+                          <button class="mini-btn danger" type="button" @click="cancelar(r.id)">Cancelar</button>
+                        </div>
+                      </div>
+
+                      <!-- Bloqueos -->
+                      <div v-for="b in cancha.bloqueos" :key="'b' + b.id" class="timeline-row blocked">
+                        <div class="timeline-time muted">
+                          <ion-icon name="lock-closed-outline"></ion-icon>
+                          <span>{{ b.hora_inicio }} - {{ b.hora_fin }}</span>
+                        </div>
+                        <div class="timeline-content">
+                          <span class="client-name-sm">Horario Bloqueado</span>
+                          <small class="status-chip blocked-tag">{{ b.motivo || 'Uso Interno' }}</small>
+                        </div>
+                      </div>
+                    </div>
+
+                    <p v-if="!cancha.reservas?.filter(res => res.estado !== 'pendiente').length && !cancha.bloqueos?.length" class="empty-inline">
+                      <ion-icon name="calendar-clear-outline"></ion-icon>
+                      Sin reservas activas ni bloqueos registrados para hoy.
+                    </p>
+                  </div>
+                </div>
+
+                <div v-else class="empty-state-card">
+                  <ion-icon name="information-circle-outline"></ion-icon>
+                  <p>No hay agenda disponible para este complejo.</p>
+                </div>
+              </div>
+
+              <!-- Guía de Operación -->
+              <div class="white-panel-card">
+                <div class="card-header-row">
+                  <div>
+                    <span class="section-kicker">GUÍA RÁPIDA</span>
+                    <h2 class="section-title">Flujo de Operación</h2>
+                  </div>
+                </div>
+
+                <ol class="flow-steps">
+                  <li class="step-item">
+                    <div class="step-number">1</div>
+                    <div class="step-body">
+                      <strong>Aceptar Solicitud</strong>
+                      <span>Asegura el bloque provisional y comunícate con el cliente vía WhatsApp.</span>
+                    </div>
+                  </li>
+                  <li class="step-item">
+                    <div class="step-number">2</div>
+                    <div class="step-body">
+                      <strong>Coordinar Pago</strong>
+                      <span>Confirma el pago por SINPE Móvil o transferencia.</span>
+                    </div>
+                  </li>
+                  <li class="step-item">
+                    <div class="step-number">3</div>
+                    <div class="step-body">
+                      <strong>Confirmar Reserva</strong>
+                      <span>Presiona "Confirmar pago" para bloquear el horario definitivamente.</span>
+                    </div>
+                  </li>
+                </ol>
+
+                <div v-if="mensajeReserva" :class="['message-banner', errorReserva ? 'error' : 'success']">
+                  <ion-icon :name="errorReserva ? 'alert-circle-outline' : 'checkmark-circle-outline'"></ion-icon>
+                  <span>{{ mensajeReserva }}</span>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Historial de Reservas (Orden Cronológico: Primero en llegar arriba) -->
+            <section class="white-panel-card history-section">
+              <div class="card-header-row history-header">
+                <div>
+                  <span class="section-kicker">REGISTRO DE RESERVAS</span>
+                  <h2 class="section-title">Historial de Reservas</h2>
+                </div>
+                
+                <div class="history-filters">
+                  <div class="filter-input-wrap">
+                    <ion-icon name="funnel-outline" class="filter-icon"></ion-icon>
+                    <ion-input 
+                      v-model="fechaHistorial" 
+                      type="date" 
+                      class="light-date-input" 
+                      @ionChange="cargarHistorial(1)"
+                    ></ion-input>
+                  </div>
+                  <button class="btn-filter-reset" type="button" @click="limpiarFiltroHistorial">Todas</button>
+                </div>
+              </div>
+
+              <div class="table-responsive">
+                <table class="light-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Fecha</th>
+                      <th>Cancha</th>
+                      <th>Cliente</th>
+                      <th>Horario</th>
+                      <th>Estado</th>
+                      <th class="text-right">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(reserva, idx) in historialReservas" :key="reserva.id">
+                      <td class="font-bold text-muted">{{ idx + 1 }}</td>
+                      <td class="font-mono">{{ reserva.fecha }}</td>
+                      <td><span class="cancha-badge">{{ reserva.cancha?.nombre || 'N/A' }}</span></td>
+                      <td class="font-bold">{{ reserva.nombre_cliente }}</td>
+                      <td class="font-mono text-blue">{{ reserva.hora_inicio }} - {{ reserva.hora_fin }}</td>
+                      <td>
+                        <span :class="['table-status-pill', reserva.decision_propietario || reserva.estado]">
+                          {{ reserva.decision_propietario || reserva.estado }}
+                        </span>
+                      </td>
+                      <td class="text-right">
+                        <button
+                          v-if="reserva.estado === 'confirmada' && horaFinalizada(reserva)"
+                          class="mini-btn success"
+                          type="button"
+                          @click="completarAlquiler(reserva)"
+                        >
+                          Marcar completada
+                        </button>
+                        <span v-else-if="reserva.estado === 'completada'" class="text-success font-bold text-xs">
+                          ✓ Completada
+                        </span>
+                        <span v-else class="text-muted">—</span>
+                      </td>
+                    </tr>
+                    <tr v-if="historialReservas.length === 0">
+                      <td colspan="7" class="text-center py-6 text-muted">
+                        No hay reservas registradas para este filtro.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="history-pagination">
+                <span class="page-info">Página {{ paginaHistorial }} de {{ ultimaPaginaHistorial }}</span>
+                <div class="pagination-buttons">
                   <button 
-                    v-if="solicitud.estado === 'pendiente'"
-                    class="request-btn reject" 
+                    class="btn-pagination" 
                     type="button" 
-                    :disabled="respondiendoSolicitud" 
-                    @click="responderSolicitud(solicitud.reserva_id, 'rechazar')"
+                    :disabled="paginaHistorial <= 1" 
+                    @click="cargarHistorial(paginaHistorial - 1)"
                   >
-                    <ion-icon name="close-outline"></ion-icon>
-                    <span>Rechazar</span>
+                    Anterior
                   </button>
-
                   <button 
-                    v-if="solicitud.estado === 'pendiente'"
-                    class="request-btn accept" 
+                    class="btn-pagination" 
                     type="button" 
-                    :disabled="respondiendoSolicitud" 
-                    @click="responderSolicitud(solicitud.reserva_id, 'aceptar')"
+                    :disabled="paginaHistorial >= ultimaPaginaHistorial" 
+                    @click="cargarHistorial(paginaHistorial + 1)"
                   >
-                    <ion-icon name="checkmark-outline"></ion-icon>
-                    <span>{{ respondiendoSolicitud ? 'Procesando…' : 'Aceptar' }}</span>
-                  </button>
-
-                  <button 
-                    v-else-if="solicitud.estado === 'aceptada'"
-                    class="request-btn confirm-pay" 
-                    type="button" 
-                    :disabled="respondiendoSolicitud" 
-                    @click="confirmarPago(solicitud.reserva_id)"
-                  >
-                    <ion-icon name="cash-outline"></ion-icon>
-                    <span>{{ respondiendoSolicitud ? 'Procesando…' : 'Confirmar pago' }}</span>
+                    Siguiente
                   </button>
                 </div>
-              </article>
-            </div>
-          </div>
-        </section>
-
-        <!-- Grid Contenido Agenda & Flujo -->
-        <section class="content-grid">
-          <!-- Columna Agenda Diario -->
-          <div class="panel-card-glass wide-card">
-            <div class="card-header">
-              <div>
-                <span class="card-kicker">Agenda Diaria</span>
-                <h2 class="card-title">Horarios del Día</h2>
               </div>
-            </div>
+            </section>
 
-            <div v-if="agenda?.canchas?.length" class="agenda-list">
-              <div v-for="cancha in agenda.canchas" :key="cancha.cancha_id" class="agenda-item">
-                <div class="agenda-head">
-                  <div class="cancha-title-wrap">
-                    <ion-icon name="football-outline" class="cancha-icon"></ion-icon>
-                    <h3>{{ cancha.nombre }}</h3>
-                  </div>
-                  <span class="badge-deporte">{{ cancha.deporte }}</span>
-                </div>
-
-                <div class="timeline-list">
-                  <!-- Reservas -->
-                  <div v-for="r in cancha.reservas" :key="r.id" class="timeline-row reservation">
-                    <div class="timeline-time">
-                      <ion-icon name="time-outline"></ion-icon>
-                      <span>{{ r.hora_inicio }} - {{ r.hora_fin }}</span>
-                    </div>
-                    
-                    <div class="timeline-content">
-                      <span class="client-name-sm">{{ r.nombre_cliente }}</span>
-                      <small :class="['status-chip', r.estado]">{{ r.estado }}</small>
-                    </div>
-
-                    <div class="reservation-actions">
-                      <template v-if="r.estado === 'pendiente' && r.solicitud_id">
-                        <small v-if="r.expira_en" class="expiry-warn">Vence {{ formatearHora(r.expira_en) }}</small>
-                        <button class="mini-button-success" type="button" @click="responderSolicitud(r.id, 'aceptar')">Aceptar</button>
-                        <button class="mini-button-danger" type="button" @click="responderSolicitud(r.id, 'rechazar')">Rechazar</button>
-                      </template>
-                      <button v-else class="mini-button-danger" type="button" @click="cancelar(r.id)">Cancelar</button>
-                    </div>
-                  </div>
-
-                  <!-- Bloqueos -->
-                  <div v-for="b in cancha.bloqueos" :key="'b' + b.id" class="timeline-row blocked">
-                    <div class="timeline-time muted">
-                      <ion-icon name="lock-closed-outline"></ion-icon>
-                      <span>{{ b.hora_inicio }} - {{ b.hora_fin }}</span>
-                    </div>
-                    <div class="timeline-content">
-                      <span class="client-name-sm">Horario Bloqueado</span>
-                      <small class="status-chip blocked-tag">{{ b.motivo || 'Mantenimiento / Uso Interno' }}</small>
-                    </div>
-                  </div>
-                </div>
-
-                <p v-if="!cancha.reservas?.length && !cancha.bloqueos?.length" class="empty-inline">
-                  <ion-icon name="calendar-clear-outline"></ion-icon>
-                  Sin reservas ni bloqueos registrados para hoy.
-                </p>
-              </div>
-            </div>
-
-            <div v-else class="empty-state-card">
-              <ion-icon name="information-circle-outline"></ion-icon>
-              <p>No hay agenda disponible para este complejo.</p>
-            </div>
           </div>
-
-          <!-- Columna Lateral: Flujo de Operación -->
-          <div class="panel-card-glass side-card">
-            <div class="card-header">
-              <div>
-                <span class="card-kicker">Guía de Operación</span>
-                <h2 class="card-title">Flujo de Solicitudes</h2>
-              </div>
-            </div>
-
-            <ol class="flow-steps">
-              <li class="step-item">
-                <div class="step-number">1</div>
-                <div class="step-body">
-                  <strong>Aceptar Solicitud</strong>
-                  <span>Reserva provisional del horario y contacto directo con el cliente vía WhatsApp.</span>
-                </div>
-              </li>
-              <li class="step-item">
-                <div class="step-number">2</div>
-                <div class="step-body">
-                  <strong>Coordinar Pago</strong>
-                  <span>Solicita el comprobante del SINPE / transferencia acordada.</span>
-                </div>
-              </li>
-              <li class="step-item">
-                <div class="step-number">3</div>
-                <div class="step-body">
-                  <strong>Confirmar y Bloquear</strong>
-                  <span>Marca la solicitud como pagada para asegurar el bloque definitivamente.</span>
-                </div>
-              </li>
-            </ol>
-
-            <div v-if="mensajeReserva" :class="['message-banner', errorReserva ? 'error' : 'success']">
-              <ion-icon :name="errorReserva ? 'alert-circle-outline' : 'checkmark-circle-outline'"></ion-icon>
-              <span>{{ mensajeReserva }}</span>
-            </div>
-          </div>
-        </section>
-
-        <!-- Historial de Reservas -->
-        <section class="panel-card-glass history-card">
-          <div class="card-header history-header">
-            <div>
-              <span class="card-kicker">Registro Histórico</span>
-              <h2 class="card-title">Historial de Reservas</h2>
-            </div>
-            
-            <div class="history-filters">
-              <div class="filter-input-wrap">
-                <ion-icon name="funnel-outline" class="filter-icon"></ion-icon>
-                <ion-input 
-                  v-model="fechaHistorial" 
-                  type="date" 
-                  class="custom-input-dark history-date-picker" 
-                  @ionChange="cargarHistorial(1)"
-                ></ion-input>
-              </div>
-              <button class="nav-chip-btn" type="button" @click="limpiarFiltroHistorial">Todas</button>
-            </div>
-          </div>
-
-          <div class="table-responsive">
-            <table class="neon-table">
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Cancha</th>
-                  <th>Cliente</th>
-                  <th>Horario</th>
-                  <th>Estado</th>
-                  <th class="text-right">Acción</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="reserva in historialReservas" :key="reserva.id">
-                  <td class="font-mono">{{ reserva.fecha }}</td>
-                  <td><span class="cancha-badge">{{ reserva.cancha?.nombre || 'N/A' }}</span></td>
-                  <td class="font-bold">{{ reserva.nombre_cliente }}</td>
-                  <td class="font-mono text-neon-subtle">{{ reserva.hora_inicio }} - {{ reserva.hora_fin }}</td>
-                  <td>
-                    <span :class="['table-status-pill', reserva.decision_propietario || reserva.estado]">
-                      {{ reserva.decision_propietario || reserva.estado }}
-                    </span>
-                  </td>
-                  <td class="text-right">
-                    <button
-                      v-if="reserva.estado === 'confirmada' && horaFinalizada(reserva)"
-                      class="mini-button-success"
-                      type="button"
-                      @click="completarAlquiler(reserva)"
-                    >
-                      Marcar completada
-                    </button>
-                    <span v-else-if="reserva.estado === 'completada'" class="text-success font-bold text-xs">
-                      ✓ Completada
-                    </span>
-                    <span v-else class="text-muted">—</span>
-                  </td>
-                </tr>
-                <tr v-if="historialReservas.length === 0">
-                  <td colspan="6" class="text-center py-6 text-muted">
-                    No hay reservas registradas para este filtro.
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div class="history-pagination">
-            <span class="page-info">Página {{ paginaHistorial }} de {{ ultimaPaginaHistorial }}</span>
-            <div class="pagination-buttons">
-              <button 
-                class="nav-chip-btn" 
-                type="button" 
-                :disabled="paginaHistorial <= 1" 
-                @click="cargarHistorial(paginaHistorial - 1)"
-              >
-                Anterior
-              </button>
-              <button 
-                class="nav-chip-btn" 
-                type="button" 
-                :disabled="paginaHistorial >= ultimaPaginaHistorial" 
-                @click="cargarHistorial(paginaHistorial + 1)"
-              >
-                Siguiente
-              </button>
-            </div>
-          </div>
-        </section>
-      </div>
+        </div>
+      </main>
     </ion-content>
   </ion-page>
 </template>
@@ -469,7 +416,7 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import {
-  IonPage, IonContent, IonSpinner, IonSelect, IonSelectOption, IonInput, IonIcon
+  IonPage, IonContent, IonSpinner, IonInput, IonIcon
 } from '@ionic/vue';
 import { addIcons } from 'ionicons';
 import { 
@@ -494,7 +441,6 @@ import {
   checkmarkOutline,
   calendarClearOutline,
   informationCircleOutline,
-  businessOutline,
   closeCircleOutline,
   funnelOutline
 } from 'ionicons/icons';
@@ -562,7 +508,6 @@ addIcons({
   'checkmark-outline': checkmarkOutline,
   'calendar-clear-outline': calendarClearOutline,
   'information-circle-outline': informationCircleOutline,
-  'business-outline': businessOutline,
   'close-circle-outline': closeCircleOutline,
   'funnel-outline': funnelOutline,
 });
@@ -570,7 +515,6 @@ addIcons({
 const router = useRouter();
 const authStore = useAuthStore();
 
-const misComplejos = ref<Complejo[]>([]);
 const complejoIdSeleccionado = ref<number | null>(null);
 const complejoActual = ref<Complejo | null>(null);
 const agenda = ref<{ canchas: CanchaAgenda[] } | null>(null);
@@ -590,9 +534,13 @@ const ultimaPaginaHistorial = ref(1);
 
 let complejoSuscritoId: number | null = null;
 
-function formatearHora(fechaIso: string): string {
+function formatearHora(fechaIso: string | null | undefined): string {
+  if (!fechaIso) return '';
   try {
-    return new Date(fechaIso).toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' });
+    const fechaLimpia = fechaIso.split('.')[0].replace(' ', 'T');
+    const date = new Date(fechaLimpia);
+    if (isNaN(date.getTime())) return '';
+    return date.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' });
   } catch {
     return '';
   }
@@ -600,8 +548,6 @@ function formatearHora(fechaIso: string): string {
 
 async function cargarAgenda() {
   if (!complejoIdSeleccionado.value) return;
-
-  complejoActual.value = misComplejos.value.find((c) => c.id === complejoIdSeleccionado.value) || null;
 
   try {
     const [agendaRes, statsRes] = await Promise.all([
@@ -622,9 +568,14 @@ async function cargarSolicitudes() {
   errorSolicitudes.value = '';
   try {
     const { data } = await panelService.solicitudes();
-    solicitudesPendientes.value = data.data;
+    const solicitudes = data.data || [];
+    
+    solicitudesPendientes.value = solicitudes.sort(
+      (a: any, b: any) => (a.solicitud_id || a.reserva_id) - (b.solicitud_id || b.reserva_id)
+    );
   } catch (error: any) {
-    errorSolicitudes.value = error.response?.data?.message || 'No se pudieron cargar las solicitudes.';
+    console.error('Error cargando solicitudes:', error);
+    errorSolicitudes.value = 'No se pudieron cargar las solicitudes pendientes.';
   } finally {
     cargandoSolicitudes.value = false;
   }
@@ -640,18 +591,28 @@ function suscribirComplejoActual() {
   });
 }
 
-async function cambiarComplejo() {
-  await cargarAgenda();
-  suscribirComplejoActual();
-}
-
 async function cargarHistorial(pagina = 1) {
   try {
+    // Parámetros estándar compatibles sin causar error de tipado en TypeScript
     const { data } = await panelService.listarReservas({
       fecha: fechaHistorial.value || undefined,
-      page: pagina,
+      page: pagina
     });
-    historialReservas.value = data.data.data;
+
+    const items = data.data.data || [];
+
+    // Ordenamiento local estricto en el cliente para poner de primero la más antigua (primera en llegar)
+    items.sort((a: any, b: any) => {
+      const fechaA = new Date(`${a.fecha}T${a.hora_inicio || '00:00'}`).getTime();
+      const fechaB = new Date(`${b.fecha}T${b.hora_inicio || '00:00'}`).getTime();
+      
+      if (fechaA === fechaB) {
+        return (a.id || 0) - (b.id || 0);
+      }
+      return fechaA - fechaB;
+    });
+
+    historialReservas.value = items;
     paginaHistorial.value = data.data.current_page;
     ultimaPaginaHistorial.value = data.data.last_page;
   } catch (error) {
@@ -737,10 +698,11 @@ function irACanchas() {
 onMounted(async () => {
   try {
     const { data } = await panelService.misComplejos();
-    misComplejos.value = data.data;
+    const complejos = data.data;
 
-    if (misComplejos.value.length > 0) {
-      complejoIdSeleccionado.value = misComplejos.value[0].id;
+    if (complejos && complejos.length > 0) {
+      complejoActual.value = complejos[0];
+      complejoIdSeleccionado.value = complejos[0].id;
       await cargarAgenda();
       suscribirComplejoActual();
     }
@@ -758,898 +720,654 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.panel-page {
-  font-family: 'DM Sans', -apple-system, sans-serif;
-  color: #17251e;
-  background-color: #f1f6f1;
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+.sportra-hybrid-app,
+.sportra-main-viewport,
+.sportra-hybrid-app ion-content {
+  --background: #f4f6fc !important;
+  background-color: #f4f6fc !important;
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif !important;
+  color: #091133;
 }
 
-.panel-content {
-  --background: #f1f6f1;
+.dark-top-section {
+  background: #060e2d;
+  color: #ffffff;
+  padding: 20px 48px 40px;
 }
 
-/* NAVBAR */
-.top-navbar-floating {
-  position: sticky;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-  padding: 1rem 1.5rem 0.5rem;
-  background: linear-gradient(180deg, rgba(241, 246, 241, 0.96) 0%, rgba(241, 246, 241, 0) 100%);
-}
-
-.navbar-pill {
-  max-width: 1240px;
+.header-container {
+  max-width: 1360px;
   margin: 0 auto;
-  background: rgba(255, 255, 255, 0.96);
-  border: 1px solid #d7e2d8;
-  border-radius: 6px;
-  padding: 0.55rem 1.25rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 8px 24px rgba(17, 42, 29, 0.1);
+  margin-bottom: 24px;
 }
 
-.brand-logo {
+.brand-brand-text {
+  cursor: pointer;
   display: flex;
-  align-items: center;
-  gap: 0.65rem;
+  flex-direction: column;
 }
 
-.logo-circle-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 5px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #17634b;
+.brand-title {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #ffffff;
+  line-height: 1;
 }
 
-.logo-circle-icon ion-icon {
-  color: #d4ed66;
-  font-size: 1.15rem;
+.brand-title .dot-blue {
+  color: #7b96ff;
 }
 
-.brand-name {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 700;
-  font-size: 1.3rem;
-  color: #17251e;
-}
-
-.dot-neon {
-  color: #17634b;
+.brand-sub {
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: #8e9cc0;
+  margin-top: 4px;
 }
 
 .navbar-actions {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 12px;
 }
 
-.nav-chip-btn {
-  background: #ffffff;
-  border: 1px solid #d7e2d8;
-  border-radius: 4px;
-  padding: 0.45rem 1rem;
-  color: #17634b;
-  font-size: 0.825rem;
-  font-weight: 600;
-  display: flex;
+.nav-btn-light {
+  display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 99px;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
-  transition: background-color 0.18s ease, border-color 0.18s ease;
+  transition: all 0.2s ease;
 }
 
-.nav-chip-btn .chip-icon {
-  font-size: 0.95rem;
-  color: #17634b;
+.nav-btn-light:hover {
+  background: rgba(255, 255, 255, 0.16);
 }
 
-.nav-chip-btn:hover:not(:disabled) {
-  background: #eef5ec;
-  border-color: #c3d6c6;
-}
-
-.nav-chip-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.nav-chip-btn.danger {
+.nav-btn-danger-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
   background: #fff0eb;
-  border-color: #efc5b9;
+  border: 0;
+  border-radius: 99px;
   color: #9d3c2f;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.nav-chip-btn.danger .chip-icon {
-  color: #9d3c2f;
-}
-
-.nav-chip-btn.danger:hover {
+.nav-btn-danger-pill:hover {
   background: #f9ddd3;
-  border-color: #e5a794;
-  color: #7c2d20;
 }
 
-/* FONDOS DECORATIVOS DESACTIVADOS */
-.page-background-glow,
-.bg-grid {
-  display: none;
+.hero-card-banner {
+  max-width: 1360px;
+  margin: 0 auto;
+  background: #0d173d;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 28px 36px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
 }
 
-/* SPINNER CARGA INICIAL */
-.loading-shell {
-  min-height: 70vh;
+.hero-banner-content {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 32px;
+}
+
+.platform-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: rgba(123, 150, 255, 0.15);
+  border: 1px solid rgba(123, 150, 255, 0.25);
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #7b96ff;
+  margin-bottom: 12px;
+}
+
+.badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #7b96ff;
+}
+
+.hero-main-title {
+  font-size: 32px;
+  font-weight: 800;
+  margin: 0 0 8px;
+  color: #ffffff;
+  letter-spacing: -0.03em;
+}
+
+.hero-description {
+  font-size: 13px;
+  color: #8e9cc0;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.hero-metrics-row {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.metric-top-card {
+  background: #ffffff;
+  color: #091133;
+  border-radius: 12px;
+  padding: 12px 18px;
+  min-width: 90px;
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.metric-top-card small {
+  display: block;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.metric-top-card strong {
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.text-gold {
+  color: #17251e;
+}
+
+.light-body-section {
+  padding: 36px 48px 80px;
+}
+
+.body-container {
+  max-width: 1360px;
+  margin: 0 auto;
+}
+
+.loading-state-box {
+  min-height: 50vh;
+  display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
+  gap: 12px;
+  color: #64748b;
+  font-size: 14px;
 }
 
 .main-spinner {
-  width: 44px;
-  height: 44px;
-  color: #17634b;
+  width: 40px;
+  height: 40px;
+  color: #7b96ff;
 }
 
-.main-spinner-sm {
-  width: 18px;
-  height: 18px;
-  color: #17634b;
-}
-
-/* ESTRUCTURA DASHBOARD */
-.dashboard-shell {
-  max-width: 1240px;
-  margin: 0 auto;
-  padding: 1.5rem 1.5rem 3rem;
-  position: relative;
-  z-index: 2;
-}
-
-.topbar {
+.dashboard-grid-content {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 1rem;
-  margin-bottom: 1.75rem;
+  flex-direction: column;
+  gap: 28px;
 }
 
-.eyebrow {
-  display: inline-flex;
+.demand-strip-card {
+  display: flex;
   align-items: center;
-  gap: 0.5rem;
-  color: #17634b;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 0.725rem;
-  font-weight: 700;
-}
-
-.pulse-indicator {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background-color: #17634b;
-}
-
-.page-title {
-  font-family: 'Barlow Condensed', sans-serif;
-  margin: 0.25rem 0 0;
-  color: #17251e;
-  font-size: clamp(2rem, 3.5vw, 2.6rem);
-  font-weight: 700;
-  line-height: 1.05;
-}
-
-/* SELECTOR DE COMPLEJO */
-.selector-card-glass {
+  gap: 16px;
+  padding: 14px 20px;
   background: #ffffff;
-  border: 1px solid #d7e2d8;
-  border-radius: 6px;
-  padding: 0.9rem 1.25rem;
-  margin-bottom: 1.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  box-shadow: 0 10px 28px rgba(23, 49, 35, 0.06);
-}
-
-.selector-info {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-
-.selector-icon {
-  color: #17634b;
-  font-size: 1.15rem;
-}
-
-.selector-label {
-  color: #66736b;
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.complex-select-dark {
-  background: #ffffff;
-  border: 1px solid #d7e2d8;
-  border-radius: 4px;
-  color: #17251e;
-  min-width: 220px;
-}
-
-/* GRID DE ESTADÍSTICAS */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.stat-card-glass {
-  background: #ffffff;
-  border: 1px solid #d7e2d8;
-  border-radius: 6px;
-  padding: 1.1rem 1.15rem;
-  box-shadow: 0 10px 28px rgba(23, 49, 35, 0.06);
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
-}
-
-.stat-card-glass:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 14px 32px rgba(23, 49, 35, 0.1);
-}
-
-.stat-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0.65rem;
-}
-
-.stat-label {
-  color: #66736b;
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  font-weight: 700;
-}
-
-.icon-wrapper {
-  width: 30px;
-  height: 30px;
-  border-radius: 6px;
-  background: #eef3ec;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.icon-wrapper .stat-icon {
-  font-size: 1.05rem;
-  color: #17634b;
-}
-
-.icon-wrapper.neon { background: #eef6d8; }
-.icon-wrapper.neon .stat-icon { color: #5a7a12; }
-
-.icon-wrapper.success { background: #e8f3e9; }
-.icon-wrapper.success .stat-icon { color: #17634b; }
-
-.icon-wrapper.danger { background: #fff0eb; }
-.icon-wrapper.danger .stat-icon { color: #c0513c; }
-
-.icon-wrapper.gold { background: #f6efdd; }
-.icon-wrapper.gold .stat-icon { color: #8a6d1d; }
-
-.stat-value {
-  font-family: 'Barlow Condensed', sans-serif;
-  color: #17251e;
-  font-size: clamp(1.6rem, 2.5vw, 2rem);
-  font-weight: 700;
-  line-height: 1;
-  display: block;
-}
-
-.text-neon { color: #17634b; }
-.text-success { color: #17634b; }
-.text-danger { color: #c0513c; }
-.text-gold { color: #17251e; }
-
-/* TIRA DEMANDA DE HORAS */
-.demand-strip {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.8rem;
-  padding: 0.8rem 1.15rem;
-  background: #ffffff;
-  border: 1px solid #d7e2d8;
-  border-radius: 6px;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 10px 28px rgba(23, 49, 35, 0.06);
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
 }
 
 .demand-title {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  color: #66736b;
-  font-size: 0.78rem;
-  font-weight: 700;
+  gap: 6px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
 }
 
 .flame-icon {
-  color: #d96e5a;
-  font-size: 1.05rem;
+  color: #f97316;
+  font-size: 18px;
 }
 
 .demand-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.45rem;
+  gap: 8px;
 }
 
 .demand-pill {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  background: #f2f7e2;
-  border: 1px solid #dde9b8;
-  padding: 0.25rem 0.6rem;
-  border-radius: 4px;
-  font-size: 0.775rem;
+  gap: 6px;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-size: 12px;
 }
 
 .demand-pill .hour {
-  color: #17251e;
-  font-weight: 700;
+  color: #091133;
+  font-weight: 800;
 }
 
 .demand-pill .count {
-  color: #17634b;
+  color: #4338ca;
   font-weight: 700;
 }
 
-/* CARDS GENERALES */
-.panel-card-glass {
+.white-panel-card {
   background: #ffffff;
-  border: 1px solid #d7e2d8;
-  border-radius: 6px;
-  padding: 1.5rem;
-  box-shadow: 0 10px 28px rgba(23, 49, 35, 0.06);
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 28px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
 }
 
-.card-header {
+.card-header-row {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.25rem;
+  align-items: flex-start;
+  margin-bottom: 20px;
 }
 
-.card-kicker {
-  display: inline-block;
-  color: #17634b;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 0.7rem;
-  font-weight: 700;
+.section-kicker {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #7b96ff;
+  margin-bottom: 4px;
 }
 
-.card-title {
-  font-family: 'Barlow Condensed', sans-serif;
-  margin: 0.15rem 0 0;
-  color: #17251e;
-  font-size: 1.45rem;
-  font-weight: 700;
+.section-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #091133;
+  margin: 0;
+  letter-spacing: -0.02em;
 }
 
-/* SECCION SOLICITUDES */
-.requests-section {
-  margin-bottom: 1.5rem;
-}
-
-.requests-panel {
-  border-left: 3px solid #17634b;
-}
-
-.request-count {
-  display: grid;
-  place-items: center;
-  min-width: 2.1rem;
-  height: 2.1rem;
-  padding: 0 0.4rem;
-  border-radius: 999px;
-  background: #17634b;
-  color: #ffffff;
-  font-weight: 700;
-  font-size: 0.85rem;
-}
-
-.request-loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.7rem;
-  padding: 2.25rem 1rem;
-  color: #66736b;
-  font-size: 0.875rem;
+.badge-count-blue {
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 99px;
 }
 
 .empty-state-card {
+  text-align: center;
+  padding: 48px 24px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 2.25rem 1.5rem;
-  text-align: center;
-  background: #f7faf5;
-  border: 1px dashed #cfdccd;
-  border-radius: 6px;
 }
 
 .empty-state-card.error {
-  border-color: #efc5b9;
-  color: #9d3c2f;
-}
-
-.empty-state-card > ion-icon {
-  font-size: 1.5rem;
-  color: #17634b;
-  margin-bottom: 0.5rem;
-}
-
-.empty-state-card.error > ion-icon {
-  color: #c0513c;
-}
-
-.empty-state-card p {
-  margin: 0;
-  color: #17251e;
-  font-weight: 600;
+  border-color: #fca5a5;
+  color: #dc2626;
 }
 
 .empty-icon-wrap {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  background: #e8f3e9;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 0.7rem;
-}
-
-.empty-icon-wrap ion-icon {
-  font-size: 1.45rem;
-  color: #17634b;
+  background: #eef2ff;
+  color: #7b96ff;
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  margin-bottom: 12px;
 }
 
 .empty-title {
   margin: 0;
-  color: #17251e;
-  font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 16px;
+  font-weight: 800;
+  color: #091133;
 }
 
 .empty-sub {
-  color: #66736b;
-  font-size: 0.825rem;
-  margin-top: 0.25rem;
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 4px;
 }
 
 .requests-list {
   display: grid;
-  gap: 0.75rem;
+  gap: 12px;
 }
 
-.request-card {
+.request-item-card {
   display: grid;
   grid-template-columns: 1fr auto;
   align-items: center;
-  gap: 1.25rem;
-  padding: 1.05rem 1.2rem;
-  border: 1px solid #d7e2d8;
-  border-radius: 6px;
-  background: #fbfdfb;
-  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+  gap: 20px;
+  padding: 16px 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #ffffff;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
-.request-card:hover {
-  border-color: #b9cfba;
-  box-shadow: 0 6px 18px rgba(23, 49, 35, 0.08);
-}
-
-.request-main {
-  min-width: 0;
-}
-
-.request-title-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
+.request-item-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
 }
 
 .request-kicker {
-  color: #17634b;
-  font-size: 0.72rem;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 800;
+  color: #7b96ff;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
 .client-name {
-  margin: 0.15rem 0 0;
-  color: #17251e;
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 1.25rem;
-  font-weight: 700;
+  margin: 2px 0 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #091133;
 }
 
-.request-expiry {
+.request-expiry-tag {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  color: #8a6d1d;
-  font-size: 0.75rem;
+  gap: 4px;
+  font-size: 11px;
   font-weight: 700;
-  background: #f6efdd;
-  padding: 0.25rem 0.55rem;
-  border-radius: 4px;
-  white-space: nowrap;
+  color: #b45309;
+  background: #fef3c7;
+  padding: 4px 10px;
+  border-radius: 6px;
 }
 
 .request-meta {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 0.9rem;
-  margin-top: 0.6rem;
-  color: #66736b;
-  font-size: 0.8rem;
+  gap: 14px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #64748b;
 }
 
 .meta-item {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-}
-
-.meta-item ion-icon {
-  color: #8a968d;
-  font-size: 0.9rem;
+  gap: 4px;
 }
 
 .meta-item.phone {
-  color: #17634b;
+  color: #4338ca;
+  font-weight: 700;
   text-decoration: none;
-  font-weight: 600;
-}
-
-.meta-item.phone:hover {
-  text-decoration: underline;
 }
 
 .request-hours {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
-  margin-top: 0.7rem;
+  gap: 6px;
+  margin-top: 10px;
 }
 
 .time-badge {
-  padding: 0.3rem 0.6rem;
-  border: 1px solid #dde9b8;
-  border-radius: 4px;
-  background: #f2f7e2;
-  color: #40520c;
-  font-size: 0.775rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
+  padding: 4px 10px;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 6px;
+  color: #3730a3;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .request-notes {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.4rem;
-  margin: 0.7rem 0 0;
-  color: #55615a;
-  font-size: 0.8rem;
-  background: #f2f5f0;
-  padding: 0.45rem 0.65rem;
-  border-radius: 4px;
-}
-
-.request-notes ion-icon {
-  color: #17634b;
-  flex-shrink: 0;
-  margin-top: 0.1rem;
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #475569;
+  background: #f8fafc;
+  padding: 6px 10px;
+  border-radius: 6px;
 }
 
 .request-actions {
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
-  width: 175px;
+  gap: 8px;
+  width: 160px;
 }
 
-.request-btn {
+.btn-action-primary {
+  padding: 8px 14px;
+  background: #7b96ff;
+  border: 0;
+  border-radius: 8px;
+  color: #060e2d;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.45rem;
-  padding: 0.55rem 0.8rem;
-  border-radius: 4px;
-  font-size: 0.8rem;
+  gap: 6px;
+}
+
+.btn-action-soft {
+  padding: 8px 14px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  color: #334155;
+  font-size: 12px;
   font-weight: 700;
-  border: 1px solid transparent;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   text-decoration: none;
-  transition: background-color 0.18s ease, border-color 0.18s ease;
 }
 
-.request-btn ion-icon {
-  font-size: 1rem;
+.btn-action-soft.whatsapp {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #166534;
 }
 
-.request-btn.whatsapp {
-  background: #ffffff;
-  border-color: #bfe0ca;
-  color: #1d7a46;
+.btn-action-soft.danger {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
 }
 
-.request-btn.whatsapp:hover {
-  background: #e9f6ee;
-}
-
-.request-btn.reject {
-  background: #fff0eb;
-  border-color: #efc5b9;
-  color: #9d3c2f;
-}
-
-.request-btn.reject:hover:not(:disabled) {
-  background: #f9ddd3;
-}
-
-.request-btn.accept {
-  background: #17634b;
-  border-color: #17634b;
+.btn-action-gold {
+  padding: 8px 14px;
+  background: #f59e0b;
+  border: 0;
+  border-radius: 8px;
   color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
-.request-btn.accept:hover:not(:disabled) {
-  background: #103b2e;
-}
-
-.request-btn.confirm-pay {
-  background: #d4ed66;
-  border-color: #c2dd4e;
-  color: #142219;
-}
-
-.request-btn.confirm-pay:hover:not(:disabled) {
-  background: #c2dd4e;
-}
-
-.request-btn:disabled {
-  opacity: 0.55;
-  cursor: wait;
-}
-
-/* GRID CONTENIDO (AGENDA & FLUJO) */
-.content-grid {
+.two-columns-grid {
   display: grid;
-  grid-template-columns: 1.6fr 1fr;
-  gap: 1.5rem;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 28px;
 }
 
 .agenda-list {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 16px;
 }
 
 .agenda-item {
-  padding: 1.1rem 1.15rem;
-  border: 1px solid #e0e8de;
-  border-radius: 6px;
-  background: #f9fbf7;
+  border: 1px solid #f1f5f9;
+  border-radius: 12px;
+  padding: 16px;
+  background: #f8fafc;
 }
 
 .agenda-head {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
-  margin-bottom: 0.9rem;
+  align-items: center;
+  margin-bottom: 12px;
 }
 
 .cancha-title-wrap {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 8px;
 }
 
 .cancha-icon {
-  color: #17634b;
-  font-size: 1.1rem;
+  color: #7b96ff;
+  font-size: 18px;
 }
 
 .agenda-head h3 {
   margin: 0;
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: #17251e;
-  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  color: #091133;
 }
 
 .badge-deporte {
-  font-size: 0.68rem;
-  background: #e8f3e9;
-  border: 1px solid #c9dfcd;
-  color: #17634b;
-  padding: 0.2rem 0.55rem;
+  font-size: 10px;
+  font-weight: 800;
+  background: #eef2ff;
+  color: #4338ca;
+  padding: 2px 8px;
   border-radius: 4px;
-  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
 }
 
 .timeline-list {
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
+  gap: 8px;
 }
 
 .timeline-row {
   display: grid;
-  grid-template-columns: 130px 1fr auto;
-  gap: 0.75rem;
+  grid-template-columns: 120px 1fr auto;
   align-items: center;
-  padding: 0.7rem 0.9rem;
-  border-radius: 4px;
-  border: 1px solid transparent;
-}
-
-.timeline-row.reservation {
-  background: #eef5ec;
-  border-color: #d5e4d1;
-}
-
-.timeline-row.blocked {
-  background: #f1f3ef;
-  border-color: #e2e6df;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
 }
 
 .timeline-time {
+  font-size: 12px;
+  font-weight: 800;
+  color: #7b96ff;
   display: flex;
   align-items: center;
-  gap: 0.35rem;
-  font-weight: 700;
-  color: #17634b;
-  font-size: 0.8rem;
-  font-variant-numeric: tabular-nums;
-}
-
-.timeline-time.muted {
-  color: #66736b;
+  gap: 4px;
 }
 
 .client-name-sm {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #17251e;
+  font-size: 13px;
+  font-weight: 700;
+  color: #091133;
 }
 
 .status-chip {
   display: inline-block;
-  font-size: 0.68rem;
+  font-size: 10px;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-weight: 700;
-  padding: 0.15rem 0.5rem;
+  padding: 2px 6px;
   border-radius: 4px;
-  background: #eef2ec;
-  color: #66736b;
-  margin-top: 0.15rem;
-}
-
-.status-chip.pendiente {
-  background: #f6efdd;
-  color: #8a6d1d;
-}
-
-.status-chip.aceptada {
-  background: #e8f3e9;
-  color: #17634b;
-}
-
-.status-chip.confirmada {
-  background: #17634b;
-  color: #ffffff;
-}
-
-.status-chip.blocked-tag {
-  background: #fff0eb;
-  color: #9d3c2f;
+  background: #f1f5f9;
+  color: #64748b;
+  margin-top: 2px;
 }
 
 .reservation-actions {
   display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.4rem;
+  gap: 6px;
 }
 
-.expiry-warn {
-  color: #8a6d1d;
-  font-size: 0.7rem;
-  font-weight: 700;
-}
-
-.mini-button-success {
-  background: #e8f3e9;
-  border: 1px solid #c9dfcd;
-  color: #17634b;
-  border-radius: 4px;
-  padding: 0.35rem 0.65rem;
-  font-size: 0.75rem;
-  font-weight: 700;
+.mini-btn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 800;
   cursor: pointer;
-  transition: background-color 0.18s ease;
+  border: 0;
 }
 
-.mini-button-success:hover {
-  background: #d8ead9;
+.mini-btn.success {
+  background: #dcfce7;
+  color: #15803d;
 }
 
-.mini-button-danger {
-  background: #fff0eb;
-  border: 1px solid #efc5b9;
-  color: #9d3c2f;
-  border-radius: 4px;
-  padding: 0.35rem 0.65rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background-color 0.18s ease;
-}
-
-.mini-button-danger:hover {
-  background: #f9ddd3;
+.mini-btn.danger {
+  background: #fee2e2;
+  color: #b91c1c;
 }
 
 .empty-inline {
+  font-size: 12px;
+  color: #94a3b8;
+  margin: 8px 0 0;
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  margin: 0.5rem 0 0;
-  color: #66736b;
-  font-size: 0.825rem;
+  gap: 6px;
 }
 
-.empty-inline ion-icon {
-  color: #8a968d;
-}
-
-/* FLUJO DE PASOS */
 .flow-steps {
   display: flex;
   flex-direction: column;
-  gap: 0.7rem;
+  gap: 12px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -1657,300 +1375,194 @@ onUnmounted(() => {
 
 .step-item {
   display: flex;
-  gap: 0.8rem;
-  padding: 0.9rem 1rem;
-  border: 1px solid #e0e8de;
-  border-radius: 6px;
-  background: #f9fbf7;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
 }
 
 .step-number {
   width: 26px;
   height: 26px;
-  border-radius: 4px;
-  background: #17634b;
-  color: #ffffff;
-  font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border-radius: 8px;
+  background: #7b96ff;
+  color: #060e2d;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
   flex-shrink: 0;
-  font-size: 0.95rem;
-}
-
-.step-body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
 }
 
 .step-body strong {
-  color: #17251e;
-  font-size: 0.875rem;
+  display: block;
+  font-size: 13px;
+  color: #091133;
 }
 
 .step-body span {
-  color: #66736b;
-  font-size: 0.8rem;
-  line-height: 1.45;
+  display: block;
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 2px;
 }
 
 .message-banner {
-  margin-top: 1.15rem;
-  padding: 0.8rem 1rem;
-  border-radius: 4px;
-  font-size: 0.825rem;
-  font-weight: 600;
+  margin-top: 16px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
   display: flex;
   align-items: center;
-  gap: 0.55rem;
-}
-
-.message-banner ion-icon {
-  font-size: 1.15rem;
-  flex-shrink: 0;
+  gap: 8px;
 }
 
 .message-banner.success {
-  background: #e8f3e9;
-  border: 1px solid #c9dfcd;
-  color: #17634b;
+  background: #dcfce7;
+  color: #15803d;
 }
 
 .message-banner.error {
-  background: #fff0eb;
-  border: 1px solid #efc5b9;
-  color: #9d3c2f;
-}
-
-/* HISTORIAL Y TABLA */
-.history-card {
-  margin-top: 1.5rem;
-}
-
-.history-header {
-  flex-wrap: wrap;
-  gap: 1rem;
+  background: #fee2e2;
+  color: #b91c1c;
 }
 
 .history-filters {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 8px;
 }
 
-.filter-input-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.filter-icon {
-  position: absolute;
-  left: 0.7rem;
-  z-index: 2;
-  color: #17634b;
-  font-size: 0.9rem;
-  pointer-events: none;
-}
-
-.history-date-picker {
-  width: 170px;
-  --padding-start: 2.1rem;
-}
-
-.custom-input-dark {
+.light-date-input {
   --background: #ffffff;
-  --color: #17251e;
-  --placeholder-color: #8a968d;
-  min-height: 38px;
-  border: 1px solid #d7e2d8;
-  border-radius: 4px;
-  font-size: 0.825rem;
+  --color: #091133;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  min-height: 36px;
+  font-size: 12px;
+  width: 150px;
+}
+
+.btn-filter-reset {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
 }
 
 .table-responsive {
   width: 100%;
   overflow-x: auto;
-  margin-top: 1rem;
-  border-radius: 6px;
-  border: 1px solid #d7e2d8;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
 }
 
-.neon-table {
+.light-table {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
-  font-size: 0.85rem;
-  background: #ffffff;
+  font-size: 13px;
 }
 
-.neon-table th {
-  padding: 0.8rem 1rem;
-  background: #f4f7f3;
-  color: #66736b;
-  font-size: 0.68rem;
+.light-table th {
+  padding: 12px 16px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
-  font-weight: 700;
-  border-bottom: 1px solid #d7e2d8;
+  border-bottom: 1px solid #e2e8f0;
 }
 
-.neon-table td {
-  padding: 0.85rem 1rem;
-  border-bottom: 1px solid #edf1ea;
-  color: #2c3a32;
-}
-
-.neon-table tr:last-child td {
-  border-bottom: none;
-}
-
-.neon-table tr:hover td {
-  background: #f7faf5;
+.light-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #091133;
 }
 
 .cancha-badge {
-  display: inline-block;
-  background: #eef3ec;
-  border: 1px solid #dde5da;
-  padding: 0.2rem 0.5rem;
+  background: #f1f5f9;
+  padding: 2px 8px;
   border-radius: 4px;
-  font-size: 0.775rem;
-  color: #17251e;
+  font-size: 12px;
   font-weight: 600;
 }
 
 .table-status-pill {
-  display: inline-block;
-  padding: 0.2rem 0.55rem;
-  border-radius: 4px;
-  font-size: 0.7rem;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 800;
   text-transform: uppercase;
-  background: #eef2ec;
-  color: #66736b;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: #f1f5f9;
+  color: #64748b;
 }
 
 .table-status-pill.aceptada,
 .table-status-pill.confirmada {
-  background: #e8f3e9;
-  color: #17634b;
+  background: #dcfce7;
+  color: #15803d;
 }
 
 .table-status-pill.completada {
-  background: #17634b;
-  color: #ffffff;
-}
-
-.table-status-pill.rechazada,
-.table-status-pill.cancelada {
-  background: #fff0eb;
-  color: #9d3c2f;
-}
-
-.table-status-pill.pendiente,
-.table-status-pill.expirada {
-  background: #f6efdd;
-  color: #8a6d1d;
+  background: #7b96ff;
+  color: #060e2d;
 }
 
 .history-pagination {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 1.15rem;
-  padding-top: 0.75rem;
-}
-
-.page-info {
-  font-size: 0.8rem;
-  color: #66736b;
-  font-weight: 600;
+  margin-top: 16px;
+  font-size: 12px;
+  color: #64748b;
 }
 
 .pagination-buttons {
   display: flex;
-  gap: 0.5rem;
+  gap: 8px;
+}
+
+.btn-pagination {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #091133;
+  cursor: pointer;
+}
+
+.btn-pagination:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .font-mono { font-variant-numeric: tabular-nums; }
 .font-bold { font-weight: 700; }
-.text-neon-subtle { color: #17634b; }
-.text-muted { color: #8a968d; }
+.text-blue { color: #4338ca; }
+.text-muted { color: #94a3b8; }
 .text-right { text-align: right; }
 .text-center { text-align: center; }
-.text-xs { font-size: 0.75rem; }
-.py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
 
-/* ADAPTACIÓN MÓVIL */
-@media (max-width: 850px) {
-  .top-navbar-floating {
-    padding: 0.75rem 0.75rem 0.25rem;
-  }
+@media (max-width: 1100px) {
+  .dark-top-section { padding: 16px 20px 30px; }
+  .light-body-section { padding: 24px 20px 60px; }
+  .hero-banner-content { flex-direction: column; align-items: flex-start; gap: 20px; }
+  .hero-metrics-row { justify-content: flex-start; width: 100%; flex-wrap: wrap; }
+  .two-columns-grid { grid-template-columns: 1fr; }
+}
 
-  .navbar-pill {
-    padding: 0.5rem 0.85rem;
-  }
-
-  .brand-name {
-    font-size: 1.15rem;
-  }
-
-  .nav-chip-btn .btn-text {
-    display: none;
-  }
-
-  .nav-chip-btn {
-    padding: 0.45rem;
-  }
-
-  .topbar {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .request-card {
-    grid-template-columns: 1fr;
-  }
-
-  .request-actions {
-    width: 100%;
-    flex-direction: row;
-    flex-wrap: wrap;
-  }
-
-  .request-btn {
-    flex: 1 1 140px;
-  }
-
-  .content-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .timeline-row {
-    grid-template-columns: 1fr;
-    gap: 0.4rem;
-  }
-
-  .reservation-actions {
-    justify-content: flex-start;
-  }
-
-  .history-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .history-filters {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .history-pagination {
-    flex-direction: column;
-    gap: 0.75rem;
-  }
+@media (max-width: 768px) {
+  .request-item-card { grid-template-columns: 1fr; }
+  .request-actions { width: 100%; flex-direction: row; }
+  .timeline-row { grid-template-columns: 1fr; }
 }
 </style>

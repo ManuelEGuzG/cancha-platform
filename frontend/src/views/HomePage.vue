@@ -115,7 +115,7 @@
             <span class="nearby-icon">
               <ion-icon :icon="locationOutline"></ion-icon>
             </span>
-            <span>
+            <span class="nearby-text">
               <strong>Usar mi ubicación</strong>
               <small>Ordenar las canchas más cercanas primero</small>
             </span>
@@ -129,10 +129,10 @@
           <div class="panel-footer">
             <button class="reset-button" type="button" @click="limpiarFiltros">
               <ion-icon :icon="refreshOutline"></ion-icon>
-              Restablecer
+              <span>Restablecer</span>
             </button>
             <button class="apply-button" type="button" @click="aplicarFiltrosYScroll">
-              Ver resultados
+              <span>Ver resultados</span>
               <ion-icon :icon="arrowForwardOutline"></ion-icon>
             </button>
           </div>
@@ -141,7 +141,7 @@
     </header>
 
     <ion-content :fullscreen="true" class="sportra-main-viewport" ref="contentRef">
-      <!-- Hero Section Principal (Full Screen - 100vh distribuido) -->
+      <!-- Hero Section Principal -->
       <section class="hero-section">
         <div class="hero-container">
           <div class="hero-inner">
@@ -169,7 +169,7 @@
                 <span class="hero-subtext">Tu deporte. Tu zona. Tu momento.</span>
               </div>
 
-              <!-- Badges de Métricas / Relleno de espacio inferior -->
+              <!-- Badges de Métricas -->
               <div class="hero-metrics">
                 <div class="metric-item">
                   <strong>100+</strong>
@@ -183,7 +183,7 @@
               </div>
             </div>
 
-            <!-- Card Destacada / Banner Derecho Hero (Siempre visible) -->
+            <!-- Card Destacada Hero Banner -->
             <div
               v-if="complejosOrdenados.length > 0"
               class="featured-hero-card animate-fade-up-delay"
@@ -204,7 +204,7 @@
               </div>
             </div>
 
-            <!-- Fallback estático cuando no hay datos aún para asegurar distribución constante -->
+            <!-- Fallback estático -->
             <div
               v-else
               class="featured-hero-card animate-fade-up-delay"
@@ -216,7 +216,7 @@
               </div>
               <img
                 src="https://images.unsplash.com/photo-1529900748604-07564a03e7a6?auto=format&fit=crop&w=800&q=80"
-                alt="Pádel y Fútbol"
+                alt="Fútbol Costa Rica"
               />
               <div class="hero-card-overlay">
                 <span class="hero-card-tag">ENCUENTRA TU LUGAR</span>
@@ -246,20 +246,26 @@
                 </div>
                 <div class="col-text">
                   <small>DEPORTE</small>
-                  <strong>Pádel / Fútbol</strong>
+                  <strong>Fútbol</strong>
                 </div>
               </div>
 
               <div class="search-col-divider"></div>
 
-              <div class="search-col" @click="toggleDropdownSearch">
+              <div class="search-col relative-date-picker">
                 <div class="icon-circle">
                   <ion-icon :icon="calendarOutline"></ion-icon>
                 </div>
                 <div class="col-text">
                   <small>FECHA</small>
-                  <strong>Elegir fecha</strong>
+                  <strong>{{ fechaSeleccionadaTexto }}</strong>
                 </div>
+                <input
+                  type="date"
+                  v-model="fechaFiltro"
+                  class="hidden-date-input"
+                  aria-label="Seleccionar fecha"
+                />
               </div>
 
               <button class="hero-search-btn" type="button" @click="aplicarFiltrosYScroll">
@@ -271,7 +277,7 @@
             <div class="hero-chips-row">
               <span class="chips-label">Empieza por:</span>
               <button type="button" @click="buscarCercanas">Cerca de mí</button>
-              <button type="button" @click="scrollToCanchas">Canchas cubiertas</button>
+              <button type="button" @click="scrollToCanchas">Canchas techadas</button>
               <button type="button" @click="scrollToCanchas">Jugar de noche</button>
             </div>
           </div>
@@ -343,7 +349,7 @@
                 @click="verDetalle(complejo.slug)"
               >
                 <div class="court-image">
-                  <span class="sport-badge">Pádel / Fútbol</span>
+                  <span class="sport-badge">Fútbol</span>
                   <button class="fav-badge" type="button" aria-label="Guardar">
                     ♥
                   </button>
@@ -362,15 +368,15 @@
                     {{ complejo.distrito }}, {{ complejo.canton }}
                   </p>
                   <p class="court-features">
-                    Cubierta · Cristal · Iluminación
+                    Césped sintético · Iluminación LED
                   </p>
 
                   <div class="court-slots">
                     <span class="slots-title">HORARIOS DISPONIBLES</span>
                     <div class="slots-pills">
                       <span class="slot-pill">18:00</span>
-                      <span class="slot-pill">19:30</span>
-                      <span class="slot-pill">21:00</span>
+                      <span class="slot-pill">19:00</span>
+                      <span class="slot-pill">20:00</span>
                     </div>
                   </div>
 
@@ -389,22 +395,22 @@
               </article>
             </div>
 
-            <!-- Empty State -->
+            <!-- Empty State / Sin resultados estilizado con Plus Jakarta Sans -->
             <div v-else class="empty-state" key="empty">
               <div class="empty-icon">
                 <ion-icon :icon="searchOutline"></ion-icon>
               </div>
-              <span class="section-eyebrow">SIN RESULTADOS</span>
-              <h3>No encontramos esa cancha.</h3>
-              <p v-if="busquedaTexto">
-                No hay instalaciones que coincidan con “{{ busquedaTexto }}”.
+              <span class="empty-eyebrow">SIN RESULTADOS</span>
+              <h3 class="empty-title">No encontramos esa cancha.</h3>
+              <p v-if="busquedaTexto" class="empty-description">
+                No hay instalaciones que coincidan con “<strong>{{ busquedaTexto }}</strong>”.
               </p>
-              <p v-else>
+              <p v-else class="empty-description">
                 Prueba modificando la ubicación o eliminando alguno de los filtros.
               </p>
-              <button class="primary-action compact" type="button" @click="limpiarFiltros">
+              <button class="empty-btn" type="button" @click="limpiarFiltros">
                 <ion-icon :icon="refreshOutline"></ion-icon>
-                Restablecer filtros
+                <span>Restablecer filtros</span>
               </button>
             </div>
           </transition>
@@ -430,7 +436,7 @@
                 <span class="step-number">01</span>
               </div>
               <h3>Encuentra tu cancha</h3>
-              <p>Busca por zona y deporte. Compara espacios, servicios y precios.</p>
+              <p>Busca por provincia o cantón. Compara espacios y precios.</p>
             </div>
 
             <div class="step-card">
@@ -441,7 +447,7 @@
                 <span class="step-number">02</span>
               </div>
               <h3>Elige tu momento</h3>
-              <p>Consulta los horarios y confirma tu reserva en segundos.</p>
+              <p>Consulta la disponibilidad y selecciona tu horario ideal.</p>
             </div>
 
             <div class="step-card">
@@ -452,7 +458,7 @@
                 <span class="step-number">03</span>
               </div>
               <h3>Que empiece el juego</h3>
-              <p>Avisa al equipo y llega con ganas de darlo todo.</p>
+              <p>Confirma por WhatsApp y llega con el equipo a darlo todo.</p>
             </div>
           </div>
         </div>
@@ -476,29 +482,29 @@
               <div class="preview-header">
                 <div>
                   <strong>Tu centro, en orden.</strong>
-                  <small>Vista de reservas · Ayer/Hoy/Mañana</small>
+                  <small>Vista de reservas · Hoy</small>
                 </div>
                 <ion-icon :icon="optionsOutline"></ion-icon>
               </div>
               <div class="preview-rows">
                 <div class="preview-row">
                   <div class="row-info">
-                    <strong>Pádel · Cristal</strong>
-                    <small>18:00 - 19:30</small>
+                    <strong>Cancha Fútbol 5 · Sintético</strong>
+                    <small>18:00 - 19:00</small>
                   </div>
                   <span class="status-tag reserved">Reservada</span>
                 </div>
                 <div class="preview-row">
                   <div class="row-info">
-                    <strong>Pádel · Cubierta</strong>
-                    <small>19:30 - 21:00</small>
+                    <strong>Cancha Fútbol 7 · Techada</strong>
+                    <small>19:00 - 20:00</small>
                   </div>
                   <span class="status-tag available">Disponible</span>
                 </div>
                 <div class="preview-row">
                   <div class="row-info">
-                    <strong>Pádel · Exterior</strong>
-                    <small>21:00 - 22:30</small>
+                    <strong>Cancha Fútbol 5 · Iluminada</strong>
+                    <small>20:00 - 21:00</small>
                   </div>
                   <span class="status-tag reserved">Reservada</span>
                 </div>
@@ -597,6 +603,7 @@ const provinciaId = ref<number | null>(null);
 const cantonId = ref<number | null>(null);
 const distritoId = ref<number | null>(null);
 const busquedaTexto = ref('');
+const fechaFiltro = ref<string>('');
 const orden = ref<'nombre' | 'precio-asc' | 'precio-desc' | 'cercania'>('nombre');
 const ubicacionUsuario = ref<{ latitud: number; longitud: number } | null>(null);
 const errorUbicacion = ref('');
@@ -607,7 +614,7 @@ const cargando = ref(true);
 
 const filtrosActivos = computed(() => {
   return provinciaId.value !== null || cantonId.value !== null || distritoId.value !== null
-    || busquedaTexto.value !== '' || ubicacionUsuario.value !== null;
+    || busquedaTexto.value !== '' || fechaFiltro.value !== '' || ubicacionUsuario.value !== null;
 });
 
 const ubicacionTextoSeleccionada = computed(() => {
@@ -623,7 +630,13 @@ const ubicacionTextoSeleccionada = computed(() => {
     const p = provincias.value.find(item => item.id === provinciaId.value);
     if (p) return p.nombre;
   }
-  return 'Madrid, España';
+  return 'Costa Rica';
+});
+
+const fechaSeleccionadaTexto = computed(() => {
+  if (!fechaFiltro.value) return 'Elegir fecha';
+  const [year, month, day] = fechaFiltro.value.split('-');
+  return `${day}/${month}/${year}`;
 });
 
 const complejosFiltrados = computed(() => {
@@ -751,6 +764,7 @@ async function cargarComplejos() {
 
 async function limpiarFiltros() {
   busquedaTexto.value = '';
+  fechaFiltro.value = '';
   provinciaId.value = null;
   cantonId.value = null;
   distritoId.value = null;
@@ -949,32 +963,47 @@ button, input, select {
   background: var(--blue-hover);
 }
 
-/* Panel Desplegable */
+/* =========================================================
+   PANEL DESPLEGABLE DE FILTROS ORDENADO Y BLANCO
+   ========================================================= */
+
 .search-panel {
   position: absolute;
   top: calc(100% + 12px);
   left: 50%;
   transform: translateX(-50%);
-  width: min(600px, calc(100vw - 32px));
+  width: min(620px, calc(100vw - 32px));
   background: #0c1743;
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 20px;
   padding: 24px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
   color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .panel-heading {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 20px;
+}
+
+.eyebrow {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #ffffff !important;
+  margin-bottom: 2px;
 }
 
 .panel-heading h2 {
-  margin: 4px 0 0;
+  margin: 0;
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 800;
+  color: #ffffff;
 }
 
 .icon-button {
@@ -987,17 +1016,20 @@ button, input, select {
   display: grid;
   place-items: center;
   cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.icon-button:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .search-main-field {
-  position: relative;
   display: flex;
   align-items: center;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid var(--border-dark);
   border-radius: 12px;
   padding: 0 14px;
-  margin-bottom: 16px;
 }
 
 .search-main-field ion-icon {
@@ -1026,80 +1058,95 @@ button, input, select {
 .filter-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: 12px;
+}
+
+.filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .filter-field label {
-  display: block;
   font-size: 11px;
   color: var(--text-muted);
-  margin-bottom: 5px;
+  font-weight: 700;
 }
 
 .modern-select {
   --background: rgba(255, 255, 255, 0.06);
   --color: #fff;
+  --padding-start: 12px;
   border: 1px solid var(--border-dark);
   border-radius: 10px;
-  min-height: 40px;
-  font-size: 12px;
+  min-height: 42px;
+  font-size: 13px;
+  width: 100%;
 }
 
 .nearby-button {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-top: 14px;
-  padding: 12px;
+  gap: 14px;
+  padding: 14px 16px;
   background: rgba(123, 150, 255, 0.12);
   border: 1px solid rgba(123, 150, 255, 0.25);
-  border-radius: 12px;
+  border-radius: 14px;
   color: #fff;
   cursor: pointer;
   text-align: left;
+  transition: 0.2s ease;
+}
+
+.nearby-button:hover {
+  background: rgba(123, 150, 255, 0.2);
 }
 
 .nearby-icon {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   background: var(--blue-accent);
-  border-radius: 8px;
+  border-radius: 10px;
   display: grid;
   place-items: center;
   color: #060e2d;
+  font-size: 18px;
+  flex-shrink: 0;
 }
 
-.nearby-button span:nth-child(2) {
+.nearby-text {
   display: flex;
   flex-direction: column;
 }
 
-.nearby-button strong {
+.nearby-text strong {
   font-size: 13px;
+  color: #fff;
 }
 
-.nearby-button small {
+.nearby-text small {
   font-size: 11px;
   color: var(--text-muted);
 }
 
 .nearby-arrow {
   margin-left: auto;
+  font-size: 16px;
+  color: var(--blue-accent);
 }
 
 .location-error {
   color: #ff6b6b;
   font-size: 12px;
-  margin-top: 8px;
+  margin: 0;
 }
 
 .panel-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 20px;
-  padding-top: 16px;
+  padding-top: 12px;
   border-top: 1px solid var(--border-dark);
 }
 
@@ -1108,28 +1155,39 @@ button, input, select {
   border: 0;
   color: var(--text-muted);
   font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 6px;
+  transition: 0.2s ease;
+}
+
+.reset-button:hover {
+  color: #fff;
 }
 
 .apply-button {
   background: var(--blue-accent);
   border: 0;
   color: #060e2d;
-  padding: 10px 20px;
-  border-radius: 10px;
+  padding: 12px 24px;
+  border-radius: 12px;
   font-weight: 800;
   font-size: 13px;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 8px;
+  transition: 0.2s ease;
+}
+
+.apply-button:hover {
+  background: var(--blue-hover);
 }
 
 /* =========================================================
-   HERO SECTION (100VH + EXCELENTE DISTRIBUCIÓN DE ESPACIOS)
+   HERO SECTION
    ========================================================= */
 
 .hero-section {
@@ -1240,7 +1298,6 @@ button, input, select {
   color: var(--text-muted);
 }
 
-/* Relleno métricas bajo las acciones */
 .hero-metrics {
   display: flex;
   align-items: center;
@@ -1270,7 +1327,6 @@ button, input, select {
   background: rgba(255, 255, 255, 0.1);
 }
 
-/* Card Destacada Hero Pádel (Aprovechamiento de espacio) */
 .featured-hero-card {
   position: relative;
   width: 100%;
@@ -1340,7 +1396,7 @@ button, input, select {
   color: #fff;
 }
 
-/* BARRA DE BÚSQUEDA OSCURA HERO */
+/* BARRA DE BÚSQUEDA HERO */
 .hero-search-card {
   background: #0d173d;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -1363,6 +1419,19 @@ button, input, select {
   gap: 14px;
   cursor: pointer;
   flex: 1;
+}
+
+.relative-date-picker {
+  position: relative;
+}
+
+.hidden-date-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
 }
 
 .icon-circle {
@@ -1448,7 +1517,7 @@ button, input, select {
 }
 
 /* =========================================================
-   SECCIÓN CANCHAS (RESULTADOS / GRID DE TARJETAS BLANCAS)
+   SECCIÓN CANCHAS
    ========================================================= */
 
 .courts-section {
@@ -1709,26 +1778,95 @@ button, input, select {
   text-align: center;
 }
 
-/* Empty State */
+/* =========================================================
+   EMPTY STATE (SIN RESULTADOS) - TIPOGRAFÍA BASE MEJORADA
+   ========================================================= */
+
 .empty-state {
   text-align: center;
-  padding: 60px 20px;
-  background: #fff;
-  border-radius: 16px;
-  max-width: 500px;
+  padding: 56px 28px;
+  background: #ffffff;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  max-width: 520px;
   margin: 0 auto;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .empty-icon {
-  width: 50px;
-  height: 50px;
+  width: 56px;
+  height: 56px;
   background: #eef2ff;
-  color: var(--blue-accent);
+  color: var(--blue-accent, #7b96ff);
   border-radius: 50%;
   display: grid;
   place-items: center;
   font-size: 24px;
-  margin: 0 auto 16px;
+  margin-bottom: 20px;
+}
+
+.empty-eyebrow {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #6281f7;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.empty-title {
+  margin: 0 0 10px;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #091133;
+  line-height: 1.2;
+}
+
+.empty-description {
+  font-size: 14px;
+  color: #64748b;
+  line-height: 1.5;
+  margin: 0 0 24px;
+  max-width: 420px;
+  font-weight: 500;
+}
+
+.empty-description strong {
+  color: #091133;
+}
+
+.empty-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: #7b96ff;
+  border: 0;
+  border-radius: 12px;
+  color: #060e2d;
+  font-size: 13px;
+  font-weight: 800;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(123, 150, 255, 0.3);
+}
+
+.empty-btn:hover {
+  background: #6281f7;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(98, 129, 247, 0.4);
+}
+
+.empty-btn ion-icon {
+  font-size: 16px;
 }
 
 /* Skeletons */
@@ -2004,9 +2142,7 @@ button, input, select {
   margin: 0;
 }
 
-/* =========================================================
-   RESPONSIVE DESIGN
-   ========================================================= */
+/* RESPONSIVE */
 
 @media (max-width: 1100px) {
   .hero-section {
