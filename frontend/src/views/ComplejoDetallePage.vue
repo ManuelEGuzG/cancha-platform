@@ -1,6 +1,6 @@
 <template>
   <ion-page class="sportra-app">
-    <!-- Header Principal Simplificado (Sin buscador, explorar ni propietarios) -->
+    <!-- Header Principal Simplificado -->
     <header class="site-header">
       <div class="nav-shell">
         <button class="brand" type="button" @click="irAHome" aria-label="Ir al inicio">
@@ -181,12 +181,16 @@
                     </span>
                   </div>
 
-                  <!-- Mes y Navegación Días -->
+                  <!-- Mes y Navegación por Flechas -->
                   <div class="month-selector-bar">
                     <span>{{ mesAnioTexto }}</span>
-                    <div class="month-nav-btns">
-                      <button type="button" @click="moverSemana(-7)">&lt;</button>
-                      <button type="button" @click="moverSemana(7)">&gt;</button>
+                    <div class="arrow-navigator-controls">
+                      <button type="button" class="nav-arrow-btn" @click="cambiarSemana(-1)" title="Semana anterior">
+                        <ion-icon :icon="chevronBackOutline"></ion-icon>
+                      </button>
+                      <button type="button" class="nav-arrow-btn" @click="cambiarSemana(1)" title="Semana siguiente">
+                        <ion-icon :icon="chevronForwardOutline"></ion-icon>
+                      </button>
                     </div>
                   </div>
 
@@ -390,7 +394,9 @@ import {
   closeOutline, 
   informationCircleOutline,
   optionsOutline,
-  refreshOutline
+  refreshOutline,
+  chevronBackOutline,
+  chevronForwardOutline
 } from 'ionicons/icons';
 
 import complejosService from '@/services/complejos.service';
@@ -408,7 +414,9 @@ addIcons({
   'close-outline': closeOutline,
   'information-circle-outline': informationCircleOutline,
   'options-outline': optionsOutline,
-  'refresh-outline': refreshOutline
+  'refresh-outline': refreshOutline,
+  'chevron-back-outline': chevronBackOutline,
+  'chevron-forward-outline': chevronForwardOutline
 });
 
 const route = useRoute();
@@ -463,7 +471,8 @@ const DIAS_A_MOSTRAR = 7;
 
 const proximosDias = computed<DiaItem[]>(() => {
   const lista: DiaItem[] = [];
-  const base = new Date();
+  const [year, month, day] = fechaSeleccionada.value.split('-').map(Number);
+  const base = new Date(year, month - 1, day);
 
   for (let i = 0; i < DIAS_A_MOSTRAR; i++) {
     const d = new Date(base.getFullYear(), base.getMonth(), base.getDate() + i);
@@ -489,7 +498,7 @@ function formatearObjetoDia(d: Date): DiaItem {
 }
 
 const mesAnioTexto = computed(() => {
-  if (!fechaSeleccionada.value) return 'Octubre de 2026';
+  if (!fechaSeleccionada.value) return '';
   const [year, month, day] = fechaSeleccionada.value.split('-').map(Number);
   const dateObj = new Date(year, month - 1, day);
   const mesStr = dateObj.toLocaleDateString('es-CR', { month: 'long' });
@@ -545,12 +554,13 @@ function seleccionarFecha(iso: string) {
   }
 }
 
-function moverSemana(dias: number) {
+function cambiarSemana(direccion: number) {
   const [year, month, day] = fechaSeleccionada.value.split('-').map(Number);
-  const nuevaFecha = new Date(year, month - 1, day + dias);
-  const yearStr = nuevaFecha.getFullYear();
-  const monthStr = String(nuevaFecha.getMonth() + 1).padStart(2, '0');
-  const dayStr = String(nuevaFecha.getDate()).padStart(2, '0');
+  const base = new Date(year, month - 1, day + (direccion * 7));
+  const yearStr = base.getFullYear();
+  const monthStr = String(base.getMonth() + 1).padStart(2, '0');
+  const dayStr = String(base.getDate()).padStart(2, '0');
+  
   seleccionarFecha(`${yearStr}-${monthStr}-${dayStr}`);
 }
 
@@ -1216,13 +1226,31 @@ button, input, select, textarea {
   color: #334155;
 }
 
-.month-nav-btns button {
-  background: transparent;
-  border: 0;
-  font-weight: 800;
-  color: #64748b;
+/* Controles de flechas para navegar entre semanas */
+.arrow-navigator-controls {
+  display: flex;
+  gap: 6px;
+}
+
+.nav-arrow-btn {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: #334155;
   cursor: pointer;
-  padding: 0 6px;
+  transition: 0.2s ease;
+}
+
+.nav-arrow-btn:hover {
+  background: #eef2ff;
+  border-color: var(--blue-accent);
+  color: var(--blue-accent);
 }
 
 .days-week-grid {
