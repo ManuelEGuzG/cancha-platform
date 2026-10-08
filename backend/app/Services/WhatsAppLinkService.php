@@ -32,7 +32,7 @@ class WhatsAppLinkService
 
         $numero = $this->normalizarNumero($complejo->whatsapp_numero);
         $horas = collect($datos['horas'])->map(function (string $hora) {
-            $fin = Carbon::createFromFormat('H:i', $hora)->addHour()->format('H:i');
+            $fin = Carbon::parse($hora)->addHour()->format('H:i');
 
             return "{$hora} - {$fin}";
         })->implode(', ');
