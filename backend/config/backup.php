@@ -39,7 +39,9 @@ return [
                     base_path('vendor'),
                     base_path('.git'),
                     base_path('.env'),
+                    base_path('.env.*'),
                     base_path('node_modules'),
+                    storage_path('logs'),
                     storage_path('framework'),
                 ],
 

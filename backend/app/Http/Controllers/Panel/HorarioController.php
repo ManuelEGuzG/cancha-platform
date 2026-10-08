@@ -24,6 +24,11 @@ class HorarioController extends Controller
                     ->where('fecha', '>=', now()->toDateString())
                     ->orderBy('fecha')
                     ->get(),
+                'bloqueos' => $cancha->bloqueos()
+                    ->where('fecha', '>=', now()->toDateString())
+                    ->orderBy('fecha')
+                    ->orderBy('hora_inicio')
+                    ->get(),
             ],
         ]);
     }

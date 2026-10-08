@@ -37,6 +37,7 @@ class User extends Authenticatable
         'activo' => 'boolean',
         'two_factor_secret' => 'encrypted',
         'two_factor_enabled_at' => 'datetime',
+        'two_factor_last_used_step' => 'integer',
         'two_factor_recovery_codes' => 'encrypted:array',
     ];
 }

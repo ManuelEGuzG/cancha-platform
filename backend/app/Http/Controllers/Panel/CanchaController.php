@@ -16,7 +16,7 @@ class CanchaController extends Controller
     {
         Gate::authorize('gestionar', $complejo);
 
-        $canchas = $complejo->canchas()->with('deporte')->get();
+        $canchas = $complejo->canchas()->with(['deporte', 'fotos'])->get();
 
         return response()->json(['data' => $canchas]);
     }

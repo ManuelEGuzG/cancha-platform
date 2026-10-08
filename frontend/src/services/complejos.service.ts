@@ -31,7 +31,11 @@ export default {
     website?: string;
     captcha_token?: string;
   }) {
-    return api.post<{ data: { solicitud_id: string; expira_en: string; whatsapp_url: string } }>(
+    return api.post<{ data: {
+      solicitud_id: string;
+      expira_en: string;
+      whatsapp_url: string;
+    } }>(
       `/complejos/${slug}/solicitudes`,
       payload,
     );

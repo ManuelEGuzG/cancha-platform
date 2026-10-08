@@ -31,6 +31,7 @@ class ComplejoPublicoController extends Controller
             ->where('activo', true)
             ->with(['distrito.canton.provincia', 'canchas' => function ($query) use ($request) {
                 $query->where('activa', true)->where('estado_verificacion', 'aprobada');
+                $query->with(['fotos' => fn ($fotos) => $fotos->where('estado_verificacion', 'aprobada')]);
                 if ($request->filled('deporte_id')) {
                     $query->where('deporte_id', $request->integer('deporte_id'));
                 }
@@ -67,7 +68,10 @@ class ComplejoPublicoController extends Controller
 
         $complejo->load([
             'distrito.canton.provincia',
-            'canchas' => fn ($query) => $query->where('activa', true)->where('estado_verificacion', 'aprobada')->with('deporte'),
+            'canchas' => fn ($query) => $query
+                ->where('activa', true)
+                ->where('estado_verificacion', 'aprobada')
+                ->with(['deporte', 'fotos' => fn ($fotos) => $fotos->where('estado_verificacion', 'aprobada')]),
         ]);
 
         return response()->json([
@@ -96,7 +100,7 @@ class ComplejoPublicoController extends Controller
                 'bloqueos' => fn ($query) => $query->whereDate('fecha', $fecha->toDateString()),
                 'reservas' => fn ($query) => $query
                     ->whereDate('fecha', $fecha->toDateString())
-                    ->whereIn('estado', ['pendiente', 'confirmada']),
+                    ->whereIn('estado', ['pendiente', 'aceptada', 'confirmada']),
             ])
             ->get();
 

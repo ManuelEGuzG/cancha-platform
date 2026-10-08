@@ -24,6 +24,7 @@ class VerificarProduccion extends Command
         $claveBackupOperativa = strlen($claveBackup) >= 32
             && !str_contains(strtolower($claveBackup), 'replace-with')
             && !in_array(strtolower($claveBackup), ['password', 'changeme'], true);
+        $loggingCentralizado = in_array(config('logging.default'), ['stderr', 'errorlog', 'syslog', 'papertrail'], true);
         $administradores = User::query()->where('is_platform_admin', true)->count();
 
         $fallos += $this->comprobar('APP_ENV=production', app()->environment('production'));
@@ -37,6 +38,7 @@ class VerificarProduccion extends Command
         $fallos += $this->comprobar('CORS contiene solo orígenes HTTPS específicos', $originsSeguros);
         $fallos += $this->comprobar('Token Sanctum tiene vencimiento', (int) config('sanctum.expiration') > 0);
         $fallos += $this->comprobar('Turnstile tiene secret y hostname', (bool) config('services.turnstile.secret') && (bool) config('services.turnstile.hostname'));
+        $fallos += $this->comprobar('Logs enviados a sink centralizado', $loggingCentralizado);
         $fallos += $this->comprobar('Cola asíncrona habilitada', config('queue.default') !== 'sync');
         $fallos += $this->comprobar('Backup apunta a S3', config('backup.backup.destination.disks') === ['s3']);
         $fallos += $this->comprobar('Bucket y credenciales S3 configurados', (bool) config('filesystems.disks.s3.bucket')

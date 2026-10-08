@@ -147,6 +147,7 @@ class AuthController extends Controller
             'name' => $user->name,
             'email' => $user->email,
             'is_platform_admin' => $user->is_platform_admin,
+            'two_factor_enabled' => (bool) $user->two_factor_enabled_at,
             'complejos' => $complejos,
         ];
     }

@@ -22,10 +22,10 @@ class CalculadorDisponibilidadService
             : $cancha->bloqueos()->whereDate('fecha', $fecha->toDateString())->get();
 
         $reservas = $cancha->relationLoaded('reservas')
-            ? $cancha->getRelation('reservas')
+            ? $cancha->getRelation('reservas')->whereIn('estado', ['pendiente', 'aceptada', 'confirmada'])
             : $cancha->reservas()
                 ->whereDate('fecha', $fecha->toDateString())
-                ->whereIn('estado', ['pendiente', 'confirmada'])
+                ->whereIn('estado', ['pendiente', 'aceptada', 'confirmada'])
                 ->get();
 
         $bloques = collect();
@@ -100,7 +100,7 @@ class CalculadorDisponibilidadService
 
         foreach ($reservas as $reserva) {
             if ($this->seSolapan($inicioBloque, $finBloque, $reserva->hora_inicio, $reserva->hora_fin)) {
-                return $reserva->estado === 'pendiente'
+                return in_array($reserva->estado, ['pendiente', 'aceptada'], true)
                     ? EstadoDisponibilidad::EN_TRAMITE
                     : EstadoDisponibilidad::RESERVADO;
             }

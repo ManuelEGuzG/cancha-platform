@@ -24,7 +24,11 @@
         <!-- Banner de Encabezado -->
         <section class="admin-hero">
           <div class="hero-text">
-            <h1 class="page-title">Panel <span class="lime-gradient-text">Administrativo Global</span></h1>
+            <span class="eyebrow">
+              <span class="pulse-indicator"></span>
+              Administración de la plataforma
+            </span>
+            <h1 class="page-title">Panel Administrativo Global</h1>
             <p class="page-subtitle">Control de suscripciones, gestión de sedes, accesos e historial de reservas.</p>
           </div>
 
@@ -81,6 +85,14 @@
           >
             <ion-icon :icon="receiptOutline"></ion-icon>
             <span>Reporte Mensual</span>
+          </button>
+          <button :class="['tab-btn', { active: vista === 'fotos' }]" @click="vista = 'fotos'">
+            <ion-icon :icon="imagesOutline"></ion-icon>
+            <span>Fotos</span>
+          </button>
+          <button :class="['tab-btn', { active: vista === 'seguridad' }]" @click="vista = 'seguridad'">
+            <ion-icon :icon="keyOutline"></ion-icon>
+            <span>Seguridad</span>
           </button>
         </div>
 
@@ -379,6 +391,102 @@
           </div>
         </section>
 
+        <section v-if="vista === 'fotos'" class="tab-content animate-fade-in">
+          <div class="section-card">
+            <div class="card-header">
+              <h3>Fotos pendientes de revisión</h3>
+              <span class="counter-pill">{{ fotosRevision.length }}</span>
+            </div>
+            <div class="table-responsive">
+              <table class="neon-table">
+                <thead><tr><th>Foto</th><th>Cancha</th><th>Complejo</th><th>Descripción</th><th>Observaciones</th><th>Moderación</th></tr></thead>
+                <tbody>
+                  <tr v-for="foto in fotosRevision" :key="foto.id">
+                    <td><img :src="foto.url" :alt="foto.caption || 'Foto de cancha pendiente'" class="admin-photo-preview" loading="lazy" /></td>
+                    <td>{{ foto.cancha?.nombre }}</td>
+                    <td>{{ foto.cancha?.complejo?.nombre }}</td>
+                    <td>{{ foto.caption || 'Sin descripción' }}</td>
+                    <td><input v-model="observacionesFoto[foto.id]" class="neon-input" maxlength="1000" placeholder="Motivo si se rechaza" /></td>
+                    <td>
+                      <div class="action-buttons-cell">
+                        <button class="btn-action-sm btn-success" @click="resolverFoto(foto, 'aprobada')">Aprobar</button>
+                        <button class="btn-action-sm btn-danger" :disabled="!observacionesFoto[foto.id]?.trim()" @click="resolverFoto(foto, 'rechazada')">Rechazar</button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr v-if="fotosRevision.length === 0"><td colspan="6" class="text-center py-4">No hay fotos pendientes.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section v-if="vista === 'seguridad'" class="tab-content animate-fade-in">
+          <div class="section-card security-section">
+            <div class="card-header">
+              <div><h3>Verificación en dos pasos</h3><p>Usa una aplicación TOTP para proteger la cuenta administradora.</p></div>
+              <span :class="['status-pill', twoFactorActivo ? 'status-active' : 'status-warning']">
+                {{ twoFactorActivo ? 'Activa' : 'Inactiva' }}
+              </span>
+            </div>
+
+            <div v-if="!twoFactorActivo" class="security-form">
+              <form class="neon-form" @submit.prevent="iniciarDosFactores">
+                <div class="field-block">
+                  <label>Contraseña actual</label>
+                  <input v-model="passwordDosFactores" type="password" autocomplete="current-password" class="neon-input" required />
+                </div>
+                <button type="submit" class="btn-submit-neon" :disabled="cargandoDosFactores">
+                  {{ cargandoDosFactores ? 'Preparando...' : 'Configurar aplicación' }}
+                </button>
+              </form>
+
+              <div v-if="configuracionDosFactores" class="totp-enrollment">
+                <img v-if="codigoQr" :src="codigoQr" alt="Código QR de configuración TOTP" class="totp-qr" />
+                <div class="field-block">
+                  <label>Clave manual</label>
+                  <code class="totp-secret">{{ configuracionDosFactores.secret }}</code>
+                </div>
+                <form class="neon-form" @submit.prevent="confirmarDosFactores">
+                  <div class="field-block">
+                    <label>Código de 6 dígitos</label>
+                    <input v-model="codigoDosFactores" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" class="neon-input" required />
+                  </div>
+                  <button type="submit" class="btn-submit-neon" :disabled="cargandoDosFactores">Confirmar y activar</button>
+                </form>
+              </div>
+            </div>
+
+            <div v-else class="security-form">
+              <div v-if="codigosRecuperacion.length" class="recovery-codes-panel" role="status">
+                <h4>Códigos de recuperación</h4>
+                <p>Guárdalos ahora. Cada código se puede usar una sola vez y no volverán a mostrarse.</p>
+                <code v-for="codigo in codigosRecuperacion" :key="codigo" class="recovery-code">{{ codigo }}</code>
+                <label class="recovery-confirmation">
+                  <input v-model="recoveryCodesSaved" type="checkbox" />
+                  Guardé los códigos en un lugar seguro
+                </label>
+              </div>
+
+              <form class="neon-form" @submit.prevent="desactivarDosFactores">
+                <div class="field-block">
+                  <label>Contraseña actual</label>
+                  <input v-model="passwordDesactivar2FA" type="password" autocomplete="current-password" class="neon-input" required />
+                </div>
+                <div class="field-block">
+                  <label>Código TOTP o de recuperación</label>
+                  <input v-model="codigoDesactivar2FA" type="text" autocomplete="one-time-code" class="neon-input" required />
+                </div>
+                <button type="submit" class="btn-action-sm btn-danger" :disabled="cargandoDosFactores">Desactivar 2FA</button>
+              </form>
+            </div>
+
+            <p v-if="mensajeDosFactores" class="message-banner" role="status">{{ mensajeDosFactores }}</p>
+            <p v-if="errorDosFactores" class="message-banner error" role="alert">{{ errorDosFactores }}</p>
+            <button v-if="codigosRecuperacion.length" class="btn-submit-neon" :disabled="!recoveryCodesSaved" @click="cerrarSesionTras2FA">Volver a iniciar sesión</button>
+          </div>
+        </section>
+
         <!-- PESTAÑA 3: MOVIMIENTOS / RESERVAS GLOBALES -->
         <section v-if="vista === 'movimientos'" class="tab-content animate-fade-in">
           <div class="section-card">
@@ -528,10 +636,12 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { IonPage, IonContent, IonSelect, IonSelectOption, IonIcon } from '@ionic/vue';
 import { addIcons } from 'ionicons';
+import QRCode from 'qrcode';
 import {
   shieldCheckmarkOutline, logOutOutline, businessOutline, peopleOutline,
   receiptOutline, checkmarkCircleOutline, closeCircleOutline, cardOutline,
-  lockClosedOutline, lockOpenOutline, addCircleOutline, eyeOutline, personAddOutline
+  lockClosedOutline, lockOpenOutline, addCircleOutline, eyeOutline, personAddOutline,
+  imagesOutline, keyOutline
 } from 'ionicons/icons';
 
 import { useAuthStore } from '@/stores/auth';
@@ -552,23 +662,39 @@ addIcons({
   'add-circle-outline': addCircleOutline,
   'eye-outline': eyeOutline,
   'person-add-outline': personAddOutline
+  ,'images-outline': imagesOutline
+  ,'key-outline': keyOutline
 });
 
 const router = useRouter();
 const authStore = useAuthStore();
 
-const vista = ref<'complejos' | 'usuarios' | 'movimientos' | 'verificacion' | 'reporte'>('complejos');
+const vista = ref<'complejos' | 'usuarios' | 'movimientos' | 'verificacion' | 'reporte' | 'fotos' | 'seguridad'>('complejos');
 
 const facturacion = ref<any[]>([]);
 const usuarios = ref<any[]>([]);
 const movimientos = ref<any[]>([]);
 const canchasTodas = ref<any[]>([]);
 const canchasRevision = ref<any[]>([]);
+const fotosRevision = ref<any[]>([]);
+const observacionesFoto = ref<Record<number, string>>({});
 const observacionesRechazo = ref<Record<number, string>>({});
 const reporteMensual = ref<any[]>([]);
 const mensaje = ref('');
 const fechaActual = new Date();
 const mesReporte = ref(`${fechaActual.getFullYear()}-${String(fechaActual.getMonth() + 1).padStart(2, '0')}`);
+const twoFactorActivo = ref(false);
+const passwordDosFactores = ref('');
+const passwordDesactivar2FA = ref('');
+const codigoDosFactores = ref('');
+const codigoDesactivar2FA = ref('');
+const codigoQr = ref('');
+const configuracionDosFactores = ref<{ secret: string; otpauth_url: string } | null>(null);
+const codigosRecuperacion = ref<string[]>([]);
+const recoveryCodesSaved = ref(false);
+const cargandoDosFactores = ref(false);
+const mensajeDosFactores = ref('');
+const errorDosFactores = ref('');
 
 const filtroComplejo = ref<number | null>(null);
 const filtroCancha = ref<number | null>(null);
@@ -677,6 +803,88 @@ async function cargarVerificaciones() {
   }
 }
 
+async function cargarFotosRevision() {
+  try {
+    const { data } = await adminService.fotosPendientes();
+    fotosRevision.value = data.data.data;
+  } catch {
+    mensaje.value = 'No se pudieron cargar las fotos pendientes.';
+  }
+}
+
+async function resolverFoto(foto: any, estado_verificacion: 'aprobada' | 'rechazada') {
+  try {
+    await adminService.verificarFoto(foto.id, {
+      estado_verificacion,
+      observaciones_admin: estado_verificacion === 'rechazada' ? observacionesFoto.value[foto.id]?.trim() : undefined,
+    });
+    mensaje.value = estado_verificacion === 'aprobada' ? 'Foto aprobada.' : 'Foto rechazada.';
+    await cargarFotosRevision();
+  } catch (error: any) {
+    mensaje.value = error.response?.data?.message || 'No se pudo moderar la foto.';
+  }
+}
+
+async function iniciarDosFactores() {
+  cargandoDosFactores.value = true;
+  errorDosFactores.value = '';
+  mensajeDosFactores.value = '';
+  try {
+    const { data } = await adminService.iniciar2FA(passwordDosFactores.value);
+    configuracionDosFactores.value = data.data;
+    codigoQr.value = await QRCode.toDataURL(data.data.otpauth_url, { width: 240, margin: 2, errorCorrectionLevel: 'M' });
+  } catch (error: any) {
+    errorDosFactores.value = error.response?.data?.message || 'No se pudo iniciar la configuración 2FA.';
+  } finally {
+    cargandoDosFactores.value = false;
+  }
+}
+
+async function confirmarDosFactores() {
+  cargandoDosFactores.value = true;
+  errorDosFactores.value = '';
+  try {
+    const { data } = await adminService.confirmar2FA(codigoDosFactores.value);
+    codigosRecuperacion.value = data.data.recovery_codes;
+    recoveryCodesSaved.value = false;
+    twoFactorActivo.value = true;
+    configuracionDosFactores.value = null;
+    codigoQr.value = '';
+    if (authStore.usuario) authStore.usuario.two_factor_enabled = true;
+    mensajeDosFactores.value = '2FA activado. Los códigos se muestran una sola vez; tus sesiones anteriores se cerraron.';
+  } catch (error: any) {
+    errorDosFactores.value = error.response?.data?.message || 'El código no es válido o ya fue utilizado.';
+  } finally {
+    cargandoDosFactores.value = false;
+  }
+}
+
+async function desactivarDosFactores() {
+  cargandoDosFactores.value = true;
+  errorDosFactores.value = '';
+  try {
+    await adminService.desactivar2FA({ password: passwordDesactivar2FA.value, code: codigoDesactivar2FA.value });
+    twoFactorActivo.value = false;
+    if (authStore.usuario) authStore.usuario.two_factor_enabled = false;
+    mensajeDosFactores.value = '2FA desactivado.';
+    passwordDesactivar2FA.value = '';
+    codigoDesactivar2FA.value = '';
+  } catch (error: any) {
+    errorDosFactores.value = error.response?.data?.message || 'No se pudo desactivar 2FA.';
+  } finally {
+    cargandoDosFactores.value = false;
+  }
+}
+
+async function cerrarSesionTras2FA() {
+  try {
+    await authStore.logout();
+  } catch {
+    localStorage.removeItem('token');
+  }
+  router.replace('/login');
+}
+
 async function resolverVerificacion(cancha: any, estado_verificacion: 'aprobada' | 'rechazada') {
   try {
     await adminService.verificarCancha(cancha.id, {
@@ -724,17 +932,18 @@ async function guardarPago() {
     complejoPago.value = null;
     nuevoPago.value = { monto: 0, periodo_desde: '', periodo_hasta: '', fecha_pago: new Date().toISOString().split('T')[0], metodo: 'sinpe' };
     await cargarDatos();
-  } catch (error) {
-    console.error('Error al registrar pago:', error);
+  } catch (error: any) {
+    mensaje.value = error.response?.data?.message || 'No se pudo registrar el pago. Revisa los datos.';
   }
 }
 
 async function toggleComplejo(complejo: any) {
   try {
     await adminService.toggleEstadoComplejo(complejo.complejo_id);
+    mensaje.value = complejo.activo ? 'Complejo bloqueado.' : 'Complejo activado.';
     await cargarDatos();
-  } catch (error) {
-    console.error('Error cambiando estado del complejo:', error);
+  } catch (error: any) {
+    mensaje.value = error.response?.data?.message || 'No se pudo cambiar el estado del complejo.';
   }
 }
 
@@ -810,23 +1019,72 @@ watch(vista, (nuevaVista) => {
   }
   if (nuevaVista === 'verificacion') cargarVerificaciones();
   if (nuevaVista === 'reporte') cargarReporteMensual();
+  if (nuevaVista === 'fotos') cargarFotosRevision();
+  if (nuevaVista === 'seguridad') {
+    twoFactorActivo.value = Boolean(authStore.usuario?.two_factor_enabled);
+    mensajeDosFactores.value = '';
+    errorDosFactores.value = '';
+  }
 });
 
 onMounted(async () => {
-  await Promise.all([cargarDatos(), cargarProvincias()]);
+  try {
+    await authStore.cargarUsuario();
+    if (!authStore.usuario?.is_platform_admin) {
+      router.replace('/panel');
+      return;
+    }
+    await Promise.all([cargarDatos(), cargarProvincias()]);
+  } catch {
+    router.replace('/login');
+  }
 });
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
+/* ==========================================================
+   PALETA SPORTRA
+   #050A30  Azul noche      #0B2D9A  Azul profundo
+   #2B59C3  Azul medio      #7BAAF7  Azul cielo
+   #F5F7FF  Blanco azulado
+   ========================================================== */
+.sportra-admin-page {
+  --c-night: #050A30;
+  --c-deep: #0B2D9A;
+  --c-mid: #2B59C3;
+  --c-sky: #7BAAF7;
+  --c-ice: #F5F7FF;
 
-ion-content.sportra-main-viewport {
-  --background: #030712;
-  font-family: 'Inter', sans-serif;
-  color: #f3f4f6;
+  /* Tonos derivados de la paleta */
+  --c-surface: #FFFFFF;
+  --c-hover: #EDF2FF;
+  --c-line: #DCE5FA;
+  --c-line-strong: #C2D2F5;
+  --c-text: #050A30;
+  --c-text-soft: #4A5688;
+  --c-muted: #8089B0;
+
+  /* Colores semánticos (estados) */
+  --ok-bg: #E4F6EE;     --ok-fg: #0E6B4B;     --ok-bd: #B7E3CF;
+  --warn-bg: #FFF4DA;   --warn-fg: #8A5A00;   --warn-bd: #F3DDA4;
+  --bad-bg: #FFECEE;    --bad-fg: #B42335;    --bad-bd: #F5C2C8;
+
+  --shadow-sm: 0 4px 14px rgba(11, 45, 154, 0.07);
+  --shadow-md: 0 12px 32px rgba(11, 45, 154, 0.10);
+  --shadow-lg: 0 28px 70px rgba(5, 10, 48, 0.35);
+  --radius: 14px;
+  --radius-sm: 10px;
 }
 
-/* NAVBAR */
+ion-content.sportra-main-viewport {
+  --background: radial-gradient(1100px 520px at 85% -8%, rgba(123, 170, 247, 0.22), transparent 60%),
+                radial-gradient(900px 480px at -5% 110%, rgba(43, 89, 195, 0.10), transparent 60%),
+                #F5F7FF;
+  font-family: 'DM Sans', -apple-system, sans-serif;
+  color: var(--c-text);
+}
+
+/* ===================== NAVBAR ===================== */
 .navbar-container {
   position: fixed;
   top: 1rem;
@@ -839,272 +1097,447 @@ ion-content.sportra-main-viewport {
 .navbar-bar {
   max-width: 1280px;
   margin: 0 auto;
-  background: rgba(11, 15, 25, 0.85);
-  backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 99px;
+  background: rgba(5, 10, 48, 0.92);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(123, 170, 247, 0.25);
+  border-radius: var(--radius);
   padding: 0.6rem 1.25rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  box-shadow: 0 14px 40px rgba(5, 10, 48, 0.28);
 }
 
-.brand-box { display: flex; align-items: center; gap: 0.6rem; }
+.brand-box { display: flex; align-items: center; gap: 0.7rem; }
 
 .brand-badge {
-  width: 36px;
-  height: 36px;
-  background: rgba(132, 204, 22, 0.15);
-  border: 1px solid rgba(132, 204, 22, 0.4);
-  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+  background: linear-gradient(135deg, var(--c-deep), var(--c-mid));
+  border: 1px solid rgba(123, 170, 247, 0.45);
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.brand-icon { font-size: 1.2rem; color: #84cc16; }
-.brand-name { font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 1.25rem; color: #ffffff; }
-.neon-dot { color: #84cc16; }
+.brand-icon { font-size: 1.2rem; color: var(--c-ice); }
+
+.brand-name {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 1.4rem;
+  letter-spacing: 0.04em;
+  color: var(--c-ice);
+}
+
+.neon-dot { color: var(--c-sky); }
 
 .role-badge {
-  font-size: 0.65rem;
-  background: rgba(132, 204, 22, 0.2);
-  color: #84cc16;
-  padding: 0.15rem 0.5rem;
-  border-radius: 6px;
-  margin-left: 0.4rem;
+  font-size: 0.62rem;
+  background: rgba(123, 170, 247, 0.15);
+  border: 1px solid rgba(123, 170, 247, 0.4);
+  color: var(--c-sky);
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  margin-left: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  vertical-align: middle;
 }
 
 .btn-logout {
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #f87171;
-  padding: 0.45rem 1rem;
-  border-radius: 99px;
-  font-weight: 700;
+  background: rgba(245, 247, 255, 0.06);
+  border: 1px solid rgba(245, 247, 255, 0.22);
+  color: var(--c-ice);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
   font-size: 0.8rem;
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.45rem;
   cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
-.btn-logout:hover { background: #ef4444; color: #ffffff; }
+.btn-logout:hover {
+  background: rgba(123, 170, 247, 0.18);
+  border-color: var(--c-sky);
+  color: #ffffff;
+}
 
-/* CONTAINER LAYOUT */
+/* ===================== LAYOUT ===================== */
 .admin-wrapper {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 7.5rem 1.5rem 4rem;
+  padding: 6.5rem 1.5rem 4rem;
 }
 
+/* ===================== HERO ===================== */
 .admin-hero {
+  position: relative;
+  overflow: hidden;
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
-  margin-bottom: 2rem;
+  align-items: center;
   flex-wrap: wrap;
   gap: 1.5rem;
+  margin-bottom: 1.75rem;
+  padding: 1.9rem 2.1rem;
+  background: linear-gradient(125deg, var(--c-night) 0%, #071463 45%, var(--c-deep) 100%);
+  border: 1px solid rgba(123, 170, 247, 0.25);
+  border-radius: 20px;
+  box-shadow: var(--shadow-md);
+  color: var(--c-ice);
 }
 
-.page-title { font-family: 'Space Grotesk', sans-serif; font-size: 2.2rem; font-weight: 800; margin: 0 0 0.4rem; }
-
-.lime-gradient-text {
-  background: linear-gradient(135deg, #84cc16 0%, #ecfccb 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+.admin-hero::after {
+  content: '';
+  position: absolute;
+  width: 380px;
+  height: 380px;
+  right: -90px;
+  top: -170px;
+  background: radial-gradient(circle, rgba(123, 170, 247, 0.35), transparent 68%);
+  pointer-events: none;
 }
 
-.page-subtitle { color: #94a3b8; font-size: 0.95rem; margin: 0; }
+.hero-text, .metrics-row { position: relative; z-index: 1; }
 
-.metrics-row { display: flex; gap: 1rem; }
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--c-sky);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.pulse-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--c-sky);
+  box-shadow: 0 0 0 0 rgba(123, 170, 247, 0.7);
+  animation: sportraPulse 2s infinite;
+}
+
+.page-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: clamp(2rem, 3.5vw, 2.8rem);
+  font-weight: 700;
+  margin: 0.35rem 0 0.4rem;
+  color: var(--c-ice);
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+}
+
+.page-subtitle { color: rgba(245, 247, 255, 0.72); font-size: 0.95rem; margin: 0; max-width: 520px; }
+
+.metrics-row { display: flex; gap: 0.9rem; flex-wrap: wrap; }
 
 .metric-card {
-  background: #0b0f19;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
+  background: rgba(245, 247, 255, 0.07);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(123, 170, 247, 0.3);
+  border-radius: var(--radius);
   padding: 0.85rem 1.25rem;
   display: flex;
   flex-direction: column;
-  min-width: 120px;
+  min-width: 124px;
+  transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
 }
 
-.metric-label { font-size: 0.7rem; color: #64748b; font-weight: 700; text-transform: uppercase; }
-.metric-value { font-size: 1.4rem; font-weight: 800; color: #ffffff; }
-.text-lime { color: #84cc16; }
+.metric-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--c-sky);
+  background: rgba(245, 247, 255, 0.12);
+}
 
-/* TABS MENU */
+.metric-label {
+  font-size: 0.68rem;
+  color: var(--c-sky);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.metric-value {
+  font-size: 1.9rem;
+  font-weight: 700;
+  color: var(--c-ice);
+  font-family: 'Barlow Condensed', sans-serif;
+  line-height: 1.15;
+}
+
+.text-lime { color: var(--c-deep); }
+.metric-card .text-lime { color: var(--c-sky); }
+.modal-header .text-lime { color: var(--c-mid); }
+
+/* ===================== TABS ===================== */
 .tab-menu {
   display: flex;
-  gap: 0.75rem;
+  flex-wrap: wrap;
+  gap: 0.55rem;
   margin-bottom: 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  padding-bottom: 0.85rem;
+  padding: 0.5rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
 }
 
 .tab-btn {
   background: transparent;
-  border: none;
-  color: #94a3b8;
-  padding: 0.6rem 1.1rem;
-  border-radius: 12px;
-  font-weight: 700;
-  font-size: 0.875rem;
+  border: 1px solid transparent;
+  color: var(--c-text-soft);
+  padding: 0.55rem 1rem;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.85rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
+
+.tab-btn:hover { background: var(--c-hover); color: var(--c-deep); }
 
 .tab-btn.active {
-  background: rgba(132, 204, 22, 0.15);
-  color: #84cc16;
-  border: 1px solid rgba(132, 204, 22, 0.3);
+  background: linear-gradient(135deg, var(--c-deep), var(--c-mid));
+  color: var(--c-ice);
+  box-shadow: 0 6px 16px rgba(11, 45, 154, 0.32);
 }
 
-/* CARDS & TABLES */
+/* ===================== CARDS ===================== */
 .admin-grid-layout {
   display: grid;
   grid-template-columns: 2.2fr 1fr;
   gap: 1.5rem;
+  align-items: start;
 }
 
 .section-card {
-  background: #0b0f19;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
-  padding: 1.5rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: 18px;
+  padding: 1.6rem;
+  box-shadow: var(--shadow-md);
 }
 
-.card-header h3 { margin: 0 0 0.25rem; font-size: 1.2rem; font-weight: 800; color: #ffffff; }
-.card-header p { margin: 0; font-size: 0.85rem; color: #94a3b8; }
-
-.header-with-filter {
+.card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  gap: 1rem;
+}
+
+.card-header h3 {
+  margin: 0 0 0.2rem;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--c-night);
+  font-family: 'Barlow Condensed', sans-serif;
+  letter-spacing: 0.01em;
+}
+
+.card-header p { margin: 0; font-size: 0.85rem; color: var(--c-text-soft); }
+
+.header-with-filter { flex-wrap: wrap; margin-bottom: 1rem; }
+
+.counter-pill {
+  min-width: 34px;
+  text-align: center;
+  background: var(--c-deep);
+  color: var(--c-ice);
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
 }
 
 .filter-select { min-width: 200px; }
 
-.table-responsive { overflow-x: auto; margin-top: 1rem; }
+/* ===================== TABLAS ===================== */
+.table-responsive {
+  overflow-x: auto;
+  margin-top: 1rem;
+  border: 1px solid var(--c-line);
+  border-radius: 12px;
+}
 
 .neon-table {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
-  font-size: 0.875rem;
+  font-size: 0.85rem;
+  background: var(--c-surface);
 }
 
 .neon-table th {
   padding: 0.85rem 1rem;
-  color: #64748b;
-  font-size: 0.725rem;
+  background: var(--c-hover);
+  color: var(--c-deep);
+  font-size: 0.68rem;
   text-transform: uppercase;
-  font-weight: 800;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  border-bottom: 1px solid var(--c-line-strong);
+  white-space: nowrap;
 }
 
 .neon-table td {
-  padding: 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  color: #cbd5e1;
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid var(--c-line);
+  color: var(--c-text);
+  vertical-align: middle;
 }
 
-.status-pill {
-  padding: 0.25rem 0.65rem;
-  border-radius: 99px;
+.neon-table tr:last-child td { border-bottom: none; }
+.neon-table tbody tr { transition: background-color 0.15s ease; }
+.neon-table tbody tr:hover td { background: #F5F8FF; }
+
+.complexes-tag {
+  display: inline-block;
+  background: var(--c-hover);
+  color: var(--c-mid);
+  border: 1px solid var(--c-line-strong);
+  padding: 0.2rem 0.6rem;
+  border-radius: 8px;
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
-.status-active { background: rgba(132, 204, 22, 0.15); color: #84cc16; }
-.status-warning { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
-.status-danger { background: rgba(239, 68, 68, 0.15); color: #f87171; }
-.status-neutral { background: rgba(255, 255, 255, 0.08); color: #94a3b8; }
+/* ===================== ESTADOS ===================== */
+.status-pill {
+  display: inline-block;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.status-active  { background: var(--ok-bg);   color: var(--ok-fg);   border: 1px solid var(--ok-bd); }
+.status-warning { background: var(--warn-bg); color: var(--warn-fg); border: 1px solid var(--warn-bd); }
+.status-danger  { background: var(--bad-bg);  color: var(--bad-fg);  border: 1px solid var(--bad-bd); }
+.status-neutral { background: #EEF1FA;        color: var(--c-text-soft); border: 1px solid var(--c-line); }
+.status-pending { background: rgba(123, 170, 247, 0.2); color: var(--c-deep); border: 1px solid var(--c-sky); }
 
 .tag-blocked {
-  background: rgba(239, 68, 68, 0.2);
-  color: #f87171;
-  font-size: 0.65rem;
-  padding: 0.1rem 0.4rem;
-  border-radius: 4px;
+  background: var(--bad-bg);
+  color: var(--bad-fg);
+  border: 1px solid var(--bad-bd);
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
   margin-left: 0.4rem;
+  letter-spacing: 0.06em;
 }
 
-/* ACTION BUTTONS */
-.action-buttons-cell { display: flex; gap: 0.4rem; justify-content: flex-end; }
+/* ===================== BOTONES DE ACCIÓN ===================== */
+.action-buttons-cell { display: flex; gap: 0.4rem; justify-content: flex-end; flex-wrap: wrap; align-items: center; }
 
 .btn-action-sm {
-  border: none;
-  padding: 0.35rem 0.65rem;
+  border: 1px solid transparent;
+  padding: 0.4rem 0.75rem;
   border-radius: 8px;
   font-size: 0.75rem;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.35rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.18s ease, color 0.18s ease, transform 0.18s ease, border-color 0.18s ease;
 }
 
-.btn-pay { background: rgba(132, 204, 22, 0.15); color: #84cc16; }
-.btn-pay:hover { background: #84cc16; color: #030712; }
+.btn-action-sm:hover:not(:disabled) { transform: translateY(-1px); }
+.btn-action-sm:disabled { opacity: 0.45; cursor: not-allowed; }
 
-.btn-info { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
-.btn-info:hover { background: #3b82f6; color: #ffffff; }
+.btn-pay { background: var(--c-hover); color: var(--c-deep); border-color: var(--c-line-strong); }
+.btn-pay:hover { background: var(--c-deep); color: var(--c-ice); border-color: var(--c-deep); }
 
-.btn-danger { background: rgba(239, 68, 68, 0.15); color: #f87171; }
-.btn-danger:hover { background: #ef4444; color: #ffffff; }
+.btn-info { background: rgba(123, 170, 247, 0.18); color: var(--c-deep); border-color: rgba(123, 170, 247, 0.55); }
+.btn-info:hover { background: var(--c-mid); color: var(--c-ice); border-color: var(--c-mid); }
 
-.btn-success { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
-.btn-success:hover { background: #22c55e; color: #ffffff; }
+.btn-danger { background: var(--bad-bg); color: var(--bad-fg); border-color: var(--bad-bd); }
+.btn-danger:hover:not(:disabled) { background: var(--bad-fg); color: #ffffff; border-color: var(--bad-fg); }
 
-/* FORMS */
+.btn-success { background: var(--ok-bg); color: var(--ok-fg); border-color: var(--ok-bd); }
+.btn-success:hover { background: var(--ok-fg); color: #ffffff; border-color: var(--ok-fg); }
+
+/* ===================== FORMULARIOS ===================== */
 .neon-form { display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem; }
 
 .field-block label {
   display: block;
-  font-size: 0.725rem;
-  font-weight: 800;
-  color: #84cc16;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--c-deep);
   text-transform: uppercase;
-  margin-bottom: 0.35rem;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.4rem;
 }
 
 .neon-input {
   width: 100%;
-  height: 42px;
-  background: #030712;
-  border: 1px solid rgba(132, 204, 22, 0.25);
-  border-radius: 10px;
-  padding: 0 0.85rem;
-  color: #ffffff;
+  height: 44px;
+  background: var(--c-ice);
+  border: 1px solid var(--c-line-strong);
+  border-radius: var(--radius-sm);
+  padding: 0 0.9rem;
+  color: var(--c-text);
   outline: none;
   font-size: 0.875rem;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+}
+
+.neon-input::placeholder { color: var(--c-muted); }
+.neon-input:hover { border-color: var(--c-sky); }
+
+.neon-input:focus {
+  background: #ffffff;
+  border-color: var(--c-mid);
+  box-shadow: 0 0 0 4px rgba(43, 89, 195, 0.16);
 }
 
 .neon-select {
-  --background: #030712;
-  --color: #ffffff;
-  --padding-start: 0.85rem;
-  background: #030712;
-  border: 1px solid rgba(132, 204, 22, 0.25);
-  border-radius: 10px;
-  height: 42px;
+  --background: #F5F7FF;
+  --color: #050A30;
+  --placeholder-color: #8089B0;
+  --placeholder-opacity: 1;
+  --padding-start: 0.9rem;
+  --padding-end: 0.9rem;
+  background: var(--c-ice);
+  border: 1px solid var(--c-line-strong);
+  border-radius: var(--radius-sm);
+  min-height: 44px;
   font-size: 0.875rem;
-  color: #ffffff;
+  color: var(--c-text);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
+.neon-select:hover { border-color: var(--c-sky); }
+.neon-select:focus-within { border-color: var(--c-mid); box-shadow: 0 0 0 4px rgba(43, 89, 195, 0.16); }
+
+input[type='checkbox'] { accent-color: var(--c-deep); width: 16px; height: 16px; }
+
 .btn-submit-neon {
-  background: #84cc16;
-  color: #030712;
-  border: none;
-  padding: 0.75rem 1.25rem;
-  border-radius: 10px;
-  font-weight: 800;
+  background: linear-gradient(135deg, var(--c-deep), var(--c-mid));
+  color: var(--c-ice);
+  border: 1px solid transparent;
+  padding: 0.8rem 1.3rem;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
   font-size: 0.875rem;
   display: flex;
   align-items: center;
@@ -1112,21 +1545,25 @@ ion-content.sportra-main-viewport {
   gap: 0.5rem;
   cursor: pointer;
   margin-top: 0.5rem;
+  box-shadow: 0 8px 20px rgba(11, 45, 154, 0.28);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
 }
 
 .btn-submit-neon:hover:not(:disabled) {
-  background: #a3e635;
-  box-shadow: 0 0 15px rgba(132, 204, 22, 0.3);
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+  box-shadow: 0 12px 26px rgba(11, 45, 154, 0.38);
 }
 
-.btn-submit-neon:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-submit-neon:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
 
-/* MODALS */
+/* ===================== MODALES ===================== */
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(3, 7, 18, 0.8);
-  backdrop-filter: blur(12px);
+  background: rgba(5, 10, 48, 0.62);
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
   z-index: 2000;
   display: flex;
   align-items: center;
@@ -1135,63 +1572,226 @@ ion-content.sportra-main-viewport {
 }
 
 .modal-box {
-  background: #0b0f19;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 20px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-line-strong);
+  border-top: 4px solid var(--c-mid);
+  border-radius: 18px;
   width: 100%;
-  max-width: 520px;
-  padding: 1.5rem;
+  max-width: 540px;
+  padding: 1.6rem;
+  box-shadow: var(--shadow-lg);
+  max-height: 92vh;
+  overflow-y: auto;
 }
 
-.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-.modal-header h3 { margin: 0; font-size: 1.15rem; font-weight: 800; color: #ffffff; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; gap: 1rem; }
 
-.btn-close-modal { background: transparent; border: none; font-size: 1.5rem; color: #64748b; cursor: pointer; }
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--c-night);
+  font-family: 'Barlow Condensed', sans-serif;
+}
+
+.btn-close-modal {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--c-muted);
+  cursor: pointer;
+  display: flex;
+  transition: color 0.18s ease, transform 0.18s ease;
+}
+
+.btn-close-modal:hover { color: var(--c-deep); transform: rotate(90deg); }
 
 .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; }
 
-.modal-actions { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 1rem; flex-wrap: wrap; }
+.modal-actions .btn-submit-neon { margin-top: 0; }
 
 .btn-cancel {
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #94a3b8;
-  padding: 0.6rem 1rem;
-  border-radius: 10px;
-  font-weight: 700;
+  background: var(--c-surface);
+  border: 1px solid var(--c-line-strong);
+  color: var(--c-text-soft);
+  padding: 0.65rem 1.1rem;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
   cursor: pointer;
+  transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
 }
 
-.user-logs-container { display: flex; flex-direction: column; gap: 0.75rem; max-height: 350px; overflow-y: auto; }
+.btn-cancel:hover { background: var(--c-hover); border-color: var(--c-mid); color: var(--c-deep); }
+
+.user-logs-container { display: flex; flex-direction: column; gap: 0.65rem; max-height: 350px; overflow-y: auto; padding-right: 0.25rem; }
 
 .log-row {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  padding: 0.75rem;
-  border-radius: 10px;
+  background: var(--c-ice);
+  border: 1px solid var(--c-line);
+  border-left: 3px solid var(--c-mid);
+  padding: 0.75rem 0.9rem;
+  border-radius: 8px;
   font-size: 0.8rem;
 }
 
-.log-time { color: #84cc16; font-size: 0.7rem; font-weight: 700; margin-bottom: 0.2rem; }
-.log-details { color: #cbd5e1; }
+.log-time { color: var(--c-mid); font-size: 0.7rem; font-weight: 700; margin-bottom: 0.2rem; }
+.log-details { color: var(--c-text); }
 
-/* TOAST */
+/* ===================== NOTIFICACIÓN ===================== */
 .notification-toast {
-  background: rgba(132, 204, 22, 0.15);
-  border: 1px solid #84cc16;
-  color: #ffffff;
-  padding: 0.85rem 1.25rem;
-  border-radius: 14px;
+  background: linear-gradient(90deg, rgba(123, 170, 247, 0.22), rgba(123, 170, 247, 0.08));
+  border: 1px solid var(--c-sky);
+  border-left: 4px solid var(--c-mid);
+  color: var(--c-deep);
+  padding: 0.85rem 1.15rem;
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.7rem;
   margin-bottom: 1.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  box-shadow: var(--shadow-sm);
 }
 
-.btn-close-toast { margin-left: auto; cursor: pointer; color: #94a3b8; }
+.btn-close-toast { margin-left: auto; cursor: pointer; color: var(--c-mid); font-size: 1.2rem; transition: color 0.18s ease; }
+.btn-close-toast:hover { color: var(--c-night); }
 
+/* ===================== FOTOS ===================== */
+.admin-photo-preview {
+  width: 112px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--c-line-strong);
+  background: var(--c-hover);
+}
+
+/* ===================== SEGURIDAD ===================== */
+.security-form { display: grid; gap: 1rem; max-width: 620px; margin-top: 1rem; }
+.totp-enrollment { display: grid; gap: 1rem; padding-top: 1rem; }
+
+.totp-qr {
+  width: 240px;
+  max-width: 100%;
+  aspect-ratio: 1;
+  padding: 10px;
+  background: #fff;
+  border: 1px solid var(--c-line-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+}
+
+.totp-secret {
+  display: block;
+  overflow-wrap: anywhere;
+  padding: 0.85rem;
+  color: var(--c-ice);
+  background: var(--c-night);
+  border: 1px solid var(--c-deep);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+}
+
+.recovery-codes-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  gap: 0.7rem;
+  padding: 1.1rem;
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-bd);
+  border-radius: var(--radius-sm);
+}
+
+.recovery-codes-panel h4, .recovery-codes-panel p { grid-column: 1 / -1; margin: 0; color: var(--c-night); }
+.recovery-codes-panel p { color: var(--warn-fg); font-size: 0.85rem; }
+
+.recovery-code {
+  overflow-wrap: anywhere;
+  padding: 0.55rem;
+  color: var(--c-night);
+  background: #ffffff;
+  border: 1px solid var(--warn-bd);
+  border-radius: 8px;
+  text-align: center;
+  font-size: 0.8rem;
+}
+
+.recovery-confirmation { display: flex; align-items: center; gap: 0.5rem; grid-column: 1 / -1; color: var(--c-night); font-size: 0.85rem; }
+
+.message-banner {
+  margin-top: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-sm);
+  background: rgba(123, 170, 247, 0.16);
+  border: 1px solid var(--c-sky);
+  color: var(--c-deep);
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.security-section .message-banner.error { background: var(--bad-bg); border-color: var(--bad-bd); color: var(--bad-fg); }
+
+/* ===================== UTILIDADES ===================== */
+.text-white { color: var(--c-night); font-weight: 600; }
+.text-muted { color: var(--c-muted); }
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.font-bold { font-weight: 700; }
+.py-4 { padding-top: 1.25rem; padding-bottom: 1.25rem; }
+.filter-box { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+
+/* ===================== ANIMACIONES ===================== */
+@keyframes sportraPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(123, 170, 247, 0.65); }
+  70%  { box-shadow: 0 0 0 9px rgba(123, 170, 247, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(123, 170, 247, 0); }
+}
+
+@keyframes sportraGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(123, 170, 247, 0.45); }
+  50%      { box-shadow: 0 0 16px 2px rgba(123, 170, 247, 0.55); }
+}
+
+@keyframes sportraFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes sportraPop {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.glow-pulse { animation: sportraGlow 3s ease-in-out infinite; }
+.animate-fade-in { animation: sportraFadeIn 0.35s ease both; }
+.animate-pop { animation: sportraPop 0.25s ease both; }
+
+.fade-enter-active, .fade-leave-active { transition: opacity 0.25s ease, transform 0.25s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(-6px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .glow-pulse, .pulse-indicator, .animate-fade-in, .animate-pop { animation: none; }
+}
+
+/* ===================== RESPONSIVE ===================== */
 @media (max-width: 900px) {
   .admin-grid-layout { grid-template-columns: 1fr; }
-  .admin-hero { flex-direction: column; align-items: flex-start; }
+  .admin-hero { flex-direction: column; align-items: flex-start; padding: 1.5rem; }
+}
+
+@media (max-width: 600px) {
+  .navbar-container { padding: 0 0.75rem; }
+  .admin-wrapper { padding: 6rem 0.9rem 3rem; }
+  .btn-logout span { display: none; }
+  .form-grid-2 { grid-template-columns: 1fr; }
+  .tab-btn { padding: 0.5rem 0.75rem; font-size: 0.8rem; }
+  .section-card { padding: 1.15rem; }
+  .metric-card { flex: 1; min-width: 100px; }
 }
 </style>

@@ -49,7 +49,7 @@ class SolicitudReservaPublicaController extends Controller
                 'expira_en' => $reservas->first()->expira_en->toIso8601String(),
                 'whatsapp_url' => $this->whatsAppLinkService->generarEnlaceSolicitud($complejo, $cancha, $datos),
             ],
-        ], 201);
+        ], 201)->header('Cache-Control', 'no-store, private');
     }
 
     private function verificarTurnstile(Request $request, ?string $token): ?JsonResponse

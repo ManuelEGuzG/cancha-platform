@@ -14,6 +14,7 @@ return [
     */
 
     'default' => env('FILESYSTEM_DISK', 'local'),
+    'cancha_photos_disk' => env('CANCHA_PHOTOS_DISK', 'public'),
 
     /*
     |--------------------------------------------------------------------------

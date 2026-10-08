@@ -28,7 +28,7 @@ class ReservaService
 
             $reservasExistentes = Reserva::where('cancha_id', $cancha->id)
                 ->whereDate('fecha', $fecha)
-                ->whereIn('estado', ['pendiente', 'confirmada'])
+                ->whereIn('estado', ['pendiente', 'aceptada', 'confirmada'])
                 ->lockForUpdate()
                 ->get();
 

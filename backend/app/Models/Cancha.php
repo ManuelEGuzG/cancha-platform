@@ -73,4 +73,9 @@ class Cancha extends Model
     {
         return $this->hasMany(Bloqueo::class);
     }
+
+    public function fotos(): HasMany
+    {
+        return $this->hasMany(CanchaFoto::class);
+    }
 }

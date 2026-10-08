@@ -22,11 +22,13 @@ class Complejo extends Model
         'logo_url',
         'activo',
         'suscripcion_activa',
+        'suscripcion_vence_en',
     ];
 
     protected $casts = [
         'activo' => 'boolean',
         'suscripcion_activa' => 'boolean',
+        'suscripcion_vence_en' => 'date',
         'latitud' => 'decimal:7',
         'longitud' => 'decimal:7',
     ];

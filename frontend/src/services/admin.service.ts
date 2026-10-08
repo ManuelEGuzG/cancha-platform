@@ -49,4 +49,19 @@ export default {
       responseType: 'blob',
     });
   },
+  iniciar2FA(password: string) {
+    return api.post('/auth/2fa/setup', { password });
+  },
+  confirmar2FA(code: string) {
+    return api.post('/auth/2fa/confirm', { code });
+  },
+  desactivar2FA(payload: { password: string; code: string }) {
+    return api.post('/auth/2fa/disable', payload);
+  },
+  fotosPendientes() {
+    return api.get('/panel/admin/fotos/verificacion');
+  },
+  verificarFoto(fotoId: number, payload: { estado_verificacion: 'aprobada' | 'rechazada'; observaciones_admin?: string }) {
+    return api.patch(`/panel/admin/fotos/${fotoId}/verificacion`, payload);
+  },
 };

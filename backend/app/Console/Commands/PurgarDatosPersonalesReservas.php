@@ -28,7 +28,7 @@ class PurgarDatosPersonalesReservas extends Command
             ->pluck('id');
 
         if ($ids->isEmpty()) {
-            $this->info('No hay datos personales vencidos.');
+            $this->info('No hay datos personales fuera del periodo de retención.');
 
             return self::SUCCESS;
         }
@@ -41,15 +41,19 @@ class PurgarDatosPersonalesReservas extends Command
             'updated_at' => now(),
         ]);
 
-        Activity::query()
-            ->where('subject_type', (new Reserva)->getMorphClass())
-            ->whereIn('subject_id', $ids)
-            ->get()
-            ->each(function (Activity $activity) {
-                $activity->properties = $this->eliminarNombreCliente($activity->properties?->toArray() ?? []);
-                $activity->attribute_changes = $this->eliminarNombreCliente($activity->attribute_changes?->toArray() ?? []);
-                $activity->save();
-            });
+        $tokensEliminados = 0;
+
+        if ($ids->isNotEmpty()) {
+            Activity::query()
+                ->where('subject_type', (new Reserva)->getMorphClass())
+                ->whereIn('subject_id', $ids)
+                ->get()
+                ->each(function (Activity $activity) {
+                    $activity->properties = $this->eliminarNombreCliente($activity->properties?->toArray() ?? []);
+                    $activity->attribute_changes = $this->eliminarNombreCliente($activity->attribute_changes?->toArray() ?? []);
+                    $activity->save();
+                });
+        }
 
         $this->info("Reservas anonimizadas: {$eliminados}");
 

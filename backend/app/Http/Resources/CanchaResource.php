@@ -14,6 +14,10 @@ class CanchaResource extends JsonResource
             'nombre' => $this->nombre,
             'precio_hora' => $this->precio_hora,
             'deporte' => $this->deporte->nombre,
+            'fotos' => $this->whenLoaded('fotos', fn () => $this->fotos->where('estado_verificacion', 'aprobada')->map(fn ($foto) => [
+                'url' => $foto->url,
+                'caption' => $foto->caption,
+            ])->values()),
         ];
     }
 }

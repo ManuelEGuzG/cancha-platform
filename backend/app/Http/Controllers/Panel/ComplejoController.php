@@ -63,7 +63,7 @@ class ComplejoController extends Controller
         $agenda = $canchas->map(function ($cancha) use ($fecha) {
             $reservas = $cancha->reservas()
                 ->whereDate('fecha', $fecha->toDateString())
-                ->whereIn('estado', ['pendiente', 'confirmada'])
+                ->whereIn('estado', ['pendiente', 'aceptada', 'confirmada'])
                 ->orderBy('hora_inicio')
                 ->get(['id', 'nombre_cliente', 'telefono_cliente', 'hora_inicio', 'hora_fin', 'estado', 'origen', 'solicitud_id', 'expira_en']);
 

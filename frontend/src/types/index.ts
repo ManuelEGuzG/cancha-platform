@@ -18,6 +18,12 @@ export interface Cancha {
   nombre: string;
   precio_hora: number;
   deporte: string;
+  fotos?: FotoCancha[];
+}
+
+export interface FotoCancha {
+  url: string;
+  caption: string | null;
 }
 
 export interface ComplejoDetalle {

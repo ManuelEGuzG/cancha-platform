@@ -19,6 +19,10 @@ export default {
     return api.get('/panel/reservas', { params });
   },
 
+  solicitudes() {
+    return api.get('/panel/solicitudes');
+  },
+
   crearReserva(payload: {
     cancha_id: number;
     nombre_cliente: string;
@@ -36,6 +40,14 @@ export default {
 
   responderSolicitud(reservaId: number, decision: 'aceptar' | 'rechazar') {
     return api.post(`/panel/reservas/${reservaId}/${decision}`);
+  },
+
+  confirmarPago(reservaId: number) {
+    return api.post(`/panel/reservas/${reservaId}/confirmar-pago`);
+  },
+
+  completarReserva(reservaId: number) {
+    return api.post(`/panel/reservas/${reservaId}/completar`);
   },
 
   crearBloqueo(payload: {

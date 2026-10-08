@@ -48,14 +48,23 @@
             </div>
           </div>
 
-          <div class="field-grid">
-            <div class="field-group">
-              <label>Hora apertura</label>
-              <ion-input v-model="horaApertura" type="time" class="custom-input-dark"></ion-input>
-            </div>
-            <div class="field-group">
-              <label>Hora cierre</label>
-              <ion-input v-model="horaCierre" type="time" class="custom-input-dark"></ion-input>
+          <div class="weekly-schedule-list">
+            <div v-for="dia in horariosSemanal" :key="dia.dia_semana" class="weekly-schedule-row">
+              <div class="weekday-toggle">
+                <strong>{{ dia.nombre }}</strong>
+                <ion-toggle v-model="dia.abierto" class="neon-toggle"></ion-toggle>
+              </div>
+              <template v-if="dia.abierto">
+                <div class="field-group">
+                  <label :for="`apertura-${dia.dia_semana}`">Abre</label>
+                  <ion-input :id="`apertura-${dia.dia_semana}`" v-model="dia.hora_apertura" type="time" class="custom-input-dark"></ion-input>
+                </div>
+                <div class="field-group">
+                  <label :for="`cierre-${dia.dia_semana}`">Cierra</label>
+                  <ion-input :id="`cierre-${dia.dia_semana}`" v-model="dia.hora_cierre" type="time" class="custom-input-dark"></ion-input>
+                </div>
+              </template>
+              <span v-else class="closed-day-label">Cerrado</span>
             </div>
           </div>
 
@@ -147,12 +156,19 @@
           </div>
 
           <button class="btn-dark-glass" @click="crearBloqueo">Bloquear horario</button>
+          <div v-if="bloqueos.length" class="stack-list block-list">
+            <div v-for="bloqueo in bloqueos" :key="bloqueo.id" class="list-item-glass">
+              <div><strong>{{ bloqueo.fecha }}</strong><small>{{ bloqueo.hora_inicio }} - {{ bloqueo.hora_fin }} · {{ bloqueo.motivo }}</small></div>
+              <button class="mini-button-danger" @click="eliminarBloqueo(bloqueo.id)">Quitar</button>
+            </div>
+          </div>
+          <p v-else class="empty-inline">No hay bloqueos futuros.</p>
         </section>
 
         <!-- Banner de Mensaje -->
-        <p v-if="mensaje" class="message-banner">
+        <p v-if="mensaje || error" class="message-banner" :class="{ 'message-error': error }" role="status">
           <ion-icon name="checkmark-circle-outline"></ion-icon>
-          <span>{{ mensaje }}</span>
+          <span>{{ error || mensaje }}</span>
         </p>
       </div>
     </ion-content>
@@ -163,7 +179,7 @@
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import {
-  IonPage, IonContent, IonInput, IonSpinner, IonSelect, IonSelectOption, IonIcon
+  IonPage, IonContent, IonInput, IonSpinner, IonSelect, IonSelectOption, IonIcon, IonToggle
 } from '@ionic/vue';
 import { addIcons } from 'ionicons';
 import { 
@@ -183,12 +199,20 @@ addIcons({
 const route = useRoute();
 const router = useRouter();
 const canchaId = Number(route.params.canchaId);
+const nombresDias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
 const cargando = ref(true);
 const horariosExcepcion = ref<any[]>([]);
-const horaApertura = ref('16:00');
-const horaCierre = ref('23:00');
+const bloqueos = ref<any[]>([]);
+const horariosSemanal = ref(nombresDias.map((nombre, dia_semana) => ({
+  dia_semana,
+  nombre,
+  abierto: false,
+  hora_apertura: '16:00',
+  hora_cierre: '23:00',
+})));
 const mensaje = ref('');
+const error = ref('');
 
 const nuevaExcepcion = ref({ fecha: '', hora_apertura: '', hora_cierre: '', motivo: '' });
 const nuevoBloqueo = ref({ fecha: '', hora_inicio: '', hora_fin: '', motivo: 'mantenimiento' });
@@ -202,95 +226,135 @@ async function cargarHorarios() {
   try {
     const { data } = await horariosService.index(canchaId);
     horariosExcepcion.value = data.data.horarios_excepcion;
-
-    if (data.data.horarios_regulares.length > 0) {
-      horaApertura.value = data.data.horarios_regulares[0].hora_apertura.slice(0, 5);
-      horaCierre.value = data.data.horarios_regulares[0].hora_cierre.slice(0, 5);
-    }
-  } catch (error) {
-    console.error('Error al cargar horarios:', error);
+    bloqueos.value = data.data.bloqueos || [];
+    const regulares = data.data.horarios_regulares as { dia_semana: number; hora_apertura: string; hora_cierre: string }[];
+    horariosSemanal.value = nombresDias.map((nombre, dia_semana) => {
+      const horario = regulares.find((item) => item.dia_semana === dia_semana);
+      return {
+        dia_semana,
+        nombre,
+        abierto: Boolean(horario),
+        hora_apertura: horario?.hora_apertura.slice(0, 5) || '16:00',
+        hora_cierre: horario?.hora_cierre.slice(0, 5) || '23:00',
+      };
+    });
+  } catch (fallo: any) {
+    error.value = fallo.response?.data?.message || 'No se pudieron cargar los horarios.';
   } finally {
     cargando.value = false;
   }
 }
 
 async function guardarHorarioRegular() {
-  const horarios = Array.from({ length: 7 }, (_, dia) => ({
-    dia_semana: dia,
-    hora_apertura: horaApertura.value,
-    hora_cierre: horaCierre.value,
-  }));
-
-  await horariosService.actualizarRegular(canchaId, horarios);
-  mensaje.value = 'Horario semanal actualizado correctamente.';
+  error.value = '';
+  const abiertos = horariosSemanal.value.filter((dia) => dia.abierto);
+  if (!abiertos.length || abiertos.some((dia) => !dia.hora_apertura || !dia.hora_cierre || dia.hora_cierre <= dia.hora_apertura)) {
+    error.value = 'Activa al menos un día y define horas válidas para cada día abierto.';
+    return;
+  }
+  try {
+    await horariosService.actualizarRegular(canchaId, abiertos.map(({ dia_semana, hora_apertura, hora_cierre }) => ({
+      dia_semana,
+      hora_apertura,
+      hora_cierre,
+    })));
+    mensaje.value = 'Horario semanal actualizado correctamente.';
+  } catch (fallo: any) {
+    error.value = fallo.response?.data?.message || 'No se pudo guardar el horario semanal.';
+  }
 }
 
 async function crearExcepcion() {
-  await horariosService.crearExcepcion({
-    cancha_id: canchaId,
-    fecha: nuevaExcepcion.value.fecha,
-    hora_apertura: nuevaExcepcion.value.hora_apertura || undefined,
-    hora_cierre: nuevaExcepcion.value.hora_cierre || undefined,
-    motivo: nuevaExcepcion.value.motivo,
-  });
-  mensaje.value = 'Excepción creada correctamente.';
-  nuevaExcepcion.value = { fecha: '', hora_apertura: '', hora_cierre: '', motivo: '' };
-  await cargarHorarios();
+  error.value = '';
+  if (!nuevaExcepcion.value.fecha || !nuevaExcepcion.value.motivo
+    || Boolean(nuevaExcepcion.value.hora_apertura) !== Boolean(nuevaExcepcion.value.hora_cierre)) {
+    error.value = 'Ingresa fecha y motivo; para un horario parcial define apertura y cierre.';
+    return;
+  }
+  try {
+    await horariosService.crearExcepcion({
+      cancha_id: canchaId,
+      fecha: nuevaExcepcion.value.fecha,
+      hora_apertura: nuevaExcepcion.value.hora_apertura || undefined,
+      hora_cierre: nuevaExcepcion.value.hora_cierre || undefined,
+      motivo: nuevaExcepcion.value.motivo,
+    });
+    mensaje.value = 'Excepción creada correctamente.';
+    nuevaExcepcion.value = { fecha: '', hora_apertura: '', hora_cierre: '', motivo: '' };
+    await cargarHorarios();
+  } catch (fallo: any) {
+    error.value = fallo.response?.data?.message || 'No se pudo crear la excepción.';
+  }
 }
 
 async function eliminarExcepcion(id: number) {
-  await horariosService.eliminarExcepcion(id);
-  await cargarHorarios();
+  try {
+    await horariosService.eliminarExcepcion(id);
+    await cargarHorarios();
+  } catch (fallo: any) {
+    error.value = fallo.response?.data?.message || 'No se pudo eliminar la excepción.';
+  }
 }
 
 async function crearBloqueo() {
-  await panelService.crearBloqueo({
-    cancha_id: canchaId,
-    fecha: nuevoBloqueo.value.fecha,
-    hora_inicio: nuevoBloqueo.value.hora_inicio,
-    hora_fin: nuevoBloqueo.value.hora_fin,
-    motivo: nuevoBloqueo.value.motivo,
-  });
-  mensaje.value = 'Cancha bloqueada correctamente.';
-  nuevoBloqueo.value = { fecha: '', hora_inicio: '', hora_fin: '', motivo: 'mantenimiento' };
+  error.value = '';
+  try {
+    await panelService.crearBloqueo({
+      cancha_id: canchaId,
+      fecha: nuevoBloqueo.value.fecha,
+      hora_inicio: nuevoBloqueo.value.hora_inicio,
+      hora_fin: nuevoBloqueo.value.hora_fin,
+      motivo: nuevoBloqueo.value.motivo,
+    });
+    mensaje.value = 'Cancha bloqueada correctamente.';
+    nuevoBloqueo.value = { fecha: '', hora_inicio: '', hora_fin: '', motivo: 'mantenimiento' };
+    await cargarHorarios();
+  } catch (fallo: any) {
+    error.value = fallo.response?.data?.message || 'No se pudo bloquear el horario.';
+  }
+}
+
+async function eliminarBloqueo(id: number) {
+  try {
+    await panelService.eliminarBloqueo(id);
+    await cargarHorarios();
+  } catch (fallo: any) {
+    error.value = fallo.response?.data?.message || 'No se pudo retirar el bloqueo.';
+  }
 }
 
 onMounted(cargarHorarios);
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
-
 .horarios-page {
-  font-family: 'Inter', -apple-system, sans-serif;
-  color: #f3f4f6;
-  background-color: #030712;
+  font-family: 'DM Sans', -apple-system, sans-serif;
+  color: #17251e;
+  background-color: #f1f6f1;
 }
 
-/* NAVBAR CÁPSULA FLOTANTE */
+/* NAVBAR */
 .top-navbar-floating {
   position: sticky;
   top: 0;
   left: 0;
   right: 0;
   z-index: 100;
-  padding: 1.25rem 1.5rem 0.5rem;
-  background: transparent;
+  padding: 1rem 1.5rem 0.5rem;
+  background: linear-gradient(180deg, rgba(241, 246, 241, 0.96) 0%, rgba(241, 246, 241, 0) 100%);
 }
 
 .navbar-pill {
   max-width: 1200px;
   margin: 0 auto;
-  background: rgba(11, 15, 25, 0.75);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 9999px;
-  padding: 0.6rem 1.25rem;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #d7e2d8;
+  border-radius: 6px;
+  padding: 0.55rem 1.25rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 24px rgba(17, 42, 29, 0.1);
 }
 
 .brand-logo {
@@ -302,30 +366,27 @@ onMounted(cargarHorarios);
 .logo-circle-icon {
   width: 34px;
   height: 34px;
-  border-radius: 50%;
-  border: 1px solid #84cc16;
+  border-radius: 5px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(132, 204, 22, 0.08);
-  box-shadow: 0 0 12px rgba(132, 204, 22, 0.3);
+  background: #17634b;
 }
 
 .logo-circle-icon ion-icon {
-  color: #84cc16;
-  font-size: 1.1rem;
+  color: #d4ed66;
+  font-size: 1.15rem;
 }
 
 .brand-name {
-  font-family: 'Space Grotesk', sans-serif;
-  font-weight: 800;
-  font-size: 1.2rem;
-  letter-spacing: 0.04em;
-  color: #ffffff;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: #17251e;
 }
 
 .dot-neon {
-  color: #84cc16;
+  color: #17634b;
 }
 
 /* ACCIONES NAVEGACIÓN */
@@ -336,66 +397,38 @@ onMounted(cargarHorarios);
 }
 
 .nav-chip-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 9999px;
+  background: #ffffff;
+  border: 1px solid #d7e2d8;
+  border-radius: 4px;
   padding: 0.45rem 1rem;
-  color: #ffffff;
+  color: #17634b;
   font-size: 0.825rem;
-  font-weight: 700;
+  font-weight: 600;
   display: flex;
   align-items: center;
   gap: 0.45rem;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: background-color 0.18s ease, border-color 0.18s ease;
 }
 
 .nav-chip-btn .chip-icon {
   font-size: 0.95rem;
-  color: #84cc16;
+  color: #17634b;
 }
 
 .nav-chip-btn:hover {
-  background: rgba(132, 204, 22, 0.15);
-  border-color: rgba(132, 204, 22, 0.4);
-  transform: translateY(-1px);
+  background: #eef5ec;
+  border-color: #c3d6c6;
 }
 
 /* VIEWPORT & BACKGROUND */
 .horarios-content {
-  --background: #030712;
+  --background: #f1f6f1;
 }
 
-.page-background-glow {
-  position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
-  filter: blur(100px);
-}
-
-.glow-float-1 {
-  top: 5%;
-  left: 10%;
-  width: 450px;
-  height: 450px;
-  background: radial-gradient(circle, rgba(132, 204, 22, 0.08) 0%, rgba(3, 7, 18, 0) 70%);
-}
-
-.glow-float-2 {
-  bottom: 10%;
-  right: 15%;
-  width: 500px;
-  height: 500px;
-  background: radial-gradient(circle, rgba(163, 230, 53, 0.05) 0%, rgba(3, 7, 18, 0) 70%);
-}
-
+.page-background-glow,
 .bg-grid {
-  position: absolute;
-  inset: 0;
-  background-image: linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px),
-                    linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px);
-  background-size: 48px 48px;
-  pointer-events: none;
+  display: none;
 }
 
 /* SPINNER */
@@ -407,9 +440,9 @@ onMounted(cargarHorarios);
 }
 
 .main-spinner {
-  width: 42px;
-  height: 42px;
-  color: #84cc16;
+  width: 40px;
+  height: 40px;
+  color: #17634b;
 }
 
 /* LAYOUT PRINCIPAL */
@@ -425,34 +458,33 @@ onMounted(cargarHorarios);
 }
 
 .page-header {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
 }
 
 .eyebrow {
   display: block;
-  color: #84cc16;
+  color: #17634b;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: 0.725rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .page-title {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Barlow Condensed', sans-serif;
   margin: 0.2rem 0 0;
-  color: #ffffff;
-  font-size: clamp(1.6rem, 3vw, 2.2rem);
-  font-weight: 800;
-  letter-spacing: -0.03em;
+  color: #17251e;
+  font-size: clamp(1.9rem, 3vw, 2.4rem);
+  font-weight: 700;
+  line-height: 1.05;
 }
 
 .panel-card-glass {
-  background: rgba(11, 15, 25, 0.8);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 24px;
+  background: #ffffff;
+  border: 1px solid #d7e2d8;
+  border-radius: 6px;
   padding: 1.5rem;
+  box-shadow: 0 10px 28px rgba(23, 49, 35, 0.06);
 }
 
 .card-header {
@@ -461,19 +493,19 @@ onMounted(cargarHorarios);
 
 .card-kicker {
   display: inline-block;
-  color: #84cc16;
+  color: #17634b;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: 0.7rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .card-title {
-  font-family: 'Space Grotesk', sans-serif;
-  margin: 0.2rem 0 0;
-  color: #ffffff;
-  font-size: 1.35rem;
-  font-weight: 800;
+  font-family: 'Barlow Condensed', sans-serif;
+  margin: 0.15rem 0 0;
+  color: #17251e;
+  font-size: 1.45rem;
+  font-weight: 700;
 }
 
 .field-grid {
@@ -497,95 +529,91 @@ onMounted(cargarHorarios);
 }
 
 .field-group label {
-  color: #84cc16;
-  font-weight: 800;
+  color: #66736b;
+  font-weight: 700;
   font-size: 0.7rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
 }
 
 .custom-input-dark {
-  --background: #030712;
-  --color: #ffffff;
-  --placeholder-color: #475569;
+  --background: #ffffff;
+  --color: #17251e;
+  --placeholder-color: #8a968d;
   --padding-start: 0.85rem;
   --padding-end: 0.85rem;
-  min-height: 44px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
+  min-height: 42px;
+  border: 1px solid #d7e2d8;
+  border-radius: 4px;
   font-size: 0.875rem;
-  transition: border-color 0.25s ease;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .custom-input-dark:focus-within {
-  border-color: #84cc16;
+  border-color: #17634b;
+  box-shadow: 0 0 0 3px rgba(23, 99, 75, 0.13);
 }
 
-/* BOTONES ESTILIZADOS */
+/* BOTONES */
 .btn-submit-neon {
   width: 100%;
   margin-top: 1.25rem;
-  background: #84cc16;
-  color: #030712;
-  border: none;
-  border-radius: 12px;
-  padding: 0.85rem;
+  background: #d4ed66;
+  color: #142219;
+  border: 1px solid #c2dd4e;
+  border-radius: 4px;
+  padding: 0.8rem;
   font-size: 0.9rem;
-  font-weight: 800;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.25s ease;
-  box-shadow: 0 0 20px rgba(132, 204, 22, 0.3);
+  transition: background-color 0.18s ease;
 }
 
 .btn-submit-neon:hover {
-  background: #a3e635;
-  transform: translateY(-2px);
-  box-shadow: 0 0 30px rgba(132, 204, 22, 0.45);
+  background: #c2dd4e;
 }
 
 .btn-secondary-glass {
   width: 100%;
   margin-top: 1.25rem;
-  background: rgba(132, 204, 22, 0.1);
-  border: 1px solid rgba(132, 204, 22, 0.3);
-  color: #84cc16;
-  border-radius: 12px;
-  padding: 0.85rem;
+  background: #ffffff;
+  border: 1px solid #17634b;
+  color: #17634b;
+  border-radius: 4px;
+  padding: 0.8rem;
   font-size: 0.9rem;
-  font-weight: 800;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: background-color 0.18s ease;
 }
 
 .btn-secondary-glass:hover {
-  background: rgba(132, 204, 22, 0.2);
-  transform: translateY(-2px);
+  background: #eef5ec;
 }
 
 .btn-dark-glass {
   width: 100%;
   margin-top: 1.25rem;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #17634b;
+  border: 1px solid #17634b;
   color: #ffffff;
-  border-radius: 12px;
-  padding: 0.85rem;
+  border-radius: 4px;
+  padding: 0.8rem;
   font-size: 0.9rem;
-  font-weight: 800;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: background-color 0.18s ease;
 }
 
 .btn-dark-glass:hover {
-  background: rgba(255, 255, 255, 0.12);
-  transform: translateY(-2px);
+  background: #103b2e;
 }
 
-/* LISTAS DE EXCEPCIONES */
+/* LISTAS */
 .stack-list {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.65rem;
 }
 
 .list-item-glass {
@@ -593,65 +621,120 @@ onMounted(cargarHorarios);
   justify-content: space-between;
   align-items: center;
   gap: 0.8rem;
-  background: rgba(3, 7, 18, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 14px;
-  padding: 0.85rem 1rem;
+  background: #f9fbf7;
+  border: 1px solid #e0e8de;
+  border-radius: 6px;
+  padding: 0.8rem 1rem;
 }
 
 .list-item-glass strong {
   display: block;
-  color: #ffffff;
+  color: #17251e;
   font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .list-item-glass small {
   display: block;
-  color: #94a3b8;
+  color: #66736b;
   margin-top: 0.15rem;
   line-height: 1.4;
   font-size: 0.8rem;
 }
 
 .mini-button-danger {
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #f87171;
+  background: #fff0eb;
+  border: 1px solid #efc5b9;
+  color: #9d3c2f;
   padding: 0.4rem 0.75rem;
   font-size: 0.725rem;
   font-weight: 700;
-  border-radius: 8px;
+  border-radius: 4px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.18s ease;
 }
 
 .mini-button-danger:hover {
-  background: rgba(239, 68, 68, 0.25);
-  color: #ffffff;
+  background: #f9ddd3;
 }
 
 .empty-inline {
-  color: #64748b;
+  color: #66736b;
   font-size: 0.825rem;
   margin-bottom: 0.5rem;
 }
 
 .message-banner {
   margin-top: 0.5rem;
-  padding: 0.85rem 1rem;
-  border-radius: 12px;
-  background: rgba(132, 204, 22, 0.12);
-  border: 1px solid rgba(132, 204, 22, 0.3);
-  color: #84cc16;
+  padding: 0.8rem 1rem;
+  border-radius: 4px;
+  background: #e8f3e9;
+  border: 1px solid #c9dfcd;
+  color: #17634b;
   font-size: 0.85rem;
-  font-weight: 700;
+  font-weight: 600;
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
+.message-banner.message-error {
+  background: #fff0eb;
+  border-color: #efc5b9;
+  color: #9d3c2f;
+}
+
 .message-banner ion-icon {
   font-size: 1.1rem;
+}
+
+/* HORARIO SEMANAL */
+.weekly-schedule-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.weekly-schedule-row {
+  display: grid;
+  grid-template-columns: 170px 1fr 1fr;
+  gap: 0.9rem;
+  align-items: center;
+  padding: 0.7rem 0.9rem;
+  background: #f9fbf7;
+  border: 1px solid #e0e8de;
+  border-radius: 6px;
+}
+
+.weekday-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.weekday-toggle strong {
+  color: #17251e;
+  font-size: 0.875rem;
+}
+
+.neon-toggle {
+  --background: #dfe7dd;
+  --background-checked: #17634b;
+  --handle-background: #ffffff;
+  --handle-background-checked: #ffffff;
+}
+
+.closed-day-label {
+  color: #9d3c2f;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.block-list {
+  margin-top: 1.25rem;
 }
 
 @media (max-width: 700px) {
@@ -665,6 +748,11 @@ onMounted(cargarHorarios);
 
   .field-grid {
     grid-template-columns: 1fr;
+  }
+
+  .weekly-schedule-row {
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
   }
 
   .list-item-glass {

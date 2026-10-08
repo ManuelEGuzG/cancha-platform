@@ -13,6 +13,7 @@ interface Usuario {
   name: string;
   email: string;
   is_platform_admin: boolean;
+  two_factor_enabled: boolean;
   complejos: ComplejoUsuario[];
 }
 
@@ -27,8 +28,8 @@ export const useAuthStore = defineStore('auth', {
   },
 
   actions: {
-    async login(email: string, password: string) {
-      const { data } = await api.post('/auth/login', { email, password });
+    async login(email: string, password: string, code?: string) {
+      const { data } = await api.post('/auth/login', { email, password, ...(code ? { code } : {}) });
       this.token = data.token;
       this.usuario = data.user;
       localStorage.setItem('token', data.token);

@@ -16,10 +16,15 @@ use App\Http\Controllers\Admin\FacturacionController;
 use App\Http\Controllers\Admin\UsuarioAdminController;
 use App\Http\Controllers\Admin\VerificacionCanchaController;
 use App\Http\Controllers\Admin\ReporteMensualController;
+use App\Http\Controllers\Admin\VerificacionFotoController;
+use App\Http\Controllers\Panel\CanchaFotoController;
 
 Route::prefix('panel/admin')->middleware(['auth:sanctum', 'account.active', 'platform.admin'])->group(function () {
     Route::get('/canchas/verificacion', [VerificacionCanchaController::class, 'index']);
     Route::patch('/canchas/{cancha}/verificacion', [VerificacionCanchaController::class, 'update']);
+    Route::get('/fotos/verificacion', [VerificacionFotoController::class, 'index']);
+    Route::patch('/fotos/{foto}/verificacion', [VerificacionFotoController::class, 'update']);
+
     Route::get('/reportes/mensual', [ReporteMensualController::class, 'index']);
     Route::get('/reportes/mensual/exportar', [ReporteMensualController::class, 'exportar']);
 
@@ -30,9 +35,9 @@ Route::prefix('panel/admin')->middleware(['auth:sanctum', 'account.active', 'pla
 
     Route::get('/facturacion/resumen', [FacturacionController::class, 'resumen']);
     Route::get('/facturacion/movimientos', [FacturacionController::class, 'movimientos']);
-    Route::post('/complejos/{complejo}/pagos', [FacturacionController::class, 'registrarPago']);
-    Route::get('/complejos/{complejo}/pagos', [FacturacionController::class, 'historialPagos']);
-    Route::patch('/complejos/{complejo}/estado', [FacturacionController::class, 'toggleEstadoComplejo']);
+    Route::post('/complejos/{complejo:id}/pagos', [FacturacionController::class, 'registrarPago']);
+    Route::get('/complejos/{complejo:id}/pagos', [FacturacionController::class, 'historialPagos']);
+    Route::patch('/complejos/{complejo:id}/estado', [FacturacionController::class, 'toggleEstadoComplejo']);
 });
 
 Route::prefix('auth')->group(function () {
@@ -76,6 +81,8 @@ Route::prefix('panel')->middleware(['auth:sanctum', 'account.active'])->group(fu
     Route::get('/complejos/{complejo:id}/canchas', [CanchaController::class, 'index']);
     Route::post('/canchas', [CanchaController::class, 'store']);
     Route::put('/canchas/{cancha}', [CanchaController::class, 'update']);
+    Route::post('/canchas/{cancha}/fotos', [CanchaFotoController::class, 'store']);
+    Route::delete('/fotos/{foto}', [CanchaFotoController::class, 'destroy']);
 
     Route::get('/canchas/{cancha}/horarios', [HorarioController::class, 'index']);
     Route::put('/canchas/{cancha}/horarios/regular', [HorarioController::class, 'actualizarRegular']);
@@ -83,9 +90,12 @@ Route::prefix('panel')->middleware(['auth:sanctum', 'account.active'])->group(fu
     Route::delete('/horarios/excepcion/{horarioExcepcion}', [HorarioController::class, 'eliminarExcepcion']);
 
     Route::get('/reservas', [ReservaController::class, 'index']);
+    Route::get('/solicitudes', [ReservaController::class, 'solicitudes']);
     Route::post('/reservas', [ReservaController::class, 'store']);
     Route::post('/reservas/{reserva}/aceptar', [ReservaController::class, 'aceptar']);
     Route::post('/reservas/{reserva}/rechazar', [ReservaController::class, 'rechazar']);
+    Route::post('/reservas/{reserva}/confirmar-pago', [ReservaController::class, 'confirmarPago']);
+    Route::post('/reservas/{reserva}/completar', [ReservaController::class, 'completar']);
     Route::delete('/reservas/{reserva}', [ReservaController::class, 'destroy']);
 
     Route::post('/bloqueos', [BloqueoController::class, 'store']);

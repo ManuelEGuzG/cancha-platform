@@ -3,6 +3,7 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
+use App\Services\AdminTwoFactorService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PragmaRX\Google2FA\Google2FA;
 use Tests\TestCase;
@@ -39,7 +40,7 @@ class AdminTwoFactorTest extends TestCase
             'email' => $admin->email,
             'password' => 'password',
             'code' => app(Google2FA::class)->getCurrentOtp($secreto),
-        ])->assertOk();
+        ])->assertUnprocessable();
 
         $this->postJson('/api/auth/login', [
             'email' => $admin->email,
@@ -53,6 +54,24 @@ class AdminTwoFactorTest extends TestCase
             'password' => 'password',
             'code' => $recuperacion,
         ])->assertUnprocessable();
+    }
+
+    public function test_same_totp_cannot_be_reused_within_its_time_step(): void
+    {
+        $admin = User::factory()->create(['is_platform_admin' => true]);
+        $totp = app(Google2FA::class);
+        $secreto = $totp->generateSecretKey(32);
+        $admin->forceFill([
+            'two_factor_secret' => $secreto,
+            'two_factor_enabled_at' => now(),
+            'two_factor_last_used_step' => $totp->getTimestamp() - 1,
+            'two_factor_recovery_codes' => [],
+        ])->save();
+        $codigo = $totp->getCurrentOtp($secreto);
+        $service = app(AdminTwoFactorService::class);
+
+        $this->assertTrue($service->verificar($admin->fresh(), $codigo));
+        $this->assertFalse($service->verificar($admin->fresh(), $codigo));
     }
 
     public function test_two_factor_setup_is_admin_only_and_requires_current_password(): void

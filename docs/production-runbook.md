@@ -9,6 +9,7 @@ This checklist is for deployment configuration. The application repository canno
 - Set `CORS_ALLOWED_ORIGINS` to exact HTTPS frontend origins. Do not use wildcard origins.
 - Set `HTTPS_ENFORCED_AT_EDGE=true` and `CSP_ENFORCED_AT_EDGE=true` only after the proxy redirects HTTP and sends the CSP to the frontend document.
 - Set `TURNSTILE_SECRET` and `TURNSTILE_HOSTNAME` for the deployed frontend host. Public reservations fail closed in production if the verification secret is absent.
+- Set `CANCHA_PHOTOS_DISK=s3` and ensure approved photo objects are served through the configured public CDN/origin; uploads remain hidden from the catalog until admin approval.
 - Configure an asynchronous queue and run `php artisan queue:work --tries=3`. Configure a shared Reverb service for all application instances.
 - Configure `BACKUP_DISK=s3`, the S3 bucket/region/access credentials, a randomly generated `BACKUP_ARCHIVE_PASSWORD` of at least 32 characters, and `BACKUP_NOTIFICATION_EMAIL`.
 - Set `LOG_CHANNEL=stderr` or a configured central sink. Configure `MAIL_MAILER` for backup failure notifications.
@@ -29,6 +30,8 @@ The frontend is served separately from Laravel. Configure the edge/web server to
 
 The setup/confirm/disable endpoints are API-only until the frontend account-security view is designed. Keep administrator access to this operation restricted and verify TOTP enrollment before granting production admin access.
 
+Completed public requests return a one-time `review_token` in a `Cache-Control: no-store` response. The future customer review view must present or retain that token until its 30-day expiry; the backend stores only its SHA-256 hash and rejects reuse.
+
 ## Scheduler And Workers
 
 Run one scheduler process or install the Laravel scheduler cron entry once per deployment:
@@ -37,7 +40,7 @@ Run one scheduler process or install the Laravel scheduler cron entry once per d
 * * * * * cd /srv/sportra/backend && php artisan schedule:run >> /dev/null 2>&1
 ```
 
-The schedule expires pending requests every minute, purges personal data older than `RESERVATION_PII_RETENTION_DAYS` (default 365), and runs backup, cleanup, and backup-health checks daily. Run queue workers and Reverb as supervised long-lived processes; use shared cache/queue backends for horizontal scaling.
+The schedule expires pending requests every minute, purges personal data older than `RESERVATION_PII_RETENTION_DAYS` (default 365) and review tokens 30 days after the rental, and runs backup, cleanup, and backup-health checks daily. Run queue workers and Reverb as supervised long-lived processes; use shared cache/queue backends for horizontal scaling.
 
 ## Backups And Restore
 

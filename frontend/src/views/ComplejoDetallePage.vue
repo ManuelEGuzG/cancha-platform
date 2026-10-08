@@ -508,11 +508,10 @@ function formatearObjetoDia(d: Date): DiaItem {
 }
 
 const galleryImages = computed(() => [
-  getComplejoImage(complejo.value),
-  '/Images/Soccer_center.jpeg',
-  '/Images/oij.jpeg',
-  fallbackImage,
-]);
+  ...((complejo.value?.canchas || []).flatMap((cancha) => cancha.fotos || []).map((foto) => foto.url)),
+].length
+  ? (complejo.value?.canchas || []).flatMap((cancha) => cancha.fotos || []).map((foto) => foto.url)
+  : [getComplejoImage(complejo.value), '/Images/Soccer_center.jpeg', '/Images/oij.jpeg', fallbackImage]);
 
 // Parseo explicito en hora local para evitar el desajuste UTC
 const fechaFormateadaCorta = computed(() => {

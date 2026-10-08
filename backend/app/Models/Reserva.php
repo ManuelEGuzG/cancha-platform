@@ -37,6 +37,8 @@ class Reserva extends Model
         'expira_en' => 'datetime',
     ];
 
+    protected $hidden = ['cedula_cliente'];
+
     protected static function booted(): void
     {
         static::addGlobalScope(new TenantScope);

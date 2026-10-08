@@ -67,6 +67,14 @@
                   <small class="price-unit">/ hora</small>
                 </div>
 
+                <div v-if="cancha.fotos?.length" class="court-photo-list">
+                  <figure v-for="foto in cancha.fotos" :key="foto.id" class="court-photo-item">
+                    <img :src="foto.url" :alt="foto.caption || `Foto de ${cancha.nombre}`" loading="lazy" />
+                    <figcaption>{{ foto.estado_verificacion === 'aprobada' ? 'Publicada' : etiquetaVerificacion(foto.estado_verificacion) }}</figcaption>
+                    <button class="mini-button-danger" :aria-label="`Eliminar foto de ${cancha.nombre}`" @click="eliminarFoto(foto.id)">Eliminar</button>
+                  </figure>
+                </div>
+
                 <div class="action-row">
                   <button class="secondary-btn" @click="editar(cancha)">
                     <ion-icon :icon="createOutline"></ion-icon> Editar
@@ -74,6 +82,11 @@
                   <button class="primary-btn wave-effect" @click="verHorarios(cancha.id)">
                     Horarios <ion-icon :icon="arrowForwardOutline"></ion-icon>
                   </button>
+                  <label class="secondary-btn">
+                    <ion-icon :icon="checkmarkCircleOutline"></ion-icon>
+                    Subir foto
+                    <input type="file" accept="image/jpeg,image/png,image/webp" class="photo-file-input" @change="subirFoto($event, cancha.id)" />
+                  </label>
                 </div>
               </article>
             </div>
@@ -216,6 +229,32 @@ async function guardarEdicion() {
   await cargarCanchas();
 }
 
+async function subirFoto(event: Event, canchaId: number) {
+  const input = event.target as HTMLInputElement;
+  const archivo = input.files?.[0];
+  if (!archivo) return;
+
+  try {
+    await canchasService.subirFoto(canchaId, archivo);
+    mostrarMensaje('Foto subida y enviada a revisión.');
+    await cargarCanchas();
+  } catch (error: any) {
+    mostrarMensaje(error.response?.data?.message || 'No se pudo subir la foto.');
+  } finally {
+    input.value = '';
+  }
+}
+
+async function eliminarFoto(fotoId: number) {
+  try {
+    await canchasService.eliminarFoto(fotoId);
+    mostrarMensaje('Foto eliminada.');
+    await cargarCanchas();
+  } catch (error: any) {
+    mostrarMensaje(error.response?.data?.message || 'No se pudo eliminar la foto.');
+  }
+}
+
 async function crearCancha() {
   if (!nuevaCancha.value.nombre || !nuevaCancha.value.precio_hora) return;
   await canchasService.crear({
@@ -260,16 +299,14 @@ onMounted(cargarCanchas);
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
-
 /* BASE & LAYOUT */
 ion-content.sportra-main-viewport {
-  --background: #030712;
-  font-family: 'Inter', -apple-system, sans-serif;
-  color: #f3f4f6;
+  --background: #f1f6f1;
+  font-family: 'DM Sans', -apple-system, sans-serif;
+  color: #17251e;
 }
 
-/* NAVBAR NEON GLASS */
+/* NAVBAR */
 .navbar-container {
   position: fixed;
   top: 1.25rem;
@@ -282,16 +319,14 @@ ion-content.sportra-main-viewport {
 .navbar-bar {
   max-width: 1280px;
   margin: 0 auto;
-  background: rgba(11, 15, 25, 0.75);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #d7e2d8;
+  border-radius: 6px;
   padding: 0.5rem 0.6rem 0.5rem 1.25rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 1px rgba(132, 204, 22, 0.2);
+  box-shadow: 0 8px 24px rgba(17, 42, 29, 0.1);
 }
 
 .brand-box {
@@ -303,92 +338,60 @@ ion-content.sportra-main-viewport {
 }
 
 .brand-badge {
-  width: 38px;
-  height: 38px;
-  background: rgba(132, 204, 22, 0.15);
-  border: 1px solid rgba(132, 204, 22, 0.4);
-  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  background: #17634b;
+  border-radius: 5px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 0 15px rgba(132, 204, 22, 0.2);
-  transition: transform 0.3s ease;
+  transition: transform 0.2s ease;
 }
 
 .brand-box:hover .brand-badge {
-  transform: rotate(15deg) scale(1.08);
+  transform: scale(1.05);
 }
 
 .brand-icon {
-  font-size: 1.25rem;
-  color: #84cc16;
+  font-size: 1.2rem;
+  color: #d4ed66;
 }
 
 .brand-name {
-  font-family: 'Space Grotesk', sans-serif;
-  font-weight: 800;
-  font-size: 1.35rem;
-  color: #ffffff;
-  letter-spacing: -0.04em;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 1.3rem;
+  color: #17251e;
 }
 
 .neon-dot {
-  color: #84cc16;
-  text-shadow: 0 0 8px rgba(132, 204, 22, 0.8);
+  color: #17634b;
 }
 
 .btn-portal-glow {
   background: #ffffff;
-  color: #030712;
-  border: none;
-  padding: 0.5rem 1.1rem;
-  border-radius: 99px;
-  font-weight: 800;
+  color: #17634b;
+  border: 1px solid #d7e2d8;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-weight: 600;
   font-size: 0.825rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background-color 0.18s ease, border-color 0.18s ease;
 }
 
 .btn-portal-glow:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(255, 255, 255, 0.25);
+  background: #eef5ec;
+  border-color: #c3d6c6;
 }
 
-/* DECORATIVO GLOW BACKGROUND */
-.page-background-glow {
-  position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
-  filter: blur(90px);
-}
-
-.glow-float-1 {
-  top: 5%;
-  left: 10%;
-  width: 500px;
-  height: 500px;
-  background: radial-gradient(circle, rgba(132, 204, 22, 0.12) 0%, rgba(3, 7, 18, 0) 70%);
-}
-
-.glow-float-2 {
-  bottom: 10%;
-  right: 10%;
-  width: 450px;
-  height: 450px;
-  background: radial-gradient(circle, rgba(163, 230, 53, 0.08) 0%, rgba(3, 7, 18, 0) 70%);
-}
-
+/* DECORATIVOS DESACTIVADOS */
+.page-background-glow,
 .bg-grid {
-  position: absolute;
-  inset: 0;
-  background-image: linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px),
-                    linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px);
-  background-size: 48px 48px;
-  pointer-events: none;
-  mask-image: radial-gradient(circle at center, black 40%, transparent 80%);
+  display: none;
 }
 
 /* MAIN CONTENT CONTAINER */
@@ -397,7 +400,7 @@ ion-content.sportra-main-viewport {
   z-index: 2;
   max-width: 1280px;
   margin: 0 auto;
-  padding: 8rem 1.5rem 4rem;
+  padding: 7rem 1.5rem 4rem;
 }
 
 .loading-wrap {
@@ -407,39 +410,37 @@ ion-content.sportra-main-viewport {
   justify-content: center;
   padding: 8rem 0;
   gap: 1rem;
-  color: #94a3b8;
+  color: #66736b;
   font-weight: 600;
 }
 
 .lime-spinner {
-  color: #84cc16;
-  width: 42px;
-  height: 42px;
+  color: #17634b;
+  width: 40px;
+  height: 40px;
 }
 
 .management-layout {
   display: grid;
   grid-template-columns: 1.35fr 0.9fr;
-  gap: 2rem;
+  gap: 1.5rem;
   align-items: start;
 }
 
-/* PANEL CARDS GLASS */
+/* PANEL CARDS */
 .panel-card {
-  background: rgba(11, 15, 25, 0.85);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 26px;
-  padding: 1.75rem;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+  background: #ffffff;
+  border: 1px solid #d7e2d8;
+  border-radius: 6px;
+  padding: 1.5rem;
+  box-shadow: 0 10px 28px rgba(23, 49, 35, 0.06);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.4rem;
 }
 
 .eyebrow {
@@ -447,76 +448,76 @@ ion-content.sportra-main-viewport {
   font-size: 0.68rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  font-weight: 800;
-  color: #84cc16;
+  font-weight: 700;
+  color: #17634b;
 }
 
 .card-header h2 {
-  margin: 0.2rem 0 0;
-  color: #ffffff;
-  font-family: 'Space Grotesk', sans-serif;
-  letter-spacing: -0.03em;
-  font-size: 1.6rem;
-  font-weight: 800;
+  margin: 0.15rem 0 0;
+  color: #17251e;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.7rem;
+  font-weight: 700;
+  line-height: 1.05;
 }
 
 .counter-pill {
-  background: rgba(132, 204, 22, 0.15);
-  color: #84cc16;
+  background: #17634b;
+  color: #ffffff;
   font-size: 0.85rem;
-  padding: 0.25rem 0.75rem;
-  border-radius: 99px;
-  font-weight: 800;
-  border: 1px solid rgba(132, 204, 22, 0.3);
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  font-weight: 700;
 }
 
 /* CARDS LIST & ITEM */
 .cards-list {
   display: grid;
-  gap: 1.1rem;
+  gap: 0.9rem;
 }
 
 .cancha-card {
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: 20px;
-  padding: 1.25rem;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid #d7e2d8;
+  background: #fbfdfb;
+  border-radius: 6px;
+  padding: 1.15rem 1.25rem;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .cancha-card:hover {
-  border-color: rgba(132, 204, 22, 0.4);
-  background: rgba(132, 204, 22, 0.03);
-  transform: translateY(-2px);
+  border-color: #b9cfba;
+  box-shadow: 0 6px 18px rgba(23, 49, 35, 0.08);
 }
 
 .cancha-top {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 0.75rem;
-  margin-bottom: 0.85rem;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 0.8rem;
 }
 
 .cancha-top h3 {
   margin: 0;
-  font-size: 1.15rem;
-  font-weight: 800;
-  color: #ffffff;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #17251e;
+  font-family: 'Barlow Condensed', sans-serif;
 }
 
 .deporte-tag {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  margin-top: 0.35rem;
-  color: #94a3b8;
+  margin-top: 0.3rem;
+  color: #66736b;
   font-size: 0.78rem;
   font-weight: 600;
 }
 
 .deporte-tag ion-icon {
-  color: #84cc16;
+  color: #17634b;
 }
 
 /* STATUS PILLS */
@@ -524,10 +525,10 @@ ion-content.sportra-main-viewport {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.3rem 0.75rem;
-  border-radius: 99px;
-  font-size: 0.7rem;
-  font-weight: 800;
+  padding: 0.28rem 0.65rem;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -539,233 +540,291 @@ ion-content.sportra-main-viewport {
 }
 
 .status-pill.active {
-  background: rgba(132, 204, 22, 0.12);
-  color: #a3e635;
-  border: 1px solid rgba(132, 204, 22, 0.3);
+  background: #e8f3e9;
+  color: #17634b;
+  border: 1px solid #c9dfcd;
 }
 
 .status-pill.active .beacon-dot {
-  background: #84cc16;
-  box-shadow: 0 0 8px #84cc16;
+  background: #17634b;
 }
 
 .status-pill.inactive {
-  background: rgba(245, 158, 11, 0.12);
-  color: #fbbf24;
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  background: #f6efdd;
+  color: #8a6d1d;
+  border: 1px solid #e7d9b5;
 }
 
 .status-pill.inactive .beacon-dot {
-  background: #fbbf24;
+  background: #8a6d1d;
+}
+
+.status-pill.review-pendiente {
+  background: #f6efdd;
+  color: #8a6d1d;
+  border: 1px solid #e7d9b5;
+}
+
+.status-pill.review-aprobada {
+  background: #e8f3e9;
+  color: #17634b;
+  border: 1px solid #c9dfcd;
+}
+
+.status-pill.review-rechazada {
+  background: #fff0eb;
+  color: #9d3c2f;
+  border: 1px solid #efc5b9;
+}
+
+.review-observation {
+  margin: 0 0 0.8rem;
+  padding: 0.55rem 0.75rem;
+  background: #fff0eb;
+  border: 1px solid #efc5b9;
+  border-radius: 4px;
+  color: #9d3c2f;
+  font-size: 0.8rem;
 }
 
 .cancha-meta {
   display: flex;
   align-items: baseline;
-  gap: 0.3rem;
-  margin-bottom: 1.25rem;
+  gap: 0.35rem;
+  margin-bottom: 1.1rem;
 }
 
 .price-val {
-  font-size: 1.4rem;
-  font-weight: 800;
-  color: #84cc16;
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #17251e;
+  font-family: 'Barlow Condensed', sans-serif;
 }
 
 .price-unit {
   font-size: 0.75rem;
-  color: #64748b;
+  color: #8a968d;
   font-weight: 600;
 }
 
 .action-row {
   display: flex;
-  gap: 0.75rem;
+  flex-wrap: wrap;
+  gap: 0.6rem;
 }
 
 .secondary-btn,
 .primary-btn,
 .submit-btn,
 .btn-cancel {
-  border: none;
-  border-radius: 14px;
-  font-weight: 800;
-  font-size: 0.85rem;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 0.82rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  gap: 0.45rem;
+  transition: background-color 0.18s ease, border-color 0.18s ease;
 }
 
 .secondary-btn {
   flex: 1;
-  background: rgba(255, 255, 255, 0.05);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  padding: 0.65rem 1rem;
+  background: #ffffff;
+  color: #17634b;
+  border-color: #d7e2d8;
+  padding: 0.6rem 0.9rem;
 }
 
 .secondary-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
+  background: #eef5ec;
+  border-color: #c3d6c6;
 }
 
 .primary-btn {
   flex: 1;
-  background: rgba(132, 204, 22, 0.12);
+  background: #17634b;
   color: #ffffff;
-  border: 1px solid rgba(132, 204, 22, 0.35);
-  padding: 0.65rem 1rem;
+  border-color: #17634b;
+  padding: 0.6rem 0.9rem;
 }
 
 .primary-btn:hover {
-  background: #84cc16;
-  color: #030712;
-  box-shadow: 0 0 20px rgba(132, 204, 22, 0.4);
+  background: #103b2e;
 }
 
 /* EDITOR FORM */
 .editor-form {
   display: flex;
   flex-direction: column;
-  gap: 1.2rem;
+  gap: 1.1rem;
 }
 
 .field-block label {
   font-size: 0.68rem;
-  font-weight: 800;
-  color: #a3e635;
+  font-weight: 700;
+  color: #66736b;
   display: block;
   margin-bottom: 0.4rem;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
 }
 
 .input-glow-box input {
   width: 100%;
-  height: 46px;
-  background: #030712;
-  border: 1px solid rgba(132, 204, 22, 0.25);
-  border-radius: 14px;
-  padding: 0 1rem;
+  height: 44px;
+  background: #ffffff;
+  border: 1px solid #d7e2d8;
+  border-radius: 4px;
+  padding: 0 0.9rem;
   font-size: 0.875rem;
-  color: #ffffff;
+  color: #17251e;
   outline: none;
-  transition: all 0.25s ease;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .input-glow-box input:focus {
-  border-color: #84cc16;
-  box-shadow: 0 0 15px rgba(132, 204, 22, 0.25);
+  border-color: #17634b;
+  box-shadow: 0 0 0 3px rgba(23, 99, 75, 0.13);
 }
 
 .switch-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #030712;
-  border: 1px solid rgba(132, 204, 22, 0.25);
-  border-radius: 14px;
-  padding: 0.75rem 1rem;
+  background: #f9fbf7;
+  border: 1px solid #d7e2d8;
+  border-radius: 4px;
+  padding: 0.7rem 0.9rem;
 }
 
 .switch-row span {
-  color: #ffffff;
+  color: #17251e;
   font-size: 0.85rem;
   font-weight: 600;
 }
 
 .neon-toggle {
-  --background: rgba(255, 255, 255, 0.1);
-  --background-checked: #84cc16;
+  --background: #dfe7dd;
+  --background-checked: #17634b;
   --handle-background: #ffffff;
-  --handle-background-checked: #030712;
+  --handle-background-checked: #ffffff;
 }
 
 .form-actions {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.6rem;
 }
 
 .btn-cancel {
   flex: 0.6;
-  background: transparent;
-  color: #94a3b8;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 0.75rem 1rem;
+  background: #ffffff;
+  color: #66736b;
+  border-color: #d7e2d8;
+  padding: 0.7rem 1rem;
 }
 
 .btn-cancel:hover {
-  color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.25);
+  color: #17251e;
+  border-color: #b9cfba;
 }
 
 .submit-btn {
   flex: 1;
-  background: #84cc16;
-  color: #030712;
-  padding: 0.75rem 1.25rem;
-  box-shadow: 0 0 20px rgba(132, 204, 22, 0.3);
+  background: #d4ed66;
+  color: #142219;
+  border-color: #c2dd4e;
+  padding: 0.7rem 1.2rem;
 }
 
 .submit-btn:hover {
-  background: #a3e635;
-  transform: translateY(-2px);
-  box-shadow: 0 5px 25px rgba(132, 204, 22, 0.5);
+  background: #c2dd4e;
 }
 
 .message-banner {
-  margin-top: 1.25rem;
-  padding: 0.85rem 1rem;
-  border-radius: 14px;
+  margin-top: 1.15rem;
+  padding: 0.8rem 1rem;
+  border-radius: 4px;
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.55rem;
   font-size: 0.825rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .message-banner.success {
-  background: rgba(132, 204, 22, 0.1);
-  border: 1px solid rgba(132, 204, 22, 0.3);
-  color: #a3e635;
+  background: #e8f3e9;
+  border: 1px solid #c9dfcd;
+  color: #17634b;
 }
 
 .message-banner ion-icon {
-  font-size: 1.2rem;
+  font-size: 1.15rem;
 }
 
 .empty-state {
   text-align: center;
   padding: 3rem 1rem;
-  color: #94a3b8;
+  color: #66736b;
 }
 
 .empty-icon-glow {
-  width: 54px;
-  height: 54px;
-  background: rgba(132, 204, 22, 0.12);
+  width: 52px;
+  height: 52px;
+  background: #e8f3e9;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 1rem;
-  color: #84cc16;
-  font-size: 1.6rem;
+  color: #17634b;
+  font-size: 1.5rem;
+}
+
+.court-photo-list { display: flex; flex-wrap: wrap; gap: 0.75rem; margin: 1rem 0; }
+.court-photo-item { display: grid; gap: 0.35rem; width: min(100%, 150px); margin: 0; }
+.court-photo-item img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 4px; border: 1px solid #d7e2d8; background: #eef3ec; }
+.court-photo-item figcaption { color: #66736b; font-size: 0.75rem; }
+
+.court-photo-item .mini-button-danger {
+  background: #fff0eb;
+  border: 1px solid #efc5b9;
+  color: #9d3c2f;
+  border-radius: 4px;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.court-photo-item .mini-button-danger:hover {
+  background: #f9ddd3;
+}
+
+.photo-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+label.secondary-btn {
+  position: relative;
 }
 
 /* TRANSICIONES */
 .fade-banner-enter-active,
 .fade-banner-leave-active {
-  transition: all 0.3s ease;
+  transition: all 0.25s ease;
 }
 
 .fade-banner-enter-from,
 .fade-banner-leave-to {
   opacity: 0;
-  transform: translateY(-8px);
+  transform: translateY(-6px);
 }
 
 /* RESPONSIVE */
@@ -777,7 +836,11 @@ ion-content.sportra-main-viewport {
 
 @media (max-width: 600px) {
   .management-wrapper {
-    padding: 10rem 1rem 3rem;
+    padding: 6rem 1rem 3rem;
+  }
+
+  .navbar-container {
+    padding: 0 0.75rem;
   }
 }
 </style>

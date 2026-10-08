@@ -11,6 +11,7 @@ return new class extends Migration
         Schema::table('users', function (Blueprint $table) {
             $table->text('two_factor_secret')->nullable();
             $table->timestamp('two_factor_enabled_at')->nullable();
+            $table->unsignedBigInteger('two_factor_last_used_step')->nullable();
             $table->text('two_factor_recovery_codes')->nullable();
         });
     }
@@ -18,7 +19,12 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn(['two_factor_secret', 'two_factor_enabled_at', 'two_factor_recovery_codes']);
+            $table->dropColumn([
+                'two_factor_secret',
+                'two_factor_enabled_at',
+                'two_factor_last_used_step',
+                'two_factor_recovery_codes',
+            ]);
         });
     }
 };

@@ -1,353 +1,550 @@
 <template>
   <ion-page class="sportra-app">
-    <!-- Navbar Flotante Neón Glass -->
-    <header class="navbar-container">
-      <div class="navbar-bar">
-        <!-- Logo con Glow Neón -->
-        <div class="brand-box" @click="limpiarFiltros" role="button" tabindex="0">
-          <div class="brand-badge glow-pulse">
-            <ion-icon :icon="footballOutline" class="brand-icon"></ion-icon>
-          </div>
-          <span class="brand-name">SPORTRA<span class="neon-dot">.</span></span>
+    <!-- Header / Navegación principal -->
+    <header class="site-header">
+      <div class="nav-shell">
+        <button class="brand" type="button" @click="limpiarFiltros" aria-label="Ir al inicio">
+          <span class="brand-copy">
+            <strong>SPORTRA<span>.</span></strong>
+            <small>RESERVA TU CANCHA</small>
+          </span>
+        </button>
+
+        <div class="search-bar-header" @click="toggleDropdownSearch">
+          <ion-icon :icon="searchOutline"></ion-icon>
+          <span>Buscar una cancha · {{ ubicacionTextoSeleccionada }}</span>
         </div>
 
-        <!-- Central Search Capsule -->
-        <div 
-          class="hero-search-bar" 
-          @click="toggleDropdownSearch" 
-          :class="{ 'bar-active': searchOpen }"
-        >
-          <div class="search-item">
-            <span class="item-tag">Zona</span>
-            <span class="item-text">{{ ubicacionTextoSeleccionada }}</span>
-          </div>
-
-          <div class="search-divider"></div>
-
-          <div class="search-item">
-            <span class="item-tag">Instalación</span>
-            <span class="item-text text-truncate">{{ busquedaTexto || '¿Dónde jugamos?' }}</span>
-          </div>
-
-          <button class="search-btn-neon" aria-label="Buscar">
-            <ion-icon :icon="searchOutline"></ion-icon>
+        <div class="nav-actions">
+          <button class="nav-link" type="button" @click="scrollToCanchas">
+            Explorar canchas
           </button>
 
-          <!-- Popover Modal de Filtros -->
-          <transition name="pop-scale">
-            <div v-if="searchOpen" class="filter-modal" @click.stop>
-              <div class="modal-top">
-                <div class="modal-title">
-                  <ion-icon :icon="optionsOutline" class="title-lime"></ion-icon>
-                  <span>Filtrar instalaciones</span>
-                </div>
-                <button class="btn-close-modal" @click="searchOpen = false" aria-label="Cerrar">
-                  <ion-icon :icon="closeOutline"></ion-icon>
-                </button>
-              </div>
-
-              <div class="modal-body">
-                <div class="field-block">
-                  <label>Buscar por nombre</label>
-                  <div class="input-glow-box">
-                    <ion-icon :icon="searchOutline" class="field-icon"></ion-icon>
-                    <input 
-                      v-model="busquedaTexto" 
-                      type="text" 
-                      placeholder="Ej: Soccer Center, Maracaná..." 
-                    />
-                    <ion-icon 
-                      v-if="busquedaTexto" 
-                      :icon="closeCircle" 
-                      class="clear-btn" 
-                      @click="busquedaTexto = ''"
-                    ></ion-icon>
-                  </div>
-                </div>
-
-                <div class="selects-row">
-                  <div class="field-block">
-                    <label>Provincia</label>
-                    <ion-select
-                      v-model="provinciaId"
-                      interface="popover"
-                      placeholder="Todas"
-                      class="neon-select"
-                      @ionChange="onProvinciaChange"
-                    >
-                      <ion-select-option :value="null">Todas</ion-select-option>
-                      <ion-select-option v-for="p in provincias" :key="p.id" :value="p.id">
-                        {{ p.nombre }}
-                      </ion-select-option>
-                    </ion-select>
-                  </div>
-
-                  <div class="field-block">
-                    <label>Cantón</label>
-                    <ion-select
-                      v-model="cantonId"
-                      interface="popover"
-                      placeholder="Todos"
-                      class="neon-select"
-                      :disabled="!provinciaId && cantones.length === 0"
-                      @ionChange="onCantonChange"
-                    >
-                      <ion-select-option :value="null">Todos</ion-select-option>
-                      <ion-select-option v-for="c in cantones" :key="c.id" :value="c.id">
-                        {{ c.nombre }}
-                      </ion-select-option>
-                    </ion-select>
-                  </div>
-
-                  <div class="field-block">
-                    <label>Distrito</label>
-                    <ion-select
-                      v-model="distritoId"
-                      interface="popover"
-                      placeholder="Todos"
-                      class="neon-select"
-                      :disabled="!cantonId && distritos.length === 0"
-                      @ionChange="cargarComplejos"
-                    >
-                      <ion-select-option :value="null">Todos</ion-select-option>
-                      <ion-select-option v-for="d in distritos" :key="d.id" :value="d.id">
-                        {{ d.nombre }}
-                      </ion-select-option>
-                    </ion-select>
-                  </div>
-                </div>
-
-                <button class="btn-clear nearby-search-button" @click="buscarCercanas">
-                  <ion-icon :icon="locationOutline"></ion-icon>
-                  <span>Buscar cerca de mí</span>
-                </button>
-                <p v-if="errorUbicacion" class="location-error" role="alert">{{ errorUbicacion }}</p>
-              </div>
-
-              <div class="modal-footer">
-                <button class="btn-clear" @click="limpiarFiltros">
-                  <ion-icon :icon="refreshOutline"></ion-icon> Restablecer
-                </button>
-                <button class="btn-submit-neon wave-effect" @click="aplicarFiltrosYScroll">
-                  Buscar Canchas
-                </button>
-              </div>
-            </div>
-          </transition>
-        </div>
-
-        <!-- Accesos rápidos sin Horarios -->
-        <div class="header-right">
-          <nav class="top-nav">
-            <button @click="scrollToCanchas">Canchas</button>
-          </nav>
-
-          <button class="btn-portal-glow" @click="irAlPanel">
+          <button class="owner-button" type="button" @click="irAlPanel">
             <span>Propietarios</span>
-            <div class="portal-arrow">
-              <ion-icon :icon="arrowForwardOutline"></ion-icon>
-            </div>
+            <ion-icon :icon="arrowForwardOutline"></ion-icon>
           </button>
         </div>
       </div>
+
+      <!-- Panel de Búsqueda Desplegable / Filtros -->
+      <transition name="search-panel">
+        <div v-if="searchOpen" class="search-panel" @click.stop>
+          <div class="panel-heading">
+            <div>
+              <span class="eyebrow">EXPLORA</span>
+              <h2>Encuentra tu próxima cancha</h2>
+            </div>
+            <button class="icon-button" type="button" @click="searchOpen = false" aria-label="Cerrar">
+              <ion-icon :icon="closeOutline"></ion-icon>
+            </button>
+          </div>
+
+          <div class="search-main-field">
+            <ion-icon :icon="searchOutline"></ion-icon>
+            <input
+              v-model="busquedaTexto"
+              type="text"
+              placeholder="Nombre de la instalación..."
+              aria-label="Buscar por nombre"
+            />
+            <button
+              v-if="busquedaTexto"
+              class="input-clear"
+              type="button"
+              @click="busquedaTexto = ''"
+              aria-label="Limpiar búsqueda"
+            >
+              <ion-icon :icon="closeCircle"></ion-icon>
+            </button>
+          </div>
+
+          <div class="filter-grid">
+            <div class="filter-field">
+              <label>Provincia</label>
+              <ion-select
+                v-model="provinciaId"
+                interface="popover"
+                placeholder="Todas"
+                class="modern-select"
+                @ionChange="onProvinciaChange"
+              >
+                <ion-select-option :value="null">Todas</ion-select-option>
+                <ion-select-option v-for="p in provincias" :key="p.id" :value="p.id">
+                  {{ p.nombre }}
+                </ion-select-option>
+              </ion-select>
+            </div>
+
+            <div class="filter-field">
+              <label>Cantón</label>
+              <ion-select
+                v-model="cantonId"
+                interface="popover"
+                placeholder="Todos"
+                class="modern-select"
+                :disabled="!provinciaId && cantones.length === 0"
+                @ionChange="onCantonChange"
+              >
+                <ion-select-option :value="null">Todos</ion-select-option>
+                <ion-select-option v-for="c in cantones" :key="c.id" :value="c.id">
+                  {{ c.nombre }}
+                </ion-select-option>
+              </ion-select>
+            </div>
+
+            <div class="filter-field">
+              <label>Distrito</label>
+              <ion-select
+                v-model="distritoId"
+                interface="popover"
+                placeholder="Todos"
+                class="modern-select"
+                :disabled="!cantonId && distritos.length === 0"
+                @ionChange="cargarComplejos"
+              >
+                <ion-select-option :value="null">Todos</ion-select-option>
+                <ion-select-option v-for="d in distritos" :key="d.id" :value="d.id">
+                  {{ d.nombre }}
+                </ion-select-option>
+              </ion-select>
+            </div>
+          </div>
+
+          <button class="nearby-button" type="button" @click="buscarCercanas">
+            <span class="nearby-icon">
+              <ion-icon :icon="locationOutline"></ion-icon>
+            </span>
+            <span>
+              <strong>Usar mi ubicación</strong>
+              <small>Ordenar las canchas más cercanas primero</small>
+            </span>
+            <ion-icon :icon="arrowForwardOutline" class="nearby-arrow"></ion-icon>
+          </button>
+
+          <p v-if="errorUbicacion" class="location-error" role="alert">
+            {{ errorUbicacion }}
+          </p>
+
+          <div class="panel-footer">
+            <button class="reset-button" type="button" @click="limpiarFiltros">
+              <ion-icon :icon="refreshOutline"></ion-icon>
+              Restablecer
+            </button>
+            <button class="apply-button" type="button" @click="aplicarFiltrosYScroll">
+              Ver resultados
+              <ion-icon :icon="arrowForwardOutline"></ion-icon>
+            </button>
+          </div>
+        </div>
+      </transition>
     </header>
 
     <ion-content :fullscreen="true" class="sportra-main-viewport" ref="contentRef">
-      <!-- HERO LANDING -->
-      <section class="hero-wrapper">
-        <div class="hero-bg-glow glow-float-1"></div>
-        <div class="hero-bg-glow glow-float-2"></div>
-        <div class="hero-bg-grid"></div>
+      <!-- Hero Section Principal (Full Screen - 100vh distribuido) -->
+      <section class="hero-section">
+        <div class="hero-container">
+          <div class="hero-inner">
+            <div class="hero-copy animate-fade-up">
+              <div class="status-pill">
+                <span class="status-dot"></span>
+                MENOS VUELTAS. MÁS PARTIDOS.
+              </div>
 
-        <div class="hero-content-grid">
-          <div class="hero-text-side animate-fade-up">
-            <div class="pill-tag">
-              <span class="beacon"></span>
-              <span>RESERVAS AL INSTANTE EN COSTA RICA</span>
+              <h1>
+                Tu próximo<br />
+                <span>partido empieza</span><br />
+                aquí.
+              </h1>
+
+              <p class="hero-description">
+                Encuentra tu cancha, elige tu horario y reúne al equipo.
+              </p>
+
+              <div class="hero-actions">
+                <button class="primary-action" type="button" @click="scrollToCanchas">
+                  <span>Explorar canchas</span>
+                  <ion-icon :icon="arrowForwardOutline"></ion-icon>
+                </button>
+                <span class="hero-subtext">Tu deporte. Tu zona. Tu momento.</span>
+              </div>
+
+              <!-- Badges de Métricas / Relleno de espacio inferior -->
+              <div class="hero-metrics">
+                <div class="metric-item">
+                  <strong>100+</strong>
+                  <small>Canchas disponibles</small>
+                </div>
+                <div class="metric-divider"></div>
+                <div class="metric-item">
+                  <strong>Reserva instantánea</strong>
+                  <small>Sin intermediarios</small>
+                </div>
+              </div>
             </div>
 
-            <h1 class="hero-title-main">
-              DOMINA LA <br />
-              <span class="lime-gradient-text glow-text-shadow">CANCHA HOY</span>
-            </h1>
+            <!-- Card Destacada / Banner Derecho Hero (Siempre visible) -->
+            <div
+              v-if="complejosOrdenados.length > 0"
+              class="featured-hero-card animate-fade-up-delay"
+              @click="verDetalle(complejosOrdenados[0].slug)"
+            >
+              <div class="hero-card-badge">
+                <span class="reload-icon">↻</span>
+                Siempre hay tiempo para jugar
+              </div>
+              <img
+                :src="getComplejoImage(complejosOrdenados[0])"
+                :alt="complejosOrdenados[0].nombre"
+                @error="handleImageError"
+              />
+              <div class="hero-card-overlay">
+                <span class="hero-card-tag">ENCUENTRA TU LUGAR</span>
+                <h3>De la rutina a la cancha.</h3>
+              </div>
+            </div>
 
-            <p class="hero-lead">
-              La plataforma definitiva para encontrar y alquilar canchas sintéticas. Precios transparentes, disponibilidad en vivo y confirmación inmediata.
-            </p>
-
-            <div class="hero-actions-row">
-              <button class="btn-cta-lime glow-hover" @click="scrollToCanchas">
-                <span>Reservar Partido</span>
-                <div class="cta-circle">
-                  <ion-icon :icon="arrowForwardOutline"></ion-icon>
-                </div>
-              </button>
-
-              <div class="live-community-badge">
-                <div class="avatars-cluster">
-                  <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" alt="Jugador" />
-                  <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80" alt="Jugador" />
-                  <img src="https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=100&q=80" alt="Jugador" />
-                </div>
-                <div class="community-stats">
-                  <strong>+2,000</strong>
-                  <span>Mejengueros listos</span>
-                </div>
+            <!-- Fallback estático cuando no hay datos aún para asegurar distribución constante -->
+            <div
+              v-else
+              class="featured-hero-card animate-fade-up-delay"
+              @click="scrollToCanchas"
+            >
+              <div class="hero-card-badge">
+                <span class="reload-icon">↻</span>
+                Siempre hay tiempo para jugar
+              </div>
+              <img
+                src="https://images.unsplash.com/photo-1529900748604-07564a03e7a6?auto=format&fit=crop&w=800&q=80"
+                alt="Pádel y Fútbol"
+              />
+              <div class="hero-card-overlay">
+                <span class="hero-card-tag">ENCUENTRA TU LUGAR</span>
+                <h3>De la rutina a la cancha.</h3>
               </div>
             </div>
           </div>
 
-          <!-- Tarjeta Destacada Neón -->
-          <div class="hero-card-side animate-fade-up-delay" v-if="complejosOrdenados.length > 0">
-            <div class="spotlight-card border-gradient-glow">
-              <div class="spotlight-header">
-                <span class="spotlight-badge">DESTACADO EN TU ZONA</span>
-                <ion-icon :icon="footballOutline" class="spotlight-icon-pulse"></ion-icon>
-              </div>
-
-              <div class="spotlight-img-box">
-                <img :src="getComplejoImage(complejosOrdenados[0])" :alt="complejosOrdenados[0].nombre" @error="handleImageError" />
-                <span class="badge-live-now">
-                  <span class="dot-ping"></span> DISPONIBLE
-                </span>
-              </div>
-
-              <div class="spotlight-info">
-                <div>
-                  <h3 class="spotlight-name">{{ complejosOrdenados[0].nombre }}</h3>
-                  <p class="spotlight-location">
-                    <ion-icon :icon="locationOutline"></ion-icon>
-                    <span>{{ complejosOrdenados[0].distrito }}, {{ complejosOrdenados[0].canton }}</span>
-                  </p>
+          <!-- Barra Horizontal de Búsqueda del Hero -->
+          <div class="hero-search-card">
+            <div class="search-fields-row">
+              <div class="search-col" @click="toggleDropdownSearch">
+                <div class="icon-circle">
+                  <ion-icon :icon="locationOutline"></ion-icon>
                 </div>
-                <div class="spotlight-price">
-                  <span class="price-val">₡{{ formatearPrecio(complejosOrdenados[0].precio_desde) }}</span>
-                  <span class="price-unit">/hora</span>
+                <div class="col-text">
+                  <small>¿DÓNDE?</small>
+                  <strong>{{ ubicacionTextoSeleccionada }}</strong>
                 </div>
               </div>
 
-              <button class="spotlight-btn" @click="verDetalle(complejosOrdenados[0].slug)">
-                <span>Reservar esta cancha</span>
-                <ion-icon :icon="arrowForwardOutline" class="btn-icon-slide"></ion-icon>
+              <div class="search-col-divider"></div>
+
+              <div class="search-col" @click="toggleDropdownSearch">
+                <div class="icon-circle">
+                  <ion-icon :icon="footballOutline"></ion-icon>
+                </div>
+                <div class="col-text">
+                  <small>DEPORTE</small>
+                  <strong>Pádel / Fútbol</strong>
+                </div>
+              </div>
+
+              <div class="search-col-divider"></div>
+
+              <div class="search-col" @click="toggleDropdownSearch">
+                <div class="icon-circle">
+                  <ion-icon :icon="calendarOutline"></ion-icon>
+                </div>
+                <div class="col-text">
+                  <small>FECHA</small>
+                  <strong>Elegir fecha</strong>
+                </div>
+              </div>
+
+              <button class="hero-search-btn" type="button" @click="aplicarFiltrosYScroll">
+                <span>Buscar</span>
+                <ion-icon :icon="searchOutline"></ion-icon>
               </button>
+            </div>
+
+            <div class="hero-chips-row">
+              <span class="chips-label">Empieza por:</span>
+              <button type="button" @click="buscarCercanas">Cerca de mí</button>
+              <button type="button" @click="scrollToCanchas">Canchas cubiertas</button>
+              <button type="button" @click="scrollToCanchas">Jugar de noche</button>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- SECCIÓN DE CANCHAS & RESULTADOS -->
-      <main class="courts-section" id="seccion-canchas" ref="seccionCanchasRef">
-        <div class="section-header-bar">
-          <div class="header-title-box">
-            <h2 class="main-section-title">
-              Canchas Encontradas
-              <span class="counter-pill">{{ complejosFiltrados.length }}</span>
-            </h2>
-            <div v-if="filtrosActivos" class="active-filter-tag">
-              <span class="pulse-lime"></span> Filtros aplicados
+      <!-- Sección de Resultados / Lista de Canchas -->
+      <main id="seccion-canchas" ref="seccionCanchasRef" class="courts-section">
+        <div class="section-container">
+          <div class="section-intro">
+            <div>
+              <span class="section-eyebrow">DESCUBRE TU PRÓXIMA CANCHA</span>
+              <h2>El lugar perfecto para tu partido.</h2>
             </div>
-          </div>
 
-          <div class="sort-box" v-if="complejosFiltrados.length > 1">
-            <ion-icon :icon="swapVerticalOutline" class="sort-icon-lime"></ion-icon>
-            <select v-model="orden" class="neon-sort-select">
-              <option value="nombre">Ordenar por: Nombre (A-Z)</option>
-              <option value="precio-asc">Precio: Menor a Mayor</option>
-              <option value="precio-desc">Precio: Mayor a Menor</option>
-              <option v-if="ubicacionUsuario" value="cercania">Más cercanas</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Skeleton Loader -->
-        <transition name="fade-mode" mode="out-in">
-          <div v-if="cargando" class="cards-grid">
-            <div v-for="i in 6" :key="i" class="card-item skeleton-box">
-              <div class="sk-image shimmer-effect"></div>
-              <div class="sk-body">
-                <div class="sk-line title shimmer-effect"></div>
-                <div class="sk-line subtitle shimmer-effect"></div>
-                <div class="sk-footer">
-                  <div class="sk-line price shimmer-effect"></div>
-                  <div class="sk-btn shimmer-effect"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Grid de Canchas -->
-          <div v-else-if="complejosFiltrados.length > 0" class="cards-grid">
-            <article
-              v-for="(complejo, index) in complejosOrdenados"
-              :key="complejo.id"
-              class="card-item interactive-card"
-              :style="{ animationDelay: `${index * 0.08}s` }"
-              @click="verDetalle(complejo.slug)"
-            >
-              <div class="card-img-container">
-                <img
-                  :src="getComplejoImage(complejo)"
-                  :alt="complejo.nombre"
-                  loading="lazy"
-                  @error="handleImageError"
-                />
-                <div class="card-img-overlay"></div>
-                <div class="card-top-badges">
-                  <span class="chip-count">
-                    <ion-icon :icon="footballOutline"></ion-icon>
-                    {{ complejo.total_canchas }} {{ complejo.total_canchas === 1 ? 'Cancha' : 'Canchas' }}
-                  </span>
-                </div>
-              </div>
-
-              <div class="card-body-container">
-                <h3 class="card-court-title">{{ complejo.nombre }}</h3>
-                <p class="card-court-loc">
-                  <ion-icon :icon="locationOutline" class="loc-lime"></ion-icon>
-                  <span>{{ complejo.distrito }}, {{ complejo.canton }}</span>
-                </p>
-
-                <div class="card-footer-box">
-                  <div class="price-display">
-                    <span class="price-lbl">POR HORA</span>
-                    <div class="price-num">₡{{ formatearPrecio(complejo.precio_desde) }}</div>
-                  </div>
-
-                  <button class="btn-card-reserve">
-                    <span>Ver Hora</span>
-                    <ion-icon :icon="arrowForwardOutline" class="btn-icon-slide"></ion-icon>
-                  </button>
-                </div>
-              </div>
-            </article>
-          </div>
-
-          <!-- Empty State -->
-          <div v-else class="empty-results-box animate-fade-in">
-            <div class="empty-glow-icon glow-pulse">
-              <ion-icon :icon="searchOutline"></ion-icon>
-            </div>
-            <h3>Sin canchas disponibles</h3>
-            <p v-if="busquedaTexto">No se hallaron instalaciones para "{{ busquedaTexto }}".</p>
-            <p v-else>No coinciden instalaciones con la búsqueda actual.</p>
-            <button class="btn-reset-main glow-hover" @click="limpiarFiltros">
-              <ion-icon :icon="refreshOutline"></ion-icon>
-              <span>Restablecer Filtros</span>
+            <button class="secondary-btn" type="button" @click="limpiarFiltros">
+              Ver todas las canchas
+              <ion-icon :icon="arrowForwardOutline"></ion-icon>
             </button>
           </div>
-        </transition>
 
-        <!-- Footer estilizado -->
-        <footer class="app-footer">
-          <div class="footer-left">
-            <div class="footer-logo glow-pulse">
-              <ion-icon :icon="footballOutline"></ion-icon>
+          <div class="results-toolbar">
+            <div class="active-filters" v-if="filtrosActivos">
+              <span class="filter-status">
+                <span></span>
+                Filtros activos
+              </span>
+              <button type="button" @click="limpiarFiltros">
+                Limpiar
+                <ion-icon :icon="closeOutline"></ion-icon>
+              </button>
             </div>
-            <span class="footer-brand">SPORTRA<span class="neon-dot">.</span></span>
+
+            <div v-if="complejosFiltrados.length > 1" class="sort-control">
+              <ion-icon :icon="swapVerticalOutline"></ion-icon>
+              <select v-model="orden" aria-label="Ordenar resultados">
+                <option value="nombre">Nombre A-Z</option>
+                <option value="precio-asc">Precio menor a mayor</option>
+                <option value="precio-desc">Precio mayor a menor</option>
+                <option v-if="ubicacionUsuario" value="cercania">Más cercanas</option>
+              </select>
+            </div>
           </div>
-          <span class="footer-copyright">© 2026 Sportra Costa Rica. Reservas de fútbol en tiempo real.</span>
-        </footer>
+
+          <transition name="fade-mode" mode="out-in">
+            <!-- Loading Skeleton -->
+            <div v-if="cargando" class="cards-grid" key="loading">
+              <div v-for="i in 3" :key="i" class="court-card skeleton-card">
+                <div class="skeleton-image shimmer"></div>
+                <div class="skeleton-body">
+                  <div class="skeleton-line skeleton-title shimmer"></div>
+                  <div class="skeleton-line skeleton-location shimmer"></div>
+                  <div class="skeleton-divider shimmer"></div>
+                  <div class="skeleton-bottom">
+                    <div class="skeleton-price shimmer"></div>
+                    <div class="skeleton-button shimmer"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Resultados Grid -->
+            <div v-else-if="complejosFiltrados.length > 0" class="cards-grid" key="results">
+              <article
+                v-for="(complejo, index) in complejosOrdenados"
+                :key="complejo.id"
+                class="court-card"
+                :style="{ animationDelay: `${index * 0.05}s` }"
+                @click="verDetalle(complejo.slug)"
+              >
+                <div class="court-image">
+                  <span class="sport-badge">Pádel / Fútbol</span>
+                  <button class="fav-badge" type="button" aria-label="Guardar">
+                    ♥
+                  </button>
+                  <img
+                    :src="getComplejoImage(complejo)"
+                    :alt="complejo.nombre"
+                    loading="lazy"
+                    @error="handleImageError"
+                  />
+                </div>
+
+                <div class="court-content">
+                  <h3>{{ complejo.nombre }}</h3>
+                  <p class="court-location">
+                    <ion-icon :icon="locationOutline"></ion-icon>
+                    {{ complejo.distrito }}, {{ complejo.canton }}
+                  </p>
+                  <p class="court-features">
+                    Cubierta · Cristal · Iluminación
+                  </p>
+
+                  <div class="court-slots">
+                    <span class="slots-title">HORARIOS DISPONIBLES</span>
+                    <div class="slots-pills">
+                      <span class="slot-pill">18:00</span>
+                      <span class="slot-pill">19:30</span>
+                      <span class="slot-pill">21:00</span>
+                    </div>
+                  </div>
+
+                  <div class="court-bottom">
+                    <div class="court-price">
+                      <strong>₡{{ formatearPrecio(complejo.precio_desde) }}</strong>
+                      <span>/ hora</span>
+                    </div>
+
+                    <button class="card-link" type="button">
+                      Ver cancha
+                      <ion-icon :icon="arrowForwardOutline"></ion-icon>
+                    </button>
+                  </div>
+                </div>
+              </article>
+            </div>
+
+            <!-- Empty State -->
+            <div v-else class="empty-state" key="empty">
+              <div class="empty-icon">
+                <ion-icon :icon="searchOutline"></ion-icon>
+              </div>
+              <span class="section-eyebrow">SIN RESULTADOS</span>
+              <h3>No encontramos esa cancha.</h3>
+              <p v-if="busquedaTexto">
+                No hay instalaciones que coincidan con “{{ busquedaTexto }}”.
+              </p>
+              <p v-else>
+                Prueba modificando la ubicación o eliminando alguno de los filtros.
+              </p>
+              <button class="primary-action compact" type="button" @click="limpiarFiltros">
+                <ion-icon :icon="refreshOutline"></ion-icon>
+                Restablecer filtros
+              </button>
+            </div>
+          </transition>
+
+          <p class="disclaimer-text">
+            Selección ilustrativa: nombres, precios y horarios de ejemplo.
+          </p>
+        </div>
       </main>
+
+      <!-- Sección de Pasos -->
+      <section class="steps-section">
+        <div class="section-container">
+          <span class="section-eyebrow">ALGO SENCILLO</span>
+          <h2>Del "¿jugamos?" al "nos vemos ahí".</h2>
+
+          <div class="steps-grid">
+            <div class="step-card">
+              <div class="step-header">
+                <span class="step-icon">
+                  <ion-icon :icon="searchOutline"></ion-icon>
+                </span>
+                <span class="step-number">01</span>
+              </div>
+              <h3>Encuentra tu cancha</h3>
+              <p>Busca por zona y deporte. Compara espacios, servicios y precios.</p>
+            </div>
+
+            <div class="step-card">
+              <div class="step-header">
+                <span class="step-icon">
+                  <ion-icon :icon="optionsOutline"></ion-icon>
+                </span>
+                <span class="step-number">02</span>
+              </div>
+              <h3>Elige tu momento</h3>
+              <p>Consulta los horarios y confirma tu reserva en segundos.</p>
+            </div>
+
+            <div class="step-card">
+              <div class="step-header">
+                <span class="step-icon">
+                  <ion-icon :icon="footballOutline"></ion-icon>
+                </span>
+                <span class="step-number">03</span>
+              </div>
+              <h3>Que empiece el juego</h3>
+              <p>Avisa al equipo y llega con ganas de darlo todo.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Banner Propietarios -->
+      <section class="owner-banner-section">
+        <div class="section-container">
+          <div class="owner-card">
+            <div class="owner-info">
+              <span class="section-eyebrow">¿TIENES UN CENTRO DEPORTIVO?</span>
+              <h2>Haz que cada cancha juegue a tu favor.</h2>
+              <p>Acerca tus espacios a nuevos jugadores y organiza tus reservas en un mismo lugar.</p>
+              <button class="owner-primary-btn" type="button" @click="irAlPanel">
+                <span>Soy propietario</span>
+                <ion-icon :icon="arrowForwardOutline"></ion-icon>
+              </button>
+            </div>
+
+            <div class="owner-preview-box">
+              <div class="preview-header">
+                <div>
+                  <strong>Tu centro, en orden.</strong>
+                  <small>Vista de reservas · Ayer/Hoy/Mañana</small>
+                </div>
+                <ion-icon :icon="optionsOutline"></ion-icon>
+              </div>
+              <div class="preview-rows">
+                <div class="preview-row">
+                  <div class="row-info">
+                    <strong>Pádel · Cristal</strong>
+                    <small>18:00 - 19:30</small>
+                  </div>
+                  <span class="status-tag reserved">Reservada</span>
+                </div>
+                <div class="preview-row">
+                  <div class="row-info">
+                    <strong>Pádel · Cubierta</strong>
+                    <small>19:30 - 21:00</small>
+                  </div>
+                  <span class="status-tag available">Disponible</span>
+                </div>
+                <div class="preview-row">
+                  <div class="row-info">
+                    <strong>Pádel · Exterior</strong>
+                    <small>21:00 - 22:30</small>
+                  </div>
+                  <span class="status-tag reserved">Reservada</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Footer Completo -->
+      <footer class="site-footer">
+        <div class="section-container">
+          <div class="footer-top">
+            <div class="footer-brand-col">
+              <span class="footer-brand-title">SPORTRA<span>.</span></span>
+              <p>Reserva tu cancha. Vive tu deporte.</p>
+            </div>
+
+            <div class="footer-links-col">
+              <h4>Para jugadores</h4>
+              <a @click="scrollToCanchas">Explorar canchas</a>
+              <a @click="scrollToCanchas">Deportes</a>
+              <a @click="scrollToCanchas">Cómo reservar</a>
+            </div>
+
+            <div class="footer-links-col">
+              <h4>Para propietarios</h4>
+              <a @click="irAlPanel">Publicar mi cancha</a>
+              <a @click="irAlPanel">Gestión de reservas</a>
+              <a @click="irAlPanel">Contactar</a>
+            </div>
+
+            <div class="footer-links-col">
+              <h4>Te ayudamos</h4>
+              <a href="#">Centro de ayuda</a>
+              <a href="#">Condiciones de reserva</a>
+              <a href="#">Privacidad</a>
+            </div>
+          </div>
+
+          <div class="footer-bottom">
+            <p>© 2026 SPORTRA. Todos los derechos reservados.</p>
+            <p class="footer-sub">Hoy tampoco deberías quedarte sin jugar.</p>
+          </div>
+        </div>
+      </footer>
     </ion-content>
   </ion-page>
 </template>
@@ -366,7 +563,8 @@ import {
   swapVerticalOutline, 
   footballOutline, 
   locationOutline, 
-  arrowForwardOutline
+  arrowForwardOutline,
+  calendarOutline
 } from 'ionicons/icons';
 
 import complejosService from '@/services/complejos.service';
@@ -382,7 +580,8 @@ addIcons({
   'swap-vertical-outline': swapVerticalOutline,
   'football-outline': footballOutline,
   'location-outline': locationOutline,
-  'arrow-forward-outline': arrowForwardOutline
+  'arrow-forward-outline': arrowForwardOutline,
+  'calendar-outline': calendarOutline
 });
 
 const router = useRouter();
@@ -424,7 +623,7 @@ const ubicacionTextoSeleccionada = computed(() => {
     const p = provincias.value.find(item => item.id === provinciaId.value);
     if (p) return p.nombre;
   }
-  return 'Costa Rica';
+  return 'Madrid, España';
 });
 
 const complejosFiltrados = computed(() => {
@@ -483,7 +682,7 @@ function buscarCercanas() {
 
 function scrollToCanchas() {
   if (contentRef.value && seccionCanchasRef.value) {
-    const yOffset = seccionCanchasRef.value.offsetTop - 90;
+    const yOffset = seccionCanchasRef.value.offsetTop - 80;
     contentRef.value.$el.scrollToPoint(0, yOffset, 600);
   } else if (seccionCanchasRef.value) {
     seccionCanchasRef.value.scrollIntoView({ behavior: 'smooth' });
@@ -605,1213 +804,1267 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-/* BASE & LAYOUT */
-ion-content.sportra-main-viewport {
-  --background: #030712;
-  font-family: 'Inter', -apple-system, sans-serif;
-  color: #f3f4f6;
+.sportra-app {
+  --bg-dark: #060e2d;
+  --bg-card: #0c1743;
+  --blue-accent: #7b96ff;
+  --blue-hover: #6281f7;
+  --text-white: #ffffff;
+  --text-muted: #8e9cc0;
+  --text-dark: #091133;
+  --border-dark: rgba(255, 255, 255, 0.08);
+  --bg-light: #f4f6fc;
+
+  background: var(--bg-dark);
+  color: var(--text-white);
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
-/* NAVBAR NEON GLASS */
-.navbar-container {
+ion-content.sportra-main-viewport {
+  --background: var(--bg-dark);
+  --color: var(--text-white);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+button, input, select {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.section-container {
+  max-width: 1360px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.site-header {
   position: fixed;
-  top: 1.25rem;
+  top: 0;
   left: 0;
   right: 0;
   z-index: 1000;
-  padding: 0 1.5rem;
+  padding: 16px 48px;
+  background: rgba(6, 14, 45, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border-dark);
 }
 
-.navbar-bar {
-  max-width: 1280px;
+.nav-shell {
+  max-width: 1360px;
   margin: 0 auto;
-  background: rgba(11, 15, 25, 0.75);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 99px;
-  padding: 0.5rem 0.6rem 0.5rem 1.25rem;
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 1px rgba(132, 204, 22, 0.2);
-  transition: border-color 0.3s ease;
+  gap: 24px;
 }
 
-.navbar-bar:hover {
-  border-color: rgba(132, 204, 22, 0.25);
-}
-
-.brand-box {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
+.brand {
+  border: 0;
+  background: transparent;
+  color: #fff;
   cursor: pointer;
-  user-select: none;
+  text-align: left;
 }
 
-.brand-badge {
-  width: 38px;
-  height: 38px;
-  background: rgba(132, 204, 22, 0.15);
-  border: 1px solid rgba(132, 204, 22, 0.4);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 0 15px rgba(132, 204, 22, 0.2);
-  transition: transform 0.3s ease;
-}
-
-.brand-box:hover .brand-badge {
-  transform: rotate(15deg) scale(1.08);
-}
-
-.brand-icon {
-  font-size: 1.25rem;
-  color: #84cc16;
-}
-
-.brand-name {
-  font-family: 'Space Grotesk', sans-serif;
+.brand-copy strong {
+  font-size: 20px;
   font-weight: 800;
-  font-size: 1.35rem;
-  color: #ffffff;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.03em;
 }
 
-.neon-dot {
-  color: #84cc16;
-  text-shadow: 0 0 8px rgba(132, 204, 22, 0.8);
+.brand-copy strong span {
+  color: var(--blue-accent);
 }
 
-/* SEARCH BAR CAPSULE */
-.hero-search-bar {
-  position: relative;
+.brand-copy small {
+  display: block;
+  font-size: 8px;
+  color: var(--text-muted);
+  letter-spacing: 0.12em;
+  margin-top: 1px;
+  font-weight: 700;
+}
+
+.search-bar-header {
   display: flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 10px;
+  padding: 8px 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-dark);
   border-radius: 99px;
-  padding: 0.3rem 0.4rem 0.3rem 1.25rem;
+  font-size: 13px;
+  color: var(--text-muted);
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  min-width: 320px;
+  transition: 0.2s ease;
 }
 
-.hero-search-bar:hover,
-.hero-search-bar.bar-active {
-  background: rgba(132, 204, 22, 0.08);
-  border-color: rgba(132, 204, 22, 0.5);
-  box-shadow: 0 0 25px rgba(132, 204, 22, 0.2);
+.search-bar-header:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
 }
 
-.search-item {
-  display: flex;
-  flex-direction: column;
-  padding-right: 0.85rem;
-}
-
-.item-tag {
-  font-size: 0.58rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  color: #84cc16;
-  letter-spacing: 0.06em;
-}
-
-.item-text {
-  font-size: 0.825rem;
-  color: #ffffff;
-  font-weight: 600;
-  max-width: 140px;
-}
-
-.text-truncate {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.search-divider {
-  width: 1px;
-  height: 22px;
-  background-color: rgba(255, 255, 255, 0.12);
-  margin-right: 0.85rem;
-}
-
-.search-btn-neon {
-  background: #84cc16;
-  color: #030712;
-  border: none;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
+.nav-actions {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 1.15rem;
+  gap: 24px;
+}
+
+.nav-link {
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 0 15px rgba(132, 204, 22, 0.4);
-  transition: transform 0.25s ease, background-color 0.25s ease, box-shadow 0.25s ease;
 }
 
-.hero-search-bar:hover .search-btn-neon {
-  transform: scale(1.08);
-  box-shadow: 0 0 22px rgba(132, 204, 22, 0.6);
+.nav-link:hover {
+  color: #fff;
 }
 
-/* MODAL DE FILTROS CORREGIDO */
-.filter-modal {
+.owner-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border: 0;
+  border-radius: 99px;
+  background: var(--blue-accent);
+  color: #060e2d;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.owner-button:hover {
+  background: var(--blue-hover);
+}
+
+/* Panel Desplegable */
+.search-panel {
   position: absolute;
-  top: calc(100% + 16px);
+  top: calc(100% + 12px);
   left: 50%;
   transform: translateX(-50%);
-  width: 520px;
-  background: rgba(11, 15, 25, 0.95);
-  backdrop-filter: blur(30px);
-  -webkit-backdrop-filter: blur(30px);
-  border-radius: 28px;
-  padding: 1.6rem;
-  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.95), 0 0 30px rgba(132, 204, 22, 0.15);
-  border: 1px solid rgba(132, 204, 22, 0.35);
-  z-index: 1001;
+  width: min(600px, calc(100vw - 32px));
+  background: #0c1743;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  color: #fff;
 }
 
-.modal-top {
+.panel-heading {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.25rem;
+  margin-bottom: 20px;
 }
 
-.modal-title {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
+.panel-heading h2 {
+  margin: 4px 0 0;
+  font-size: 18px;
   font-weight: 700;
-  font-size: 1.05rem;
-  color: #ffffff;
 }
 
-.title-lime { color: #84cc16; }
-
-.btn-close-modal {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.icon-button {
+  background: rgba(255, 255, 255, 0.1);
+  border: 0;
+  color: #fff;
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #ffffff;
+  display: grid;
+  place-items: center;
   cursor: pointer;
-  transition: all 0.2s ease;
 }
 
-.btn-close-modal:hover { 
-  background: rgba(255, 255, 255, 0.2); 
-  transform: rotate(90deg);
-}
-
-.field-block label {
-  font-size: 0.68rem;
-  font-weight: 800;
-  color: #a3e635;
-  display: block;
-  margin-bottom: 0.4rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.input-glow-box {
+.search-main-field {
   position: relative;
   display: flex;
   align-items: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-dark);
+  border-radius: 12px;
+  padding: 0 14px;
+  margin-bottom: 16px;
 }
 
-.input-glow-box .field-icon {
-  position: absolute;
-  left: 0.9rem;
-  color: #64748b;
-  font-size: 1.1rem;
+.search-main-field ion-icon {
+  color: var(--text-muted);
+  font-size: 18px;
 }
 
-.input-glow-box input {
+.search-main-field input {
   width: 100%;
   height: 44px;
-  background: #030712;
-  border: 1px solid rgba(132, 204, 22, 0.25);
-  border-radius: 14px;
-  padding: 0 2.5rem;
-  font-size: 0.875rem;
-  color: #ffffff;
-  outline: none;
-  transition: all 0.25s ease;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  color: #fff;
+  padding-left: 10px;
+  font-size: 14px;
 }
 
-.input-glow-box input:focus {
-  border-color: #84cc16;
-  box-shadow: 0 0 15px rgba(132, 204, 22, 0.25);
-}
-
-.clear-btn {
-  position: absolute;
-  right: 0.9rem;
-  color: #64748b;
+.input-clear {
+  background: transparent;
+  border: 0;
+  color: var(--text-muted);
   cursor: pointer;
-  transition: color 0.2s;
 }
 
-.clear-btn:hover { color: #ffffff; }
-
-.selects-row {
+.filter-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0.75rem;
-  margin: 1.25rem 0 1.5rem;
+  gap: 10px;
 }
 
-/* FIX PARA ION-SELECTS EN MODAL */
-.neon-select {
-  --background: #030712;
-  --color: #ffffff;
-  --placeholder-color: #94a3b8;
-  --placeholder-opacity: 1;
-  --padding-start: 0.85rem;
-  --padding-end: 0.85rem;
-  --padding-top: 0;
-  --padding-bottom: 0;
-  background: #030712;
-  border: 1px solid rgba(132, 204, 22, 0.25);
-  border-radius: 14px;
-  height: 44px;
-  font-size: 0.825rem;
-  font-weight: 600;
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  transition: all 0.25s ease;
-}
-
-.neon-select:hover {
-  border-color: rgba(132, 204, 22, 0.6);
-  box-shadow: 0 0 12px rgba(132, 204, 22, 0.15);
-}
-
-.neon-select::part(icon) {
-  color: #84cc16;
-  opacity: 1;
-}
-
-.neon-select::part(text) {
-  color: #ffffff;
-  font-weight: 600;
-}
-
-.neon-select::part(placeholder) {
-  color: #94a3b8;
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: 1.1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.btn-clear {
-  background: transparent;
-  border: none;
-  color: #94a3b8;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  transition: color 0.2s;
-}
-
-.btn-clear:hover { color: #ffffff; }
-
-.btn-submit-neon {
-  background: #84cc16;
-  color: #030712;
-  border: none;
-  padding: 0.7rem 1.5rem;
-  border-radius: 14px;
-  font-weight: 800;
-  font-size: 0.875rem;
-  cursor: pointer;
-  box-shadow: 0 0 20px rgba(132, 204, 22, 0.3);
-  transition: all 0.25s ease;
-}
-
-.btn-submit-neon:hover { 
-  background: #a3e635; 
-  transform: translateY(-2px);
-  box-shadow: 0 5px 25px rgba(132, 204, 22, 0.5);
-}
-
-/* HEADER RIGHT */
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-}
-
-.top-nav {
-  display: flex;
-  gap: 1.25rem;
-}
-
-.top-nav button {
-  background: transparent;
-  border: none;
-  color: #94a3b8;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.top-nav button:hover { color: #ffffff; }
-
-.btn-portal-glow {
-  background: #ffffff;
-  color: #030712;
-  border: none;
-  padding: 0.45rem 0.5rem 0.45rem 1.1rem;
-  border-radius: 99px;
-  font-weight: 800;
-  font-size: 0.825rem;
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.btn-portal-glow:hover {
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 8px 25px rgba(255, 255, 255, 0.25);
-}
-
-.portal-arrow {
-  background: #030712;
-  color: #ffffff;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.85rem;
-  transition: transform 0.25s ease;
-}
-
-.btn-portal-glow:hover .portal-arrow {
-  transform: translateX(3px);
-}
-
-/* HERO LANDING SECTION */
-.hero-wrapper {
-  position: relative;
-  min-height: 880px;
-  padding: 10rem 1.5rem 6rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.hero-bg-glow {
-  position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
-  filter: blur(90px);
-}
-
-.glow-float-1 {
-  top: -10%;
-  left: 15%;
-  width: 550px;
-  height: 550px;
-  background: radial-gradient(circle, rgba(132, 204, 22, 0.18) 0%, rgba(3, 7, 18, 0) 70%);
-  animation: floatGlow 12s infinite alternate ease-in-out;
-}
-
-.glow-float-2 {
-  bottom: 10%;
-  right: 10%;
-  width: 450px;
-  height: 450px;
-  background: radial-gradient(circle, rgba(163, 230, 53, 0.12) 0%, rgba(3, 7, 18, 0) 70%);
-  animation: floatGlow 16s infinite alternate-reverse ease-in-out;
-}
-
-.hero-bg-grid {
-  position: absolute;
-  inset: 0;
-  background-image: linear-gradient(to right, rgba(255,255,255,0.025) 1px, transparent 1px),
-                    linear-gradient(to bottom, rgba(255,255,255,0.025) 1px, transparent 1px);
-  background-size: 48px 48px;
-  pointer-events: none;
-  mask-image: radial-gradient(circle at center, black 40%, transparent 80%);
-}
-
-.hero-content-grid {
-  position: relative;
-  z-index: 2;
-  width: 100%;
-  max-width: 1280px;
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: 1fr 400px;
-  align-items: center;
-  gap: 4rem;
-}
-
-.pill-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6rem;
-  background: rgba(132, 204, 22, 0.1);
-  border: 1px solid rgba(132, 204, 22, 0.3);
-  padding: 0.4rem 1.1rem;
-  border-radius: 99px;
-  font-size: 0.75rem;
-  font-weight: 800;
-  color: #a3e635;
-  letter-spacing: 0.05em;
-  margin-bottom: 1.75rem;
-  box-shadow: 0 0 15px rgba(132, 204, 22, 0.1);
-}
-
-.beacon {
-  width: 8px;
-  height: 8px;
-  background: #84cc16;
-  border-radius: 50%;
-  box-shadow: 0 0 10px #84cc16;
-  animation: pulseBeacon 2s infinite;
-}
-
-.hero-title-main {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: clamp(3.2rem, 5.8vw, 5.4rem);
-  font-weight: 800;
-  color: #ffffff;
-  line-height: 1.02;
-  letter-spacing: -0.04em;
-  margin: 0 0 1.5rem;
-}
-
-.lime-gradient-text {
-  background: linear-gradient(135deg, #84cc16 0%, #ecfccb 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.glow-text-shadow {
-  filter: drop-shadow(0 0 25px rgba(132, 204, 22, 0.3));
-}
-
-.hero-lead {
-  color: #94a3b8;
-  font-size: 1.1rem;
-  max-width: 560px;
-  line-height: 1.65;
-  margin-bottom: 2.75rem;
-}
-
-.hero-actions-row {
-  display: flex;
-  align-items: center;
-  gap: 2.5rem;
-}
-
-.btn-cta-lime {
-  background: #84cc16;
-  color: #030712;
-  border: none;
-  padding: 0.55rem 0.65rem 0.55rem 1.75rem;
-  border-radius: 99px;
-  font-weight: 800;
-  font-size: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-  cursor: pointer;
-  box-shadow: 0 0 30px rgba(132, 204, 22, 0.4);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.btn-cta-lime:hover {
-  transform: translateY(-3px) scale(1.03);
-  box-shadow: 0 10px 40px rgba(132, 204, 22, 0.6);
-  background: #a3e635;
-}
-
-.cta-circle {
-  background: #030712;
-  color: #ffffff;
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.1rem;
-  transition: transform 0.3s ease;
-}
-
-.btn-cta-lime:hover .cta-circle {
-  transform: translateX(4px);
-}
-
-.live-community-badge {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-}
-
-.avatars-cluster {
-  display: flex;
-}
-
-.avatars-cluster img {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  border: 2px solid #030712;
-  margin-left: -14px;
-  object-fit: cover;
-  transition: transform 0.2s ease;
-}
-
-.avatars-cluster img:first-child { margin-left: 0; }
-.avatars-cluster img:hover { transform: translateY(-4px) scale(1.1); z-index: 5; }
-
-.community-stats {
-  display: flex;
-  flex-direction: column;
-}
-
-.community-stats strong {
-  font-size: 1.05rem;
-  font-weight: 800;
-  color: #ffffff;
-}
-
-.community-stats span {
-  font-size: 0.75rem;
-  color: #64748b;
-}
-
-/* SPOTLIGHT CARD side */
-.border-gradient-glow {
-  position: relative;
-  background: rgba(15, 23, 42, 0.85);
-  backdrop-filter: blur(24px);
-  border: 1px solid rgba(132, 204, 22, 0.3);
-  border-radius: 26px;
-  padding: 1.25rem;
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.85), 0 0 40px rgba(132, 204, 22, 0.12);
-  display: flex;
-  flex-direction: column;
-  gap: 1.1rem;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.border-gradient-glow:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 35px 70px rgba(0, 0, 0, 0.9), 0 0 50px rgba(132, 204, 22, 0.2);
-}
-
-.spotlight-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.7rem;
-  font-weight: 800;
-  color: #a3e635;
-  letter-spacing: 0.05em;
-}
-
-.spotlight-icon-pulse {
-  font-size: 1.1rem;
-  animation: pulseBeacon 2s infinite;
-}
-
-.spotlight-img-box {
-  position: relative;
-  height: 195px;
-  border-radius: 18px;
-  overflow: hidden;
-}
-
-.spotlight-img-box img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.5s ease;
-}
-
-.border-gradient-glow:hover .spotlight-img-box img {
-  transform: scale(1.05);
-}
-
-.badge-live-now {
-  position: absolute;
-  top: 0.75rem;
-  left: 0.75rem;
-  background: rgba(3, 7, 18, 0.85);
-  backdrop-filter: blur(8px);
-  padding: 0.35rem 0.75rem;
-  border-radius: 99px;
-  font-size: 0.65rem;
-  font-weight: 800;
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  border: 1px solid rgba(132, 204, 22, 0.3);
-}
-
-.dot-ping {
-  width: 6px;
-  height: 6px;
-  background: #84cc16;
-  border-radius: 50%;
-  box-shadow: 0 0 8px #84cc16;
-  animation: pulseBeacon 1.5s infinite;
-}
-
-.spotlight-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-}
-
-.spotlight-name {
-  margin: 0 0 0.25rem;
-  font-size: 1.15rem;
-  font-weight: 800;
-  color: #ffffff;
-}
-
-.spotlight-location {
-  margin: 0;
-  font-size: 0.8rem;
-  color: #94a3b8;
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.spotlight-location ion-icon { color: #84cc16; }
-
-.spotlight-price { text-align: right; }
-
-.spotlight-price .price-val {
+.filter-field label {
   display: block;
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: #84cc16;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 5px;
 }
 
-.spotlight-price .price-unit {
-  font-size: 0.65rem;
-  color: #64748b;
+.modern-select {
+  --background: rgba(255, 255, 255, 0.06);
+  --color: #fff;
+  border: 1px solid var(--border-dark);
+  border-radius: 10px;
+  min-height: 40px;
+  font-size: 12px;
 }
 
-.spotlight-btn {
-  background: rgba(132, 204, 22, 0.12);
-  border: 1px solid rgba(132, 204, 22, 0.35);
-  color: #ffffff;
-  padding: 0.8rem 1.1rem;
-  border-radius: 16px;
-  font-size: 0.85rem;
-  font-weight: 800;
+.nearby-button {
+  width: 100%;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 12px;
+  background: rgba(123, 150, 255, 0.12);
+  border: 1px solid rgba(123, 150, 255, 0.25);
+  border-radius: 12px;
+  color: #fff;
   cursor: pointer;
-  transition: all 0.25s ease;
+  text-align: left;
 }
 
-.spotlight-btn:hover {
-  background: #84cc16;
-  color: #030712;
-  box-shadow: 0 0 25px rgba(132, 204, 22, 0.4);
-}
-
-.btn-icon-slide {
-  transition: transform 0.25s ease;
-}
-
-.spotlight-btn:hover .btn-icon-slide,
-.btn-card-reserve:hover .btn-icon-slide {
-  transform: translateX(4px);
-}
-
-/* SECCIÓN RESULTADOS */
-.courts-section {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 3rem 1.5rem 6rem;
-}
-
-.section-header-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2.5rem;
-  padding-bottom: 1.25rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.header-title-box {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-}
-
-.main-section-title {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 1.65rem;
-  font-weight: 800;
-  color: #ffffff;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.counter-pill {
-  background: rgba(132, 204, 22, 0.15);
-  color: #84cc16;
-  font-size: 0.85rem;
-  padding: 0.2rem 0.65rem;
-  border-radius: 99px;
-  font-weight: 800;
-  border: 1px solid rgba(132, 204, 22, 0.3);
-}
-
-.active-filter-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.75rem;
-  color: #a3e635;
-  background: rgba(132, 204, 22, 0.1);
-  padding: 0.25rem 0.75rem;
-  border-radius: 99px;
-  font-weight: 700;
-}
-
-.pulse-lime {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #84cc16;
-  animation: pulseBeacon 1.5s infinite;
-}
-
-.sort-box {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.sort-icon-lime {
-  position: absolute;
-  left: 0.9rem;
-  color: #84cc16;
-  pointer-events: none;
-}
-
-.neon-sort-select {
-  background: #0b0f19;
-  border: 1px solid rgba(132, 204, 22, 0.25);
-  border-radius: 14px;
-  padding: 0.65rem 1.25rem 0.65rem 2.5rem;
-  font-size: 0.825rem;
-  font-weight: 600;
-  color: #ffffff;
-  outline: none;
-  cursor: pointer;
-  appearance: none;
-  transition: border-color 0.25s ease;
-}
-
-.neon-sort-select:hover {
-  border-color: #84cc16;
-}
-
-/* CARDS GRID & INTERACTIVE CARDS */
-.cards-grid {
+.nearby-icon {
+  width: 34px;
+  height: 34px;
+  background: var(--blue-accent);
+  border-radius: 8px;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 2rem;
+  place-items: center;
+  color: #060e2d;
 }
 
-.interactive-card {
-  opacity: 0;
-  animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.card-item {
-  background: #0b0f19;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 24px;
-  overflow: hidden;
-  cursor: pointer;
+.nearby-button span:nth-child(2) {
   display: flex;
   flex-direction: column;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.card-item:hover {
-  transform: translateY(-8px);
-  border-color: rgba(132, 204, 22, 0.6);
-  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.85), 0 0 25px rgba(132, 204, 22, 0.15);
+.nearby-button strong {
+  font-size: 13px;
 }
 
-.card-img-container {
-  position: relative;
-  aspect-ratio: 16 / 9;
-  background: #030712;
-  overflow: hidden;
+.nearby-button small {
+  font-size: 11px;
+  color: var(--text-muted);
 }
 
-.card-img-container img {
+.nearby-arrow {
+  margin-left: auto;
+}
+
+.location-error {
+  color: #ff6b6b;
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+.panel-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-dark);
+}
+
+.reset-button {
+  background: transparent;
+  border: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.apply-button {
+  background: var(--blue-accent);
+  border: 0;
+  color: #060e2d;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* =========================================================
+   HERO SECTION (100VH + EXCELENTE DISTRIBUCIÓN DE ESPACIOS)
+   ========================================================= */
+
+.hero-section {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-sizing: border-box;
+  padding: 115px 48px 36px;
+  background: radial-gradient(circle at 82% 25%, rgba(40, 75, 190, 0.28), transparent 45%), var(--bg-dark);
+}
+
+.hero-container {
+  max-width: 1360px;
+  margin: 0 auto;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.card-img-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to top, rgba(11, 15, 25, 0.9) 0%, transparent 60%);
-  opacity: 0.6;
-  transition: opacity 0.3s ease;
-}
-
-.card-item:hover .card-img-overlay {
-  opacity: 0.3;
-}
-
-.card-item:hover .card-img-container img {
-  transform: scale(1.08);
-}
-
-.card-top-badges {
-  position: absolute;
-  top: 0.85rem;
-  right: 0.85rem;
-  z-index: 2;
-}
-
-.chip-count {
-  background: rgba(3, 7, 18, 0.85);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #ffffff;
-  padding: 0.35rem 0.75rem;
-  border-radius: 99px;
-  font-size: 0.725rem;
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.card-body-container {
-  padding: 1.4rem;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   flex: 1;
 }
 
-.card-court-title {
-  margin: 0 0 0.35rem;
-  font-size: 1.2rem;
-  font-weight: 800;
-  color: #ffffff;
-  transition: color 0.2s ease;
-}
-
-.card-item:hover .card-court-title {
-  color: #84cc16;
-}
-
-.card-court-loc {
-  display: flex;
+.hero-inner {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 50px;
   align-items: center;
-  gap: 0.35rem;
-  color: #94a3b8;
-  font-size: 0.825rem;
-  margin: 0 0 1.5rem;
+  margin: auto 0;
+  padding: 10px 0;
 }
 
-.loc-lime { color: #84cc16; }
-
-.card-footer-box {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  margin-top: auto;
-  padding-top: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.price-lbl {
-  display: block;
-  font-size: 0.625rem;
-  text-transform: uppercase;
-  color: #64748b;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-}
-
-.price-num {
-  font-size: 1.35rem;
-  font-weight: 800;
-  color: #84cc16;
-}
-
-.btn-card-reserve {
-  background: rgba(255, 255, 255, 0.05);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  padding: 0.6rem 1.1rem;
-  border-radius: 14px;
-  font-size: 0.825rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: all 0.25s ease;
-}
-
-.card-item:hover .btn-card-reserve {
-  background: #84cc16;
-  color: #030712;
-  border-color: #84cc16;
-  box-shadow: 0 0 15px rgba(132, 204, 22, 0.4);
-}
-
-/* SKELETON LOADERS */
-.sk-image { height: 180px; background: rgba(255, 255, 255, 0.05); }
-.sk-body { padding: 1.25rem; }
-.sk-line { background: rgba(255, 255, 255, 0.05); border-radius: 6px; margin-bottom: 0.8rem; }
-.sk-line.title { height: 20px; width: 70%; }
-.sk-line.subtitle { height: 14px; width: 45%; }
-.sk-footer { display: flex; justify-content: space-between; margin-top: 1.5rem; }
-.sk-line.price { height: 24px; width: 35%; }
-.sk-btn { height: 32px; width: 80px; background: rgba(255, 255, 255, 0.05); border-radius: 10px; }
-
-.shimmer-effect {
-  position: relative;
-  overflow: hidden;
-}
-
-.shimmer-effect::after {
-  position: absolute;
-  top: 0; right: 0; bottom: 0; left: 0;
-  transform: translateX(-100%);
-  background-image: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0,
-    rgba(255, 255, 255, 0.05) 20%,
-    rgba(255, 255, 255, 0.1) 60%,
-    rgba(255, 255, 255, 0)
-  );
-  animation: shimmer 1.8s infinite;
-  content: '';
-}
-
-@keyframes shimmer {
-  100% { transform: translateX(100%); }
-}
-
-/* EMPTY STATE */
-.empty-results-box {
-  text-align: center;
-  padding: 5rem 2rem;
-  background: #0b0f19;
-  border: 1px dashed rgba(132, 204, 22, 0.3);
-  border-radius: 28px;
-}
-
-.empty-glow-icon {
-  width: 68px;
-  height: 68px;
-  background: rgba(132, 204, 22, 0.12);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 1.5rem;
-  color: #84cc16;
-  font-size: 2.2rem;
-}
-
-.empty-results-box h3 {
-  font-size: 1.35rem;
-  color: #ffffff;
-  margin: 0 0 0.5rem;
-  font-weight: 700;
-}
-
-.empty-results-box p {
-  color: #94a3b8;
-  font-size: 0.95rem;
-  margin: 0 0 1.75rem;
-}
-
-.btn-reset-main {
-  background: #84cc16;
-  color: #030712;
-  border: none;
-  padding: 0.75rem 1.6rem;
-  border-radius: 14px;
-  font-weight: 800;
-  font-size: 0.875rem;
+.status-pill {
   display: inline-flex;
   align-items: center;
-  gap: 0.6rem;
-  cursor: pointer;
-  box-shadow: 0 0 20px rgba(132, 204, 22, 0.3);
-  transition: all 0.25s ease;
+  gap: 8px;
+  padding: 6px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 22px;
 }
 
-.btn-reset-main:hover {
-  background: #a3e635;
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--blue-accent);
+  box-shadow: 0 0 10px var(--blue-accent);
+}
+
+.hero-copy h1 {
+  font-size: clamp(52px, 5vw, 76px);
+  font-weight: 800;
+  line-height: 1.04;
+  letter-spacing: -0.04em;
+  margin: 0 0 20px;
+  color: #ffffff;
+}
+
+.hero-copy h1 span {
+  color: #8fa5ff;
+}
+
+.hero-description {
+  font-size: 17px;
+  color: var(--text-muted);
+  margin: 0 0 32px;
+  max-width: 580px;
+  line-height: 1.5;
+}
+
+.hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.primary-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 28px;
+  background: var(--blue-accent);
+  border: 0;
+  border-radius: 12px;
+  color: #060e2d;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.2s ease;
+  box-shadow: 0 4px 16px rgba(123, 150, 255, 0.25);
+}
+
+.primary-action:hover {
+  background: var(--blue-hover);
   transform: translateY(-2px);
 }
 
-/* FOOTER */
-.app-footer {
-  margin-top: 5rem;
-  padding-top: 2rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+.hero-subtext {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* Relleno métricas bajo las acciones */
+.hero-metrics {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding-top: 12px;
+}
+
+.metric-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.metric-item strong {
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.metric-item small {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.metric-divider {
+  width: 1px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Card Destacada Hero Pádel (Aprovechamiento de espacio) */
+.featured-hero-card {
+  position: relative;
+  width: 100%;
+  height: clamp(340px, 46vh, 460px);
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.45);
+}
+
+.featured-hero-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.featured-hero-card:hover img {
+  transform: scale(1.03);
+}
+
+.hero-card-badge {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(6, 14, 45, 0.75);
+  backdrop-filter: blur(10px);
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.reload-icon {
+  font-size: 12px;
+  color: var(--blue-accent);
+}
+
+.hero-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(6, 14, 45, 0.95) 12%, transparent 65%);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 28px;
+}
+
+.hero-card-tag {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--blue-accent);
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.hero-card-overlay h3 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+  color: #fff;
+}
+
+/* BARRA DE BÚSQUEDA OSCURA HERO */
+.hero-search-card {
+  background: #0d173d;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 18px 24px;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.35);
+  margin-top: auto;
+}
+
+.search-fields-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 14px;
+}
+
+.search-col {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  flex: 1;
+}
+
+.icon-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+  font-size: 18px;
+}
+
+.col-text small {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  font-weight: 800;
+  margin-bottom: 2px;
+}
+
+.col-text strong {
+  font-size: 14px;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.search-col-divider {
+  width: 1px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 0 20px;
+}
+
+.hero-search-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--blue-accent);
+  border: 0;
+  color: #060e2d;
+  padding: 12px 28px;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.hero-search-btn:hover {
+  background: var(--blue-hover);
+}
+
+.hero-chips-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.chips-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-right: 4px;
+}
+
+.hero-chips-row button {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 99px;
+  padding: 6px 16px;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.hero-chips-row button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+/* =========================================================
+   SECCIÓN CANCHAS (RESULTADOS / GRID DE TARJETAS BLANCAS)
+   ========================================================= */
+
+.courts-section {
+  background: var(--bg-light);
+  color: var(--text-dark);
+  padding: 90px 48px;
+}
+
+.section-intro {
+  margin-bottom: 28px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.section-eyebrow {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: var(--blue-accent);
+  margin-bottom: 6px;
+}
+
+.section-intro h2 {
+  margin: 0;
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text-dark);
+}
+
+.secondary-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid #dce2ee;
+  padding: 12px 24px;
+  border-radius: 99px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-dark);
+  cursor: pointer;
+}
+
+.results-toolbar {
+  margin-bottom: 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.footer-left {
+.active-filters {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 12px;
 }
 
-.footer-logo {
-  width: 32px;
-  height: 32px;
-  background: rgba(132, 204, 22, 0.15);
+.filter-status {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--blue-accent);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filter-status span {
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
+  background: var(--blue-accent);
+}
+
+.active-filters button {
+  background: transparent;
+  border: 0;
+  color: #64748b;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.sort-control {
   display: flex;
   align-items: center;
-  justify-content: center;
-  color: #84cc16;
+  gap: 8px;
+  position: relative;
 }
 
-.footer-brand {
-  font-family: 'Space Grotesk', sans-serif;
-  font-weight: 800;
-  color: #ffffff;
-  font-size: 1.15rem;
-}
-
-.footer-copyright {
-  font-size: 0.8rem;
+.sort-control ion-icon {
+  position: absolute;
+  left: 10px;
   color: #64748b;
 }
 
-/* ANIMACIONES KEYFRAMES & TRANSICIONES */
-@keyframes floatGlow {
-  0% { transform: translate(0, 0) scale(1); }
-  100% { transform: translate(30px, -40px) scale(1.1); }
+.sort-control select {
+  padding: 8px 12px 8px 32px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dark);
 }
 
-@keyframes pulseBeacon {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(0.85); }
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
 }
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
+.court-card {
+  background: #ffffff;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.court-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+}
+
+.court-image {
+  position: relative;
+  height: 200px;
+}
+
+.court-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sport-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: rgba(6, 14, 45, 0.8);
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.fav-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: #fff;
+  border: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.court-content {
+  padding: 20px;
+}
+
+.court-content h3 {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-dark);
+}
+
+.court-location {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.court-features {
+  font-size: 11px;
+  color: #94a3b8;
+  margin: 0 0 16px;
+}
+
+.court-slots {
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+}
+
+.slots-title {
+  display: block;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+  margin-bottom: 6px;
+}
+
+.slots-pills {
+  display: flex;
+  gap: 8px;
+}
+
+.slot-pill {
+  background: #eef2ff;
+  color: #4b6bfe;
+  font-weight: 700;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.court-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 14px;
+}
+
+.court-price strong {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-dark);
+}
+
+.court-price span {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.card-link {
+  background: transparent;
+  border: 0;
+  color: #4b6bfe;
+  font-weight: 700;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.disclaimer-text {
+  margin-top: 28px;
+  font-size: 11px;
+  color: #94a3b8;
+  text-align: center;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  background: #fff;
+  border-radius: 16px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.empty-icon {
+  width: 50px;
+  height: 50px;
+  background: #eef2ff;
+  color: var(--blue-accent);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  margin: 0 auto 16px;
+}
+
+/* Skeletons */
+.skeleton-card {
+  height: 380px;
+  background: #fff;
+}
+.skeleton-image {
+  height: 200px;
+  background: #e2e8f0;
+}
+.skeleton-body {
+  padding: 20px;
+}
+.skeleton-line {
+  height: 16px;
+  background: #f1f5f9;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+.skeleton-title { width: 70%; }
+.skeleton-location { width: 40%; }
+.skeleton-divider { height: 1px; background: #f1f5f9; margin: 20px 0; }
+.skeleton-bottom { display: flex; justify-content: space-between; }
+.skeleton-price { width: 30%; height: 20px; background: #f1f5f9; }
+.skeleton-button { width: 20%; height: 20px; background: #f1f5f9; }
+
+/* =========================================================
+   SECCIÓN PASOS
+   ========================================================= */
+
+.steps-section {
+  padding: 100px 48px;
+}
+
+.steps-section h2 {
+  font-size: 36px;
+  font-weight: 800;
+  margin: 0 0 50px;
+}
+
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+}
+
+.step-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-dark);
+  border-radius: 20px;
+  padding: 30px;
+}
+
+.step-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.step-icon {
+  width: 44px;
+  height: 44px;
+  background: rgba(123, 150, 255, 0.12);
+  color: var(--blue-accent);
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+}
+
+.step-number {
+  font-size: 28px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.12);
+}
+
+.step-card h3 {
+  font-size: 18px;
+  font-weight: 800;
+  margin: 0 0 10px;
+}
+
+.step-card p {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* =========================================================
+   BANNER PROPIETARIOS
+   ========================================================= */
+
+.owner-banner-section {
+  padding: 0 48px 100px;
+}
+
+.owner-card {
+  background: linear-gradient(135deg, #0c1743 0%, #060e2d 100%);
+  border: 1px solid var(--border-dark);
+  border-radius: 24px;
+  padding: 50px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 50px;
+  align-items: center;
+}
+
+.owner-info h2 {
+  font-size: 36px;
+  font-weight: 800;
+  margin: 0 0 16px;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.owner-info p {
+  color: var(--text-muted);
+  font-size: 15px;
+  margin: 0 0 32px;
+  line-height: 1.6;
+}
+
+.owner-primary-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--blue-accent);
+  border: 0;
+  color: #060e2d;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.owner-primary-btn:hover {
+  background: var(--blue-hover);
+}
+
+.owner-preview-box {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-dark);
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.preview-header strong {
+  display: block;
+  font-size: 14px;
+}
+
+.preview-header small {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.preview-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.preview-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 12px 16px;
+  border-radius: 10px;
+}
+
+.row-info strong {
+  display: block;
+  font-size: 12px;
+}
+
+.row-info small {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.status-tag {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.status-tag.reserved {
+  background: rgba(123, 150, 255, 0.2);
+  color: #a5bbfd;
+}
+
+.status-tag.available {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+}
+
+/* =========================================================
+   FOOTER
+   ========================================================= */
+
+.site-footer {
+  border-top: 1px solid var(--border-dark);
+  padding: 60px 48px 40px;
+}
+
+.footer-top {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 40px;
+  margin-bottom: 40px;
+}
+
+.footer-brand-title {
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.footer-brand-title span {
+  color: var(--blue-accent);
+}
+
+.footer-brand-col p {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin: 8px 0 0;
+}
+
+.footer-links-col h4 {
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0 0 16px;
+  color: #fff;
+}
+
+.footer-links-col a {
+  display: block;
+  color: var(--text-muted);
+  font-size: 13px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.footer-links-col a:hover {
+  color: #fff;
+}
+
+.footer-bottom {
+  border-top: 1px solid var(--border-dark);
+  padding-top: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.footer-sub {
+  margin: 0;
+}
+
+/* =========================================================
+   RESPONSIVE DESIGN
+   ========================================================= */
+
+@media (max-width: 1100px) {
+  .hero-section {
+    min-height: auto;
+    height: auto;
+    padding-top: 110px;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  .hero-inner {
+    grid-template-columns: 1fr;
   }
-}
-
-.animate-fade-up {
-  animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.animate-fade-up-delay {
-  animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.15s forwards;
-  opacity: 0;
-}
-
-.animate-fade-in {
-  animation: fadeInUp 0.4s ease forwards;
-}
-
-.pop-scale-enter-active,
-.pop-scale-leave-active {
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.pop-scale-enter-from,
-.pop-scale-leave-to {
-  opacity: 0;
-  transform: translate(-50%, 15px) scale(0.95);
-}
-
-.fade-mode-enter-active,
-.fade-mode-leave-active {
-  transition: opacity 0.3s ease;
-}
-
-.fade-mode-enter-from,
-.fade-mode-leave-to {
-  opacity: 0;
-}
-
-/* RESPONSIVE */
-@media (max-width: 1024px) {
-  .hero-content-grid { grid-template-columns: 1fr; gap: 3rem; }
-  .spotlight-card { max-width: 440px; margin: 0 auto; }
-  .cards-grid { grid-template-columns: repeat(2, 1fr); }
+  .featured-hero-card {
+    height: 320px;
+  }
+  .cards-grid, .steps-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .owner-card {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 768px) {
-  .navbar-container { padding: 0 0.75rem; }
-  .navbar-bar { flex-direction: column; gap: 0.75rem; border-radius: 24px; padding: 0.75rem; }
-  .header-right { display: none; }
-  .hero-search-bar { width: 100%; justify-content: space-between; }
-  .filter-modal { width: 92vw; }
-  .selects-row { grid-template-columns: 1fr; }
-  .hero-wrapper { padding: 12rem 1.25rem 4rem; }
-  .hero-actions-row { flex-direction: column; align-items: flex-start; gap: 1.5rem; }
-  .cards-grid { grid-template-columns: 1fr; }
-  .section-header-bar { flex-direction: column; align-items: flex-start; gap: 1rem; }
-  .app-footer { flex-direction: column; gap: 1rem; text-align: center; }
+  .site-header {
+    padding: 12px 20px;
+  }
+  .search-bar-header {
+    display: none;
+  }
+  .hero-section {
+    padding: 100px 20px 30px;
+  }
+  .hero-copy h1 {
+    font-size: 38px;
+  }
+  .search-fields-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .search-col-divider {
+    display: none;
+  }
+  .hero-chips-row {
+    flex-wrap: wrap;
+  }
+  .courts-section {
+    padding: 60px 20px;
+  }
+  .cards-grid, .steps-grid {
+    grid-template-columns: 1fr;
+  }
+  .footer-top {
+    grid-template-columns: 1fr;
+  }
+  .footer-bottom {
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+  }
 }
 </style>

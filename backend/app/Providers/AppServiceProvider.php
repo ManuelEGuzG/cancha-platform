@@ -27,5 +27,9 @@ class AppServiceProvider extends ServiceProvider
                 Limit::perHour(10)->by('telefono:'.hash('sha256', $telefono)),
             ];
         });
+
+        RateLimiter::for('resena-publica', function ($request) {
+            return Limit::perHour(10)->by($request->ip());
+        });
     }
 }

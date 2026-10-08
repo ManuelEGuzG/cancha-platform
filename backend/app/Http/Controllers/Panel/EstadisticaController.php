@@ -28,7 +28,7 @@ class EstadisticaController extends Controller
 
         $reservasHoy = Reserva::whereIn('cancha_id', $canchaIds)
             ->whereDate('fecha', Carbon::today()->toDateString())
-            ->whereIn('estado', ['pendiente', 'confirmada'])
+            ->whereIn('estado', ['pendiente', 'aceptada', 'confirmada'])
             ->count();
 
         $solicitudes = $reservasDelMes
