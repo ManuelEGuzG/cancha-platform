@@ -185,7 +185,14 @@
                   <div class="month-selector-bar">
                     <span>{{ mesAnioTexto }}</span>
                     <div class="arrow-navigator-controls">
-                      <button type="button" class="nav-arrow-btn" @click="cambiarSemana(-1)" title="Semana anterior">
+                      <button 
+                        type="button" 
+                        class="nav-arrow-btn" 
+                        :disabled="esSemanaActual"
+                        :class="{ 'is-disabled': esSemanaActual }"
+                        @click="cambiarSemana(-1)" 
+                        title="Semana anterior"
+                      >
                         <ion-icon :icon="chevronBackOutline"></ion-icon>
                       </button>
                       <button type="button" class="nav-arrow-btn" @click="cambiarSemana(1)" title="Semana siguiente">
@@ -481,6 +488,14 @@ const proximosDias = computed<DiaItem[]>(() => {
   return lista;
 });
 
+// Detecta si la vista actual incluye el día de hoy (para deshabilitar el botón de retroceso)
+const esSemanaActual = computed(() => {
+  if (!proximosDias.value.length) return true;
+  const hoyISO = obtenerFechaHoyISO();
+  const primerDiaVisible = proximosDias.value[0].iso;
+  return primerDiaVisible <= hoyISO;
+});
+
 function formatearObjetoDia(d: Date): DiaItem {
   const year = d.getFullYear();
   const monthStr = String(d.getMonth() + 1).padStart(2, '0');
@@ -547,6 +562,10 @@ function seleccionarCancha(id: number) {
 }
 
 function seleccionarFecha(iso: string) {
+  const hoyISO = obtenerFechaHoyISO();
+  // Impedir seleccionar días anteriores al día actual mediante los botones del carrusel
+  if (iso < hoyISO) return;
+
   if (fechaSeleccionada.value !== iso) {
     limpiarSeleccion();
     fechaSeleccionada.value = iso;
@@ -555,13 +574,24 @@ function seleccionarFecha(iso: string) {
 }
 
 function cambiarSemana(direccion: number) {
+  // Si intenta ir hacia atrás y ya estamos en la semana actual, se detiene
+  if (direccion < 0 && esSemanaActual.value) return;
+
   const [year, month, day] = fechaSeleccionada.value.split('-').map(Number);
   const base = new Date(year, month - 1, day + (direccion * 7));
-  const yearStr = base.getFullYear();
-  const monthStr = String(base.getMonth() + 1).padStart(2, '0');
-  const dayStr = String(base.getDate()).padStart(2, '0');
   
-  seleccionarFecha(`${yearStr}-${monthStr}-${dayStr}`);
+  const hoyISO = obtenerFechaHoyISO();
+  let yearStr = base.getFullYear();
+  let monthStr = String(base.getMonth() + 1).padStart(2, '0');
+  let dayStr = String(base.getDate()).padStart(2, '0');
+  let nuevaIso = `${yearStr}-${monthStr}-${dayStr}`;
+
+  // Si la nueva semana calculada queda en el pasado respecto a hoy, fijamos hoy como límite inferior
+  if (nuevaIso < hoyISO) {
+    nuevaIso = hoyISO;
+  }
+  
+  seleccionarFecha(nuevaIso);
 }
 
 async function cargarComplejo() {
@@ -1247,10 +1277,16 @@ button, input, select, textarea {
   transition: 0.2s ease;
 }
 
-.nav-arrow-btn:hover {
+.nav-arrow-btn:hover:not(:disabled) {
   background: #eef2ff;
   border-color: var(--blue-accent);
   color: var(--blue-accent);
+}
+
+.nav-arrow-btn.is-disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: #f1f5f9;
 }
 
 .days-week-grid {
@@ -1545,7 +1581,7 @@ button, input, select, textarea {
   left: -10000px;
 }
 
-.form-field {
+The form-field {
   display: flex;
   flex-direction: column;
   gap: 6px;
